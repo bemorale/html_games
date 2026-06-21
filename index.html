@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bemorale's Games</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f0f1a;
+      color: #f0f0f0;
+      min-height: 100vh;
+    }
+
+    header {
+      text-align: center;
+      padding: 60px 20px 40px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      border-bottom: 1px solid #ffffff18;
+    }
+
+    header h1 {
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      font-weight: 800;
+      background: linear-gradient(90deg, #a78bfa, #60a5fa, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+
+    header p {
+      margin-top: 12px;
+      color: #94a3b8;
+      font-size: 1.05rem;
+    }
+
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 48px 20px 80px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 24px;
+    }
+
+    .card {
+      background: #1e1e30;
+      border: 1px solid #ffffff14;
+      border-radius: 16px;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 36px rgba(0,0,0,0.5);
+      border-color: #ffffff30;
+    }
+
+    .card-thumb {
+      width: 100%;
+      aspect-ratio: 4/3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+    }
+
+    .flappy  { background: linear-gradient(135deg, #1a4a2e, #0d2b5e); }
+    .monster { background: linear-gradient(135deg, #3b1f2b, #1a0a2e); }
+    .gravity { background: linear-gradient(135deg, #0a1628, #1a2a4a); }
+    .perfect { background: linear-gradient(135deg, #2a1a0a, #3b2a0a); }
+
+    .card-body {
+      padding: 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .card-body h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    .card-body p {
+      font-size: 0.88rem;
+      color: #94a3b8;
+      line-height: 1.5;
+      flex: 1;
+    }
+
+    .play-btn {
+      margin-top: 12px;
+      display: inline-block;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: #ffffff14;
+      color: #e2e8f0;
+      text-align: center;
+      transition: background 0.15s;
+    }
+
+    .card:hover .play-btn {
+      background: #ffffff26;
+    }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: #475569;
+      font-size: 0.8rem;
+      border-top: 1px solid #ffffff0a;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Bemorale's Games</h1>
+  <p>A collection of browser games — click any card to play!</p>
+</header>
+
+<main>
+  <a class="card" href="flappy_bird_arctic_rainforest.html">
+    <div class="card-thumb flappy">🐦</div>
+    <div class="card-body">
+      <h2>Flappy Bird: Arctic Rainforest</h2>
+      <p>Tap to keep your bird airborne through an icy jungle of pipes. How far can you go?</p>
+      <span class="play-btn">Play →</span>
+    </div>
+  </a>
+
+  <a class="card" href="monster_rps_v11.html">
+    <div class="card-thumb monster">👾</div>
+    <div class="card-body">
+      <h2>Monster Battle</h2>
+      <p>Rock-paper-scissors with a monster twist. Collect creatures and battle your way to the top.</p>
+      <span class="play-btn">Play →</span>
+    </div>
+  </a>
+
+  <a class="card" href="loss_of_gravity.html">
+    <div class="card-thumb gravity">🚀</div>
+    <div class="card-body">
+      <h2>Loss of Gravity</h2>
+      <p>Float and drift through a zero-G world. Navigate obstacles in a physics-bending challenge.</p>
+      <span class="play-btn">Play →</span>
+    </div>
+  </a>
+
+  <a class="card" href="perfect_day_v4.html">
+    <div class="card-thumb perfect">☀️</div>
+    <div class="card-body">
+      <h2>Perfect Day</h2>
+      <p>Chase the ideal day from sunrise to sunset in this relaxing, feel-good experience.</p>
+      <span class="play-btn">Play →</span>
+    </div>
+  </a>
+</main>
+
+<footer>Made with ♥ by Bemorale</footer>
+
+</body>
+</html>
