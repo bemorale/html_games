@@ -1,5 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Flappy Bird: Arctic Rainforest</title>
+</head>
+<body style="margin:0;background:#111;display:flex;flex-direction:column;align-items:center;min-height:100vh;">
 <style>
-.bar{display:flex;justify-content:center;gap:5px;padding:6px 0 3px;flex-wrap:wrap;}
+*{box-sizing:border-box;}
+.bar{display:flex;justify-content:center;gap:5px;padding:8px 4px 4px;flex-wrap:wrap;width:100%;max-width:480px;}
 .tBtn{padding:4px 9px;border-radius:14px;border:2px solid transparent;font-size:11px;font-weight:500;cursor:pointer;background:var(--color-background-secondary);color:var(--color-text-secondary);transition:all 0.12s;}
 .tBtn.active{color:#fff;}
 .tBtn[data-t="classic"].active{background:#43a047;}
@@ -35,6 +44,13 @@
 .savedBadge{display:none;background:var(--color-background-success);color:var(--color-text-success);border-radius:11px;padding:4px 14px;font-size:11px;align-items:center;margin-top:6px;text-align:center;}
 .savedBadge.show{display:flex;justify-content:center;}
 .previewArea{display:flex;justify-content:center;margin-bottom:10px;}
+#gc{width:100%;max-width:480px;height:auto;touch-action:none;display:block;border-radius:12px;cursor:pointer;}
+#gameWrap{position:relative;width:100%;max-width:480px;}
+@media(max-width:500px){
+  .tBtn,.mBtn{padding:7px 10px;font-size:13px;}
+  .custBtn,.revertBtn,.muteBtn{padding:7px 10px;font-size:13px;}
+  .cItem{padding:7px 10px;font-size:13px;}
+}
 </style>
 <div class="bar" id="themeBar">
   <button class="tBtn active" data-t="classic">Classic</button>
@@ -55,8 +71,8 @@
   <button class="revertBtn" id="revertBtn">Revert to Theme</button>
   <button class="muteBtn" id="muteBtn">🔊</button>
 </div>
-<div style="position:relative;display:block;">
-<canvas id="gc" width="480" height="555" style="display:block;margin:4px auto 0;border-radius:12px;cursor:pointer;" tabindex="0"></canvas>
+<div id="gameWrap">
+<canvas id="gc" width="480" height="555" style="margin:4px auto 0;" tabindex="0"></canvas>
 <div id="customizePanel">
   <div style="font-size:15px;font-weight:500;color:var(--color-text-primary);text-align:center;margin-bottom:8px;">Customize your bird</div>
   <div class="previewArea"><canvas id="previewCanvas" width="160" height="160"></canvas></div>
@@ -616,3 +632,5 @@ document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();
 cv.addEventListener('click',flap);cv.addEventListener('touchstart',e=>{e.preventDefault();flap();},{passive:false});
 cv.focus();loop();
 </script>
+</body>
+</html>
