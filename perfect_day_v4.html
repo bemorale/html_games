@@ -1,0 +1,1804 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Perfect Day</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f0f4f8;color:#111;font-size:13px;max-width:680px;margin:0 auto}
+.scr{display:none;padding:1rem}.scr.active{display:block}
+h2{font-size:16px;font-weight:700;margin-bottom:.2rem}
+h3{font-size:13px;font-weight:700;margin-bottom:.3rem}
+.sub{font-size:12px;color:#666;margin-bottom:.7rem}
+.card{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:.8rem 1rem;margin-bottom:.6rem}
+.row{display:flex;align-items:center;gap:8px;margin-bottom:.4rem;flex-wrap:wrap}
+label{font-size:12px;color:#555;min-width:118px}
+select,input{border:1px solid #ddd;border-radius:6px;padding:4px 8px;font-size:12px;background:#fafafa;color:#111}
+.btn{border:1px solid #bbb;border-radius:7px;padding:7px 16px;font-size:12px;cursor:pointer;background:#fff;color:#111}
+.btn:hover:not([disabled]){background:#eee}
+.btn.p{background:#111;color:#fff;border-color:#111}
+.btn.p:hover:not([disabled]){background:#333}
+.btn[disabled]{opacity:.38;cursor:not-allowed}
+.shdr{font-size:10px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.05em;margin:.5rem 0 .18rem}
+.srow{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:.15rem}
+.sw{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;display:inline-block;flex-shrink:0}
+.sw.on{border-color:#111}
+.og{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:5px;margin-bottom:.15rem}
+.ob{border:1px solid #ddd;border-radius:6px;padding:5px 3px;font-size:11px;text-align:center;cursor:pointer;background:#fafafa;color:#222}
+.ob:hover{background:#eee}.ob.on{background:#e1f5ee;border-color:#5dcaa5;color:#085041}
+.tag{display:inline-block;background:#f5f5f5;border:1px solid #ddd;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;margin:2px;color:#222}
+.tag.on{background:#e1f5ee;border-color:#5dcaa5;color:#085041}
+.tag.rd.on{background:#fcebeb;border-color:#f09595;color:#7a1f1f}
+.fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:4px;margin-bottom:.3rem}
+.fb{border:1px solid #ddd;border-radius:6px;padding:5px 4px;font-size:11px;text-align:center;cursor:pointer;background:#fafafa;color:#222}
+.fb:hover{background:#eee}.fb.on{background:#e6f1fb;border-color:#85b7eb;color:#0c447c}.fb.bad{background:#faeeda;border-color:#fac775;color:#633806}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:11px;margin:2px;border:1px solid}
+.gp{background:#eaf3de;color:#27500a;border-color:#c0dd97}.rp{background:#fcebeb;color:#7a1f1f;border-color:#f7c1c1}
+.mc{display:inline-block;background:#eee;border-radius:6px;padding:.4rem .7rem;min-width:88px;margin:3px;vertical-align:top}
+.mc .mv{font-size:13px;font-weight:700}.mc .ml{font-size:10px;color:#666}
+#wcanvas{display:block;border-radius:10px;border:1px solid #ccc;flex-shrink:0}
+.sw-wrap{display:flex;gap:10px;align-items:flex-start;margin-bottom:.5rem;flex-wrap:wrap}
+.sw-r{flex:1;min-width:148px}
+.clk{font-size:22px;font-weight:800;line-height:1;margin-bottom:.12rem}
+.etitle{font-size:12px;font-weight:700;color:#333;margin-bottom:.3rem}
+.moodlbl{font-size:11px;color:#888;margin-bottom:.28rem}
+.bubble{background:#fff;border:1px solid #ddd;border-radius:0 12px 12px 12px;padding:.65rem .9rem;font-size:12px;line-height:1.85;color:#222;font-style:italic;margin-bottom:.5rem;min-height:80px}
+.pbar{height:4px;background:#e0e0e0;border-radius:2px;overflow:hidden;margin-bottom:.45rem}
+.pfill{height:100%;background:#1D9E75;border-radius:2px;transition:width .2s}
+.logbox{max-height:80px;overflow-y:auto;margin-top:.3rem}
+.lrow{font-size:11px;color:#888;padding:.14rem 0;border-bottom:1px solid #eee}.lrow strong{color:#555}
+#music-ind{position:fixed;bottom:12px;right:12px;background:rgba(0,0,0,.55);color:#fff;border-radius:20px;padding:4px 12px;font-size:11px;pointer-events:none;opacity:0;transition:opacity .5s;z-index:999}
+</style>
+</head>
+<body>
+<div id="music-ind">&#9834;</div>
+<div id="sw" class="scr active">
+  <div style="text-align:center;padding:2.5rem 1rem 2rem">
+    <div style="font-size:50px;margin-bottom:.5rem">&#127775;</div>
+    <h2 style="font-size:20px;margin-bottom:.3rem">Perfect Day</h2>
+    <p class="sub" style="max-width:310px;margin:.3rem auto 1.2rem">Design your person, plan every hour, watch them walk through their animated day. Can you earn a PERFECT DAY?</p>
+    <button class="btn p" id="b-welcome">Create your person &#8599;</button>
+  </div>
+</div>
+<div id="si" class="scr">
+  <h2>Who is this person?</h2><p class="sub">Step 1 of 5</p>
+  <div class="card">
+    <div class="row"><label>Name</label><input type="text" id="p-name" value="Alex" style="flex:1"></div>
+    <div class="row"><label>Age</label><input type="number" id="p-age" value="10" min="5" max="15" style="width:55px"></div>
+    <div class="row"><label>Grade</label><select id="p-grade"><option value="3">Grade 3</option><option value="4">Grade 4</option><option value="5" selected>Grade 5</option><option value="6">Grade 6</option><option value="7">Grade 7</option><option value="8">Grade 8</option></select></div>
+    <div class="row"><label>Gender</label><select id="p-gender"><option value="girl">Girl (she/her)</option><option value="boy" selected>Boy (he/him)</option><option value="nb">Non-binary (they/them)</option></select></div>
+  </div>
+  <div class="card"><h3>School commute</h3>
+    <div class="row"><label>How do they get there?</label><select id="p-commute"><option value="walk">Walk (8 min)</option><option value="bus" selected>School bus (25 min)</option><option value="car">Car (15 min)</option><option value="far">Long bus (45 min)</option></select></div>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn p" id="b-i-next">Next: Appearance &#8599;</button></div>
+</div>
+<div id="sl" class="scr">
+  <h2>Design their look</h2><p class="sub">Step 2 of 5 &mdash; appearance affects social interactions!</p>
+  <div style="display:flex;gap:1rem;align-items:flex-start;flex-wrap:wrap">
+    <div style="flex:1;min-width:190px">
+      <div class="card"><h3>Face</h3>
+        <div class="shdr">Skin tone</div><div class="srow" id="sw-skin"></div>
+        <div class="shdr">Eye color</div><div class="srow" id="sw-eyes"></div>
+        <div class="shdr">Nose</div><div class="og" id="sw-nose"></div>
+        <div class="shdr">Mouth</div><div class="og" id="sw-mouth"></div>
+        <div class="shdr">Blush</div><div class="og" id="sw-blush"></div>
+        <div class="shdr">Glasses</div><div class="og" id="sw-glasses"></div>
+      </div>
+      <div class="card"><h3>Hair</h3>
+        <div class="shdr">Color</div><div class="srow" id="sw-hair"></div>
+        <div class="shdr">Style</div><div class="og" id="sw-hairstyle"></div>
+      </div>
+      <div class="card"><h3>Outfit</h3>
+        <div class="shdr">Shirt color</div><div class="srow" id="sw-shirt"></div>
+        <div class="shdr">Bottom style</div><div class="og" id="sw-bottomstyle"></div>
+        <div class="shdr">Bottom color</div><div class="srow" id="sw-bottom"></div>
+        <div class="shdr">Shoes</div><div class="og" id="sw-shoes"></div>
+      </div>
+    </div>
+    <div style="flex:0 0 auto;text-align:center;position:sticky;top:8px">
+      <canvas id="char-canvas" width="150" height="260" style="border-radius:8px;border:1px solid #eee;background:#fafafa"></canvas>
+      <p style="font-size:12px;color:#666;margin-top:4px" id="cnametag">Alex</p>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:.5rem">
+    <button class="btn" id="b-l-back">Back</button>
+    <button class="btn p" id="b-l-next">Next: Health &#8599;</button>
+  </div>
+</div>
+<div id="sh" class="scr">
+  <h2>Health profile</h2><p class="sub">Step 3 of 5</p>
+  <div class="card"><h3>Medical conditions &amp; allergies</h3>
+    <p style="font-size:11px;color:#888;margin-bottom:.2rem">&#9888; Allergies are always active. Medical events take 1 hr recovery. If recovery pushes past bedtime = penalty!</p>
+    <p style="font-size:11px;color:#1a7a40;font-weight:700;margin-bottom:.35rem">&#10003; Recommended: select at least 1 allergy or medical condition for a realistic day! Choosing none lets you avoid all health challenges.</p>
+    <div id="medical-tags"></div>
+  </div>
+  <div class="card"><h3>Diet type</h3>
+    <div class="row"><label>Diet</label><select id="p-diet" onchange="resetFood()"><option value="regular" selected>Regular</option><option value="vegetarian">Vegetarian</option><option value="vegan">Vegan</option><option value="dairyfree">Dairy-free</option></select></div>
+  </div>
+  <div class="card"><h3>What do they eat today?</h3>
+    <p style="font-size:11px;color:#888;margin-bottom:.3rem">Up to 2 per meal. <span id="diet-warn" style="color:#b85500;font-weight:700"></span></p>
+    <div class="shdr">Breakfast</div><div class="fg" id="food-bfast"></div>
+    <div class="shdr">School lunch</div><div class="fg" id="food-lunch"></div>
+    <div class="shdr">Dinner</div><div class="fg" id="food-dinner"></div>
+    <div class="shdr">Snacks</div><div class="fg" id="food-snacks"></div>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button class="btn" id="b-h-back">Back</button>
+    <button class="btn p" id="b-h-next">Next: Schedule &#8599;</button>
+  </div>
+</div>
+<div id="ss" class="scr">
+  <h2>Plan the day</h2><p class="sub">Step 4 of 5 &mdash; defaults set to extremes. Find the balance! Activities MUST finish before bed.</p>
+  <div class="card"><h3>Sleep</h3>
+    <div class="row"><label>Bedtime last night</label><select id="s-bed" onchange="refreshMini()"></select></div>
+    <div class="row"><label>Wake-up time</label><select id="s-wake" onchange="refreshMini()"></select></div>
+    <div class="row"><label>Afternoon nap</label><select id="s-nap"><option value="0" selected>No nap</option><option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option></select></div>
+  </div>
+  <div class="card"><h3>Meals</h3>
+    <div class="row"><label>Breakfast</label><select id="s-bfast" onchange="refreshMini()"></select></div>
+    <div class="row"><label>Morning snack</label><select id="s-msnack"></select></div>
+    <div class="row"><label>Lunch</label><select id="s-lunch" onchange="refreshMini()"></select></div>
+    <div class="row"><label>After-school snack</label><select id="s-asnack"></select></div>
+    <div class="row"><label>Dinner</label><select id="s-dinner" onchange="refreshMini()"></select></div>
+    <div class="row"><label>Evening snack</label><select id="s-esnack"></select></div>
+  </div>
+  <div class="card"><h3>Bathroom breaks</h3>
+    <div class="row"><label>After waking</label><select id="s-b1"></select></div>
+    <div class="row"><label>Before leaving</label><select id="s-b2"></select></div>
+    <div class="row"><label>Mid-morning school</label><select id="s-b3"></select></div>
+    <div class="row"><label>After lunch</label><select id="s-b4"></select></div>
+    <div class="row"><label>Arriving home</label><select id="s-b5"></select></div>
+    <div class="row"><label>Before bed</label><select id="s-b6"></select></div>
+  </div>
+  <div class="card"><h3>Free time</h3>
+    <div class="row"><label>Outdoor / free play</label><select id="s-play"></select></div>
+    <div class="row"><label>Screen time</label><select id="s-screen"></select></div>
+  </div>
+  <div id="mini-cards" style="margin-bottom:.5rem"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button class="btn" id="b-s-back">Back</button>
+    <button class="btn p" id="b-s-next">Next: Activities &#8599;</button>
+  </div>
+</div>
+<div id="sa" class="scr">
+  <h2>After-school life</h2><p class="sub">Step 5 of 5</p>
+  <div class="card"><h3>Activities</h3>
+    <p style="font-size:11px;color:#888;margin-bottom:.3rem">4 or more = fatigue. Each ~1 hr. If not finished before bedtime, bedtime is pushed back!</p>
+    <div id="activity-tags"></div>
+  </div>
+  <div class="card"><h3>Homework</h3>
+    <div class="row"><label>Time needed</label><select id="s-hw"><option value="15">15 min</option><option value="30">30 min</option><option value="45" selected>45 min</option><option value="60">1 hour</option><option value="90">1.5 hrs</option></select></div>
+    <div class="row"><label>When</label><select id="s-hwtime"><option value="right">Right after school</option><option value="after-snack" selected>After snack</option><option value="evening">Evening</option></select></div>
+  </div>
+  <div class="card"><h3>School</h3>
+    <p style="font-size:11px;color:#c04000;font-weight:600;margin-bottom:.3rem">&#9888; Must select at least 3 lessons or the person complains!</p>
+    <div class="row"><label>Attention in class</label><select id="p-attention"><option value="focused">Focused</option><option value="tries" selected>Tries hard</option><option value="distracted">Distracted</option><option value="sleepy">Sleepy</option></select></div>
+    <div id="school-lesson-tags" style="margin-top:.3rem"></div>
+    <p style="font-size:11px;color:#888;margin-top:.3rem">Selected: <strong id="lesson-count">0</strong> lessons</p>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button class="btn" id="b-a-back">Back</button>
+    <button class="btn p" id="b-a-start">&#9654; Start the day</button>
+  </div>
+</div>
+<div id="sim" class="scr">
+  <div style="font-size:11px;color:#888;margin-bottom:.3rem">Following <strong id="sim-name">Alex</strong> &nbsp;&middot;&nbsp; <span id="sim-ctr">&mdash;</span></div>
+  <div class="pbar"><div class="pfill" id="sim-prog" style="width:0%"></div></div>
+  <div class="sw-wrap">
+    <canvas id="wcanvas" width="300" height="200"></canvas>
+    <div class="sw-r">
+      <div class="clk" id="sim-clock">&mdash;</div>
+      <div class="etitle" id="sim-title">&mdash;</div>
+      <div class="moodlbl" id="mood-lbl"></div>
+      <div class="bubble" id="sim-bubble">&mdash;</div>
+      <button class="btn p" id="b-next" style="font-size:13px;padding:8px 20px" disabled>Next &#8599;</button>
+      <div style="font-size:10px;color:#aaa;margin-top:.3rem" id="sim-hint">Starting...</div>
+    </div>
+  </div>
+  <div class="logbox" id="sim-log"></div>
+</div>
+<div id="srev" class="scr">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:.55rem">
+    <canvas id="rev-char" width="52" height="88" style="border-radius:8px;border:1px solid #eee;background:#fafafa"></canvas>
+    <div><h2 style="margin-bottom:0">End of day</h2><p class="sub" style="margin:0">What <span id="rev-name">Alex</span> says...</p></div>
+  </div>
+  <div style="font-size:34px;text-align:center;margin:.3rem 0" id="rev-mood"></div>
+  <div id="rev-score" style="text-align:center;margin-bottom:.5rem"></div>
+  <div style="background:#f5f5f5;border-radius:0 10px 10px 10px;border:1px solid #e5e5e5;padding:.8rem 1rem;font-size:12px;line-height:1.85;color:#222;margin:.5rem 0;font-style:italic" id="rev-text"></div>
+  <div id="rev-pills" style="margin-bottom:.5rem"></div>
+  <div style="background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:.75rem 1rem;max-height:200px;overflow-y:auto" id="rev-tl"></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:.75rem">
+    <button class="btn p" id="b-tweak">Tweak schedule &#8599;</button>
+    <button class="btn" id="b-fresh">Start fresh</button>
+  </div>
+</div>
+<script>
+// ── DATA ─────────────────────────────────────────────────────────
+var skinC=['#FDDBB4','#F5C89A','#E8A87C','#D4956A','#C68642','#A0693A','#8D5524','#5C3317','#3B200F'];
+var hairC=['#F9EDD0','#E8C97A','#D4A040','#C8922A','#8B4513','#3B1F0A','#1C1C1C','#B02020','#882090','#AAAAAA','#FFFFFF'];
+var eyeC=['#5B8DB8','#5A8A5A','#8B6914','#3B1F0A','#888888'];
+var shirtC=['#E74C3C','#3498DB','#27AE60','#F39C12','#9B59B6','#1ABC9C','#F5F5F5','#2C3E50','#F8BBD0','#FF69B4','#FF8C00','#8B0000'];
+var bottomC=['#2C3E50','#3498DB','#7F8C8D','#8B4513','#1A1A1A','#27AE60','#9B59B6'];
+var shoeC=['#1A1A1A','#FFFFFF','#8B4513','#E74C3C','#3498DB','#FF69B4'];
+var shoeL=['Black','White','Brown','Red','Blue','Pink'];
+var noseL=['Button','Round','Pointed','Wide','Slim'];
+var mouthL=['Big smile','Soft smile','Neutral','Frown','Grin'];
+// Hairstyles with distinct shapes
+var hairSL=['Buzz cut','Crew cut','Short straight','Short spiky','Wavy short','Side part','Curly afro','Afro puffs','Cornrows','Locs short','Medium wavy','Long straight','Long curly','Low ponytail','High ponytail','Side bun','Top bun','Braids down','French braid','Pigtails'];
+var blushL=['None','Pink','Rosy','Freckles'];
+var glassL=['None','Round','Square','Cat-eye'];
+var botSL=['Pants','Jeans','Shorts','Skirt','Leggings','Overalls'];
+var P={skin:2,hair:4,hairstyle:2,eyes:0,nose:0,mouth:0,blush:0,glasses:0,shirt:1,bottom:0,bottomstyle:0,shoes:0};
+var activities=[],lessons=[],medicals=[],FC={bfast:[],lunch:[],dinner:[],snacks:[]};
+var simEvents=[],simIdx=0;
+
+// ── WEB AUDIO ─────────────────────────────────────────────────────
+var AC=null,curOscs=[],curGain=null;
+function getAC(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}return AC;}
+function playMood(mood){
+  var ac=getAC();if(!ac)return;
+  // Stop previous sounds
+  curOscs.forEach(function(o){try{o.stop();}catch(e){}});curOscs=[];
+  if(curGain){try{curGain.disconnect();}catch(e){}}
+
+  // Master gain — loud and clear
+  var mg=ac.createGain();
+  mg.gain.setValueAtTime(0.38,ac.currentTime);
+  mg.connect(ac.destination);
+  curGain=mg;
+  var now=ac.currentTime;
+
+  // Each mood: long melody ~12-18 seconds, multiple voices/harmonics
+  // Format: [freq, startTime, duration]
+  var pats={
+    // Happy: bright, bouncy, major key, 15+ seconds
+    happy:[
+      [523,0,.55],[659,.6,.55],[784,1.2,.55],[1047,1.8,.8],
+      [784,2.7,.4],[659,3.15,.4],[523,3.6,.8],
+      [659,4.5,.55],[784,5.1,.55],[1047,5.7,.8],[1318,6.5,1.0],
+      [1047,7.6,.5],[784,8.15,.5],[659,8.7,.5],[523,9.25,1.2],
+      [784,10.5,.55],[1047,11.1,.55],[1318,11.7,.8],[1047,12.6,.55],[784,13.2,1.5],
+      // harmony layer
+      [392,0,.55],[494,.6,.55],[587,1.2,.55],[784,1.8,.8],
+      [587,4.5,.55],[784,5.7,.8],[987,6.5,1.0],[784,7.6,.5],[587,9.25,1.2]
+    ],
+    // Sleepy: slow, deep, descending, 16 seconds
+    sleepy:[
+      [220,0,3.5],[196,3.8,3.5],[185,7.6,3.5],[174,11.4,3.5],[165,15,4],
+      // soft upper melody
+      [440,0,2],[415,3.8,2],[392,7.6,2],[370,11.4,2],[349,15,3],
+      // mid harmony
+      [330,1,2],[311,4.8,2],[294,8.6,2],[277,12.4,2]
+    ],
+    // Sad: minor, gentle, descending, 16 seconds
+    sad:[
+      [330,0,2.5],[311,2.7,2.5],[294,5.5,2.5],[277,8.2,2.5],[262,11,2.5],[247,13.8,3],
+      // harmony
+      [247,0,2.5],[233,2.7,2.5],[220,5.5,2.5],[208,8.2,2.5],[196,11,2.5],[185,13.8,3],
+      // upper echo
+      [494,0.5,2],[466,3.2,2],[440,6,2],[415,8.7,2],[392,11.5,2],[370,14.3,2.5]
+    ],
+    // Disgust: dissonant, harsh, grinding, 14 seconds
+    disgust:[
+      [140,0,.3],[136,.35,.3],[152,.72,.45],[128,1.25,.7],[118,2.1,1.1],[105,3.4,1.4],
+      [140,5,.3],[136,5.35,.3],[152,5.72,.45],[128,6.25,.7],[118,7.1,1.1],[105,8.4,1.4],
+      [98,10,2],[93,12.2,1.8],
+      // screech layer
+      [280,0,.15],[272,.35,.15],[304,.72,.22],[256,1.25,.35],[236,2.1,.55]
+    ],
+    // Neutral: calm, flowing, 14 seconds
+    neutral:[
+      [392,0,1.2],[440,1.4,1.2],[494,2.8,1.2],[523,4.2,1.5],
+      [494,5.9,1.2],[440,7.3,1.2],[392,8.7,1.5],
+      [440,10.4,1.2],[494,11.8,1.2],[523,13.2,1.8],
+      // bass line
+      [196,0,1.2],[220,1.4,1.2],[247,2.8,1.2],[262,4.2,1.5],
+      [247,5.9,1.2],[220,7.3,1.2],[196,8.7,1.5]
+    ]
+  };
+  var waves={happy:'sine',sleepy:'sine',sad:'sine',disgust:'sawtooth',neutral:'triangle'};
+  var pat=pats[mood]||pats.neutral,wave=waves[mood]||'sine';
+
+  pat.forEach(function(n){
+    var o=ac.createOscillator(),g=ac.createGain();
+    o.type=wave;
+    o.frequency.setValueAtTime(n[0],now+n[1]);
+    // Smooth attack and release
+    g.gain.setValueAtTime(0,now+n[1]);
+    g.gain.linearRampToValueAtTime(0.32,now+n[1]+Math.min(0.12,n[2]*0.25));
+    g.gain.setValueAtTime(0.32,now+n[1]+n[2]-Math.min(0.1,n[2]*0.2));
+    g.gain.linearRampToValueAtTime(0,now+n[1]+n[2]);
+    o.connect(g);g.connect(mg);
+    o.start(now+n[1]);o.stop(now+n[1]+n[2]+0.05);
+    curOscs.push(o);
+  });
+
+  var lbs={happy:'\u266a Jolly & bright',sleepy:'\u266a Slow & drowsy',sad:'\u266a Quiet & blue',disgust:'\u266a Ugh...',neutral:'\u266a Calm'};
+  var ind=document.getElementById('music-ind');
+  ind.textContent=lbs[mood]||'\u266a';ind.style.opacity='1';
+  setTimeout(function(){ind.style.opacity='0';},4000);
+}
+function moodFor(reaction,icon){
+  var r=reaction.toLowerCase();
+  if(/amazing|perfect|great|wonderful|love|best|ready|clicking|energised|energized|happy|excited|yes!|fantastic|brilliant/.test(r))return'happy';
+  if(/tired|sleepy|exhaust|drowsy|fog|dozing|zombie|heavy|yawn|burning eyes|can.t keep|cannot keep/.test(r))return'sleepy';
+  if(/ugh|sick|queasy|gross|react|allergy|swell|epipen|cramp|vomit|sting|throat|bloat|dizzy|spin|faint/.test(r))return'disgust';
+  if(/sad|cry|upset|unhappy|hurt|pain|teas|bully|laugh|mock|alone|embarrass|humiliat/.test(r))return'sad';
+  return'neutral';
+}
+
+// ── AVATAR DRAWING ────────────────────────────────────────────────
+var W=300,H=200;
+var RAF=null,AX=80,AY=152,TX=80,TY=152,SCENE='bed',ACTION='sleep',BREATH=0,ARRIVED_CB=null,IS_MOVING=false;
+var SPOS={bed:{x:82,y:152},bathroom:{x:165,y:148},kitchen:{x:112,y:150},outside:{x:148,y:147},school:{x:118,y:152},home:{x:130,y:152},bus:{x:87,y:138}};
+
+function drawHair(ctx,ax,headY,hr,hs){
+  ctx.fillStyle=hairC[P.hair];
+  var hc=hairC[P.hair]; // main hair color
+  var hcDark=hairC[Math.max(0,P.hair-1)]; // slightly darker shade for detail
+
+  // Helper: draw hairline (always visible at forehead)
+  function drawHairline(){
+    // A natural hairline arc just above the forehead
+    ctx.fillStyle=hc;
+    ctx.beginPath();
+    // M-shaped or gentle arc hairline
+    ctx.moveTo(ax-hr*.82,headY-hr*.58);
+    ctx.quadraticCurveTo(ax-hr*.55,headY-hr*1.05,ax-hr*.2,headY-hr*.92);
+    ctx.quadraticCurveTo(ax,headY-hr*1.08,ax+hr*.2,headY-hr*.92);
+    ctx.quadraticCurveTo(ax+hr*.55,headY-hr*1.05,ax+hr*.82,headY-hr*.58);
+    ctx.lineTo(ax+hr*.82,headY-hr*.42);
+    ctx.quadraticCurveTo(ax,headY-hr*.38,ax-hr*.82,headY-hr*.42);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  if(hs==='Buzz cut'){
+    // Very close-cropped stubble all over — hairline just barely visible
+    ctx.beginPath();
+    ctx.arc(ax,headY,hr*1.0,Math.PI*1.05,Math.PI*1.95);ctx.fill();
+    // hairline strip at forehead
+    ctx.beginPath();
+    ctx.moveTo(ax-hr*.82,headY-hr*.58);
+    ctx.quadraticCurveTo(ax,headY-hr*1.0,ax+hr*.82,headY-hr*.58);
+    ctx.lineTo(ax+hr*.72,headY-hr*.38);
+    ctx.quadraticCurveTo(ax,headY-hr*.82,ax-hr*.72,headY-hr*.38);
+    ctx.closePath();ctx.fill();
+    // stubble texture
+    ctx.fillStyle='rgba(0,0,0,.15)';
+    for(var ta=-0.65;ta<=0.65;ta+=0.2){
+      for(var tb=0.2;tb<=0.85;tb+=0.22){
+        ctx.beginPath();ctx.arc(ax+ta*hr,headY-tb*hr,hr*.035,0,Math.PI*2);ctx.fill();
+      }
+    }
+    ctx.fillStyle=hc;
+  }
+  else if(hs==='Crew cut'){
+    // Short, flat top with defined hairline
+    drawHairline();
+    // flat top cap
+    ctx.fillRect(ax-hr*.75,headY-hr*.88,hr*1.5,hr*.14);
+    // sides
+    ctx.beginPath();ctx.arc(ax,headY-hr*.04,hr*.93,Math.PI*1.07,Math.PI*1.93);ctx.fill();
+  }
+  else if(hs==='Short straight'){
+    // Clean short cut, visible hairline
+    drawHairline();
+    ctx.beginPath();ctx.arc(ax,headY-hr*.04,hr*.93,Math.PI*1.07,Math.PI*1.93);ctx.fill();
+    // slight fringe line
+    ctx.strokeStyle=hcDark;ctx.lineWidth=hr*.04;
+    ctx.beginPath();ctx.moveTo(ax-hr*.55,headY-hr*.88);ctx.lineTo(ax+hr*.55,headY-hr*.88);ctx.stroke();
+    ctx.lineWidth=1;
+  }
+  else if(hs==='Short spiky'){
+    // Hair base with visible hairline, spikes shooting up
+    drawHairline();
+    ctx.beginPath();ctx.arc(ax,headY-hr*.04,hr*.91,Math.PI*1.08,Math.PI*1.92);ctx.fill();
+    // 5 individual spikes pointing upward
+    [-hr*.55,-hr*.28,0,hr*.28,hr*.55].forEach(function(sx){
+      ctx.beginPath();
+      ctx.moveTo(ax+sx-hr*.12,headY-hr*.82);
+      ctx.lineTo(ax+sx,headY-hr*1.35);
+      ctx.lineTo(ax+sx+hr*.12,headY-hr*.82);
+      ctx.closePath();ctx.fill();
+    });
+  }
+  else if(hs==='Wavy short'){
+    // Short with wavy fringe at forehead
+    drawHairline();
+    ctx.beginPath();ctx.arc(ax,headY-hr*.04,hr*.92,Math.PI*1.06,Math.PI*1.94);ctx.fill();
+    // wavy fringe
+    ctx.beginPath();
+    ctx.moveTo(ax-hr*.8,headY-hr*.75);
+    ctx.quadraticCurveTo(ax-hr*.5,headY-hr*1.08,ax-hr*.18,headY-hr*.88);
+    ctx.quadraticCurveTo(ax+hr*.14,headY-hr*1.12,ax+hr*.44,headY-hr*.9);
+    ctx.quadraticCurveTo(ax+hr*.72,headY-hr*1.05,ax+hr*.82,headY-hr*.78);
+    ctx.lineTo(ax+hr*.82,headY-hr*.55);
+    ctx.lineTo(ax-hr*.8,headY-hr*.55);
+    ctx.closePath();ctx.fill();
+  }
+  else if(hs==='Side part'){
+    // Classic side part — hair swept to one side, clear part line
+    ctx.beginPath();
+    ctx.moveTo(ax-hr*.9,headY-hr*.52);
+    ctx.quadraticCurveTo(ax-hr*.35,headY-hr*1.22,ax+hr*.52,headY-hr*.95);
+    ctx.quadraticCurveTo(ax+hr*.9,headY-hr*.45,ax+hr,headY);
+    ctx.lineTo(ax-hr,headY);
+    ctx.closePath();ctx.fill();
+    // part line
+    ctx.strokeStyle=skinC[P.skin];ctx.lineWidth=hr*.06;
+    ctx.beginPath();ctx.moveTo(ax-hr*.1,headY-hr*.92);ctx.lineTo(ax-hr*.1,headY-hr*.62);ctx.stroke();
+    ctx.lineWidth=1;
+  }
+  else if(hs==='Curly afro'){
+    // Large rounded afro with natural hairline
+    // Base shape
+    ctx.beginPath();ctx.ellipse(ax,headY-hr*.25,hr*1.08,hr*1.08,0,0,Math.PI*2);ctx.fill();
+    // Curl texture on outside
+    for(var ca=0;ca<Math.PI*2;ca+=0.35){
+      ctx.beginPath();ctx.arc(ax+Math.cos(ca)*hr*.95,headY-hr*.25+Math.sin(ca)*hr*.95,hr*.32,0,Math.PI*2);ctx.fill();
+    }
+    // inner fill
+    ctx.beginPath();ctx.ellipse(ax,headY-hr*.25,hr*.7,hr*.7,0,0,Math.PI*2);ctx.fill();
+    // hairline at forehead bottom edge
+    ctx.fillStyle=hcDark;
+    ctx.beginPath();ctx.arc(ax,headY-hr*.25,hr*.65,Math.PI*.85,Math.PI*2.15);ctx.fill();
+    ctx.fillStyle=hc;
+  }
+  else if(hs==='Afro puffs'){
+    // TWO separate pompoms high on either side — very distinct from afro
+    // small connecting hair on top of head
+    ctx.beginPath();ctx.arc(ax,headY-hr*.55,hr*.38,0,Math.PI*2);ctx.fill();
+    // Left puff
+    [-1,1].forEach(function(side){
+      var px=ax+side*hr*1.0, py=headY-hr*1.0;
+      // main ball
+      ctx.beginPath();ctx.arc(px,py,hr*.58,0,Math.PI*2);ctx.fill();
+      // fluff curls around edge
+      for(var cb=0;cb<Math.PI*2;cb+=0.6){
+        ctx.beginPath();ctx.arc(px+Math.cos(cb)*hr*.42,py+Math.sin(cb)*hr*.42,hr*.2,0,Math.PI*2);ctx.fill();
+      }
+      // elastic band
+      ctx.fillStyle='rgba(255,80,80,.85)';
+      ctx.beginPath();ctx.arc(ax+side*hr*.55,headY-hr*.62,hr*.1,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=hc;
+    });
+    // hairline
+    drawHairline();
+  }
+  else if(hs==='Cornrows'){
+    // Very flat, close to head, parallel ridged rows going back
+    // Base cap
+    ctx.beginPath();ctx.arc(ax,headY-hr*.04,hr*.92,Math.PI*1.05,Math.PI*1.95);ctx.fill();
+    // hairline
+    drawHairline();
+    // Row ridges (darker lines = grooves between rows)
+    ctx.strokeStyle='rgba(0,0,0,.42)';ctx.lineWidth=hr*.07;ctx.lineCap='round';
+    for(var row=-3;row<=3;row++){
+      var rx=ax+row*hr*.26;
+      ctx.beginPath();ctx.moveTo(rx,headY-hr*.92);ctx.lineTo(rx,headY+hr*.05);ctx.stroke();
+    }
+    // Raised row highlights
+    ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=hr*.05;
+    for(var row2=-3;row2<=3;row2++){
+      var rx2=ax+row2*hr*.26+hr*.04;
+      ctx.beginPath();ctx.moveTo(rx2,headY-hr*.9);ctx.lineTo(rx2,headY);ctx.stroke();
+    }
+    ctx.lineWidth=1;
+  }
+  else if(hs==='Locs short'){
+    // Thick twisted locs — fatter than braids, irregular texture
+    ctx.beginPath();ctx.arc(ax,headY-hr*.04,hr*.92,Math.PI*1.05,Math.PI*1.95);ctx.fill();
+    drawHairline();
+    // Individual locs
+    var locPos=[[-hr*.55,headY-hr*.45,ax-hr*.5,headY-hr*.9],
+                [-hr*.28,headY-hr*.38,ax-hr*.24,headY-hr*.95],
+                [0,headY-hr*.35,ax+hr*.02,headY-hr*.98],
+                [hr*.28,headY-hr*.38,ax+hr*.28,headY-hr*.95],
+                [hr*.55,headY-hr*.45,ax+hr*.52,headY-hr*.9]];
+    ctx.lineWidth=hr*.2;ctx.lineCap='round';
+    locPos.forEach(function(l){
+      ctx.strokeStyle=hc;
+      ctx.beginPath();ctx.moveTo(ax+l[0],l[1]);ctx.lineTo(l[2],l[3]);ctx.stroke();
+      // twist texture
+      ctx.strokeStyle=hcDark;ctx.lineWidth=hr*.06;
+      for(var lt=0;lt<4;lt++){
+        var lty=l[1]+(l[3]-l[1])*lt/4;
+        ctx.beginPath();ctx.arc(ax+l[0],lty,hr*.08,0,Math.PI);ctx.stroke();
+      }
+      ctx.lineWidth=hr*.2;
+    });ctx.lineWidth=1;
+  }
+  else if(hs==='Medium wavy'){
+    // Comes to jaw/chin level, wavy texture — clearly longer than short cuts
+    // Back layer hanging down
+    ctx.beginPath();ctx.ellipse(ax,headY+hr*.42,hr*.9,hr*1.65,0,0,Math.PI*2);ctx.fill();
+    // Top hair cap
+    ctx.beginPath();ctx.arc(ax,headY-hr*.04,hr*.93,Math.PI*1.05,Math.PI*1.95);ctx.fill();
+    drawHairline();
+    // Wave detail lines
+    ctx.strokeStyle=hcDark;ctx.lineWidth=hr*.06;
+    [[headY+hr*.3],[headY+hr*.65],[headY+hr*1.0]].forEach(function(yv){
+      ctx.beginPath();
+      ctx.moveTo(ax-hr*.72,yv[0]);
+      ctx.quadraticCurveTo(ax-hr*.3,yv[0]-hr*.18,ax+hr*.1,yv[0]);
+      ctx.quadraticCurveTo(ax+hr*.5,yv[0]+hr*.18,ax+hr*.82,yv[0]);
+      ctx.stroke();
+    });ctx.lineWidth=1;
+  }
+  else if(hs==='Long straight'){
+    // Perfectly straight, well past shoulders — must look VERY long
+    // Long rectangular panels on sides
+    ctx.fillRect(ax-hr*.82,headY,hr*.28,hr*2.8);
+    ctx.fillRect(ax+hr*.54,headY,hr*.28,hr*2.8);
+    // Back mass
+    ctx.beginPath();ctx.ellipse(ax,headY+hr*1.2,hr*.88,hr*2.1,0,0,Math.PI*2);ctx.fill();
+    // Top cap
+    ctx.beginPath();ctx.arc(ax,headY-hr*.04,hr*.93,Math.PI*1.05,Math.PI*1.95);ctx.fill();
+    drawHairline();
+    // Straight vertical line details
+    ctx.strokeStyle=hcDark;ctx.lineWidth=hr*.04;
+    [-hr*.55,-hr*.25,hr*.05,hr*.35,hr*.65].forEach(function(lx2){
+      if(lx2>-hr*.8&&lx2<hr*.8){
+        ctx.beginPath();ctx.moveTo(ax+lx2,headY+hr*.3);ctx.lineTo(ax+lx2,headY+hr*2.6);ctx.stroke();
+      }
+    });ctx.lineWidth=1;
+  }
+  else if(hs==='Long curly'){
+    // Big curly mass, clearly very long and voluminous
+    // Outer curly mass
+    ctx.beginPath();ctx.ellipse(ax,headY+hr*.8,hr*1.1,hr*2.3,0,0,Math.PI*2);ctx.fill();
+    // Side volume
+    ctx.beginPath();ctx.ellipse(ax-hr*.6,headY+hr*.6,hr*.6,hr*1.6,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(ax+hr*.6,headY+hr*.6,hr*.6,hr*1.6,0,0,Math.PI*2);ctx.fill();
+    // Curl texture throughout
+    for(var cc=0;cc<12;cc++){
+      var ccx=ax+(cc%4-1.5)*hr*.45,ccy=headY+hr*(0.2+Math.floor(cc/4)*0.7);
+      ctx.fillStyle='rgba(0,0,0,.1)';ctx.beginPath();ctx.arc(ccx,ccy,hr*.28,0,Math.PI*2);ctx.fill();
+    }
+    ctx.fillStyle=hc;
+    // Top cap
+    ctx.beginPath();ctx.arc(ax,headY-hr*.04,hr*.93,Math.PI*1.05,Math.PI*1.95);ctx.fill();
+    drawHairline();
+  }
+  else if(hs==='Low ponytail'){
+    // Hair gathered at NAPE OF NECK (bottom back), tail hangs STRAIGHT DOWN
+    // Top cap (hair pulled back tight)
+    ctx.beginPath();ctx.arc(ax,headY-hr*.04,hr*.92,Math.PI*1.05,Math.PI*1.95);ctx.fill();
+    drawHairline();
+    // Smooth pulled-back surface
+    ctx.beginPath();ctx.ellipse(ax,headY+hr*.45,hr*.75,hr*.55,0,0,Math.PI);ctx.fill();
+    // Elastic band at nape
+    ctx.fillStyle='rgba(30,30,30,.75)';
+    ctx.beginPath();ctx.ellipse(ax,headY+hr*.85,hr*.22,hr*.1,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=hc;
+    // Tail hanging DOWNWARD from nape
+    ctx.beginPath();
+    ctx.moveTo(ax-hr*.22,headY+hr*.85);
+    ctx.bezierCurveTo(ax-hr*.28,headY+hr*1.5,ax-hr*.18,headY+hr*2.1,ax,headY+hr*2.4);
+    ctx.bezierCurveTo(ax+hr*.18,headY+hr*2.1,ax+hr*.28,headY+hr*1.5,ax+hr*.22,headY+hr*.85);
+    ctx.fill();
+  }
+  else if(hs==='High ponytail'){
+    // Gathered at the VERY TOP of head, tail SHOOTS UPWARD then arcs back down
+    // Base hair on sides and back
+    ctx.beginPath();ctx.arc(ax,headY-hr*.04,hr*.92,Math.PI*1.05,Math.PI*1.95);ctx.fill();
+    // Hair swept upward toward the tie
+    ctx.beginPath();
+    ctx.moveTo(ax-hr*.7,headY-hr*.7);
+    ctx.quadraticCurveTo(ax-hr*.3,headY-hr*1.15,ax,headY-hr*1.22);
+    ctx.quadraticCurveTo(ax+hr*.3,headY-hr*1.15,ax+hr*.7,headY-hr*.7);
+    ctx.lineTo(ax+hr*.6,headY-hr*.52);
+    ctx.quadraticCurveTo(ax,headY-hr*.85,ax-hr*.6,headY-hr*.52);
+    ctx.closePath();ctx.fill();
+    drawHairline();
+    // Elastic at very top
+    ctx.fillStyle='rgba(30,30,30,.8)';
+    ctx.beginPath();ctx.arc(ax,headY-hr*1.22,hr*.14,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=hc;
+    // Ponytail: shoots UP then curves back over to the right
+    ctx.beginPath();
+    ctx.moveTo(ax-hr*.14,headY-hr*1.22);
+    ctx.bezierCurveTo(ax-hr*.5,headY-hr*2.4,ax+hr*.9,headY-hr*2.35,ax+hr*1.2,headY-hr*.95);
+    ctx.bezierCurveTo(ax+hr*1.0,headY-hr*.7,ax+hr*.4,headY-hr*1.22,ax+hr*.14,headY-hr*1.22);
+    ctx.fill();
+  }
+  else if(hs==='Side bun'){
+    // Bun is off to one SIDE at ear level — completely different from top bun
+    // Main hair cap (most of it pulled toward left side)
+    ctx.beginPath();ctx.arc(ax,headY-hr*.04,hr*.92,Math.PI*1.05,Math.PI*1.95);ctx.fill();
+    // Hair mass sweeping toward left ear
+    ctx.beginPath();
+    ctx.moveTo(ax-hr*.88,headY-hr*.5);
+    ctx.quadraticCurveTo(ax-hr*.5,headY-hr*.8,ax+hr*.1,headY-hr*.72);
+    ctx.lineTo(ax+hr*.1,headY-hr*.3);
+    ctx.lineTo(ax-hr*.88,headY-hr*.2);
+    ctx.closePath();ctx.fill();
+    drawHairline();
+    // BUN: round ball to the LEFT side at ear level
+    var bunX=ax-hr*1.18,bunY=headY-hr*.15;
+    ctx.beginPath();ctx.arc(bunX,bunY,hr*.52,0,Math.PI*2);ctx.fill();
+    // Bun spiral detail
+    ctx.strokeStyle=hcDark;ctx.lineWidth=hr*.07;
+    ctx.beginPath();ctx.arc(bunX,bunY,hr*.32,0.3,Math.PI*2-.3);ctx.stroke();
+    ctx.beginPath();ctx.arc(bunX,bunY,hr*.15,0.3,Math.PI*2-.3);ctx.stroke();
+    ctx.lineWidth=1;
+    // Elastic
+    ctx.fillStyle='rgba(30,30,30,.7)';ctx.beginPath();ctx.arc(bunX+hr*.52,bunY,hr*.09,0,Math.PI*2);ctx.fill();ctx.fillStyle=hc;
+  }
+  else if(hs==='Top bun'){
+    // Bun sits HIGH on the very TOP of head like a crown — not at the side
+    // Base hair — pulled upward all around
+    ctx.beginPath();ctx.arc(ax,headY-hr*.04,hr*.92,Math.PI*1.05,Math.PI*1.95);ctx.fill();
+    // Hair gathered and swept UP to the top
+    ctx.beginPath();
+    ctx.moveTo(ax-hr*.78,headY-hr*.65);
+    ctx.quadraticCurveTo(ax-hr*.4,headY-hr*1.2,ax,headY-hr*1.35);
+    ctx.quadraticCurveTo(ax+hr*.4,headY-hr*1.2,ax+hr*.78,headY-hr*.65);
+    ctx.lineTo(ax+hr*.65,headY-hr*.48);
+    ctx.quadraticCurveTo(ax,headY-hr*.95,ax-hr*.65,headY-hr*.48);
+    ctx.closePath();ctx.fill();
+    drawHairline();
+    // BIG round bun sitting ON TOP of the head like a ball
+    ctx.beginPath();ctx.arc(ax,headY-hr*1.62,hr*.62,0,Math.PI*2);ctx.fill();
+    // Bun spiral detail
+    ctx.strokeStyle=hcDark;ctx.lineWidth=hr*.08;
+    ctx.beginPath();ctx.arc(ax,headY-hr*1.62,hr*.38,0.4,Math.PI*2-.4);ctx.stroke();
+    ctx.beginPath();ctx.arc(ax,headY-hr*1.62,hr*.17,0,Math.PI*2);ctx.stroke();
+    ctx.lineWidth=1;
+    // Elastic band at base of bun
+    ctx.fillStyle='rgba(30,30,30,.7)';
+    ctx.beginPath();ctx.ellipse(ax,headY-hr*1.12,hr*.3,hr*.1,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=hc;
+  }
+  else if(hs==='Braids down'){
+    // 4 thick braids hanging DOWN past shoulders
+    ctx.beginPath();ctx.arc(ax,headY-hr*.04,hr*.92,Math.PI*1.05,Math.PI*1.95);ctx.fill();
+    drawHairline();
+    var bPos=[-hr*.52,-hr*.2,hr*.16,hr*.48];
+    bPos.forEach(function(bx){
+      // Braid shaft
+      ctx.strokeStyle=hc;ctx.lineWidth=hr*.2;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(ax+bx,headY+hr*.1);ctx.lineTo(ax+bx+hr*.04,headY+hr*2.0);ctx.stroke();
+      // Weave cross pattern
+      ctx.strokeStyle=hcDark;ctx.lineWidth=hr*.05;ctx.lineCap='butt';
+      for(var bseg=0;bseg<7;bseg++){
+        var bsy=headY+hr*.1+bseg*hr*.28;
+        ctx.beginPath();ctx.moveTo(ax+bx-hr*.1,bsy);ctx.lineTo(ax+bx+hr*.1,bsy+hr*.1);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(ax+bx+hr*.1,bsy+hr*.1);ctx.lineTo(ax+bx-hr*.1,bsy+hr*.2);ctx.stroke();
+      }
+      ctx.lineWidth=1;
+    });
+  }
+  else if(hs==='French braid'){
+    // Single large French braid running from forehead all the way down the back
+    ctx.beginPath();ctx.arc(ax,headY-hr*.04,hr*.92,Math.PI*1.05,Math.PI*1.95);ctx.fill();
+    drawHairline();
+    // Side hair panels
+    ctx.beginPath();ctx.ellipse(ax-hr*.7,headY+hr*.3,hr*.32,hr*.75,0.15,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(ax+hr*.7,headY+hr*.3,hr*.32,hr*.75,-0.15,0,Math.PI*2);ctx.fill();
+    // Central braid — wide at top, narrows slightly
+    ctx.strokeStyle=hc;ctx.lineWidth=hr*.28;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(ax,headY-hr*.88);ctx.lineTo(ax,headY+hr*1.8);ctx.stroke();
+    // Weave pattern over it
+    ctx.strokeStyle=hcDark;ctx.lineWidth=hr*.07;ctx.lineCap='round';
+    for(var fs=0;fs<10;fs++){
+      var fsy=headY-hr*.88+fs*hr*.28;
+      var fw=hr*(0.28-fs*0.008);// slightly narrowing
+      ctx.beginPath();ctx.moveTo(ax-fw,fsy);ctx.lineTo(ax+fw,fsy+hr*.14);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(ax+fw,fsy+hr*.14);ctx.lineTo(ax-fw,fsy+hr*.28);ctx.stroke();
+    }
+    ctx.lineWidth=1;
+  }
+  else if(hs==='Pigtails'){
+    // TWO separate bunches sticking out sideways at ear level — very wide silhouette
+    ctx.beginPath();ctx.arc(ax,headY-hr*.04,hr*.92,Math.PI*1.05,Math.PI*1.95);ctx.fill();
+    drawHairline();
+    [-1,1].forEach(function(side){
+      // Gathering point at side of head
+      var gx=ax+side*hr*.82,gy=headY-hr*.35;
+      // Elastic band
+      ctx.fillStyle='rgba(255,60,60,.9)';
+      ctx.beginPath();ctx.arc(gx,gy,hr*.13,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=hc;
+      // Pigtail: goes OUT sideways, then droops downward
+      ctx.beginPath();
+      ctx.moveTo(gx,gy);
+      ctx.bezierCurveTo(
+        gx+side*hr*.7,gy-hr*.35,
+        gx+side*hr*1.05,gy+hr*.25,
+        gx+side*hr*.8,gy+hr*1.1
+      );
+      ctx.bezierCurveTo(
+        gx+side*hr*.5,gy+hr*1.1,
+        gx+side*hr*.38,gy+hr*.25,
+        gx,gy
+      );
+      ctx.fill();
+    });
+  }
+}
+
+function drawAv(ctx,ax,ay,hr,action,bo,statusText){
+  var headY=ay-hr*3.55+bo;
+  var hs=hairSL[P.hairstyle];
+// Draw hair BEHIND head first
+  drawHair(ctx,ax,headY,hr,hs);
+  // Head
+  ctx.fillStyle=skinC[P.skin];ctx.beginPath();ctx.arc(ax,headY,hr,0,Math.PI*2);ctx.fill();
+  // Eyes
+  [-.38,.38].forEach(function(ex){
+    var x2=ax+hr*ex,ey=headY-hr*.12;
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(x2,ey,hr*.2,hr*.145,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=eyeC[P.eyes];ctx.beginPath();ctx.arc(x2,ey,hr*.105,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#111';ctx.beginPath();ctx.arc(x2,ey,hr*.056,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.7)';ctx.beginPath();ctx.arc(x2-hr*.04,ey-hr*.04,hr*.03,0,Math.PI*2);ctx.fill();
+    if(action==='sleep'){ctx.strokeStyle='#555';ctx.lineWidth=.9;ctx.beginPath();ctx.moveTo(x2-hr*.16,ey);ctx.lineTo(x2+hr*.16,ey);ctx.stroke();}
+    if(action==='sick'||action==='dizzy'){
+      ctx.strokeStyle='#a00';ctx.lineWidth=.8;
+      ctx.beginPath();ctx.moveTo(x2-hr*.12,ey-hr*.06);ctx.lineTo(x2+hr*.12,ey+hr*.06);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(x2+hr*.12,ey-hr*.06);ctx.lineTo(x2-hr*.12,ey+hr*.06);ctx.stroke();
+    }
+  });
+  // Nose
+  var nx=ax,ny=headY+hr*.12;
+  ctx.strokeStyle=skinC[Math.min(P.skin+3,skinC.length-1)];ctx.lineWidth=.85;ctx.lineCap='round';
+  var ns=noseL[P.nose];
+  if(ns==='Button'){ctx.beginPath();ctx.arc(nx,ny+hr*.05,hr*.055,0,Math.PI*2);ctx.stroke();}
+  else if(ns==='Round'){ctx.beginPath();ctx.arc(nx,ny,hr*.09,0,Math.PI);ctx.stroke();}
+  else if(ns==='Pointed'){ctx.beginPath();ctx.moveTo(nx,ny-hr*.09);ctx.lineTo(nx-hr*.09,ny+hr*.06);ctx.lineTo(nx+hr*.09,ny+hr*.06);ctx.stroke();}
+  else if(ns==='Wide'){ctx.beginPath();ctx.moveTo(nx-hr*.14,ny);ctx.quadraticCurveTo(nx,ny+hr*.12,nx+hr*.14,ny);ctx.stroke();}
+  else{ctx.beginPath();ctx.moveTo(nx,ny-hr*.07);ctx.lineTo(nx,ny+hr*.07);ctx.stroke();}
+  // Mouth
+  var my=headY+hr*.42;
+  var ms=action==='sleep'?'Soft smile':(action==='sick'||action==='dizzy')?'Frown':mouthL[P.mouth];
+  ctx.strokeStyle='#333';ctx.lineWidth=.9;ctx.lineCap='round';
+  if(ms==='Big smile'){ctx.beginPath();ctx.arc(ax,my-hr*.09,hr*.27,.2,Math.PI-.2);ctx.stroke();}
+  else if(ms==='Soft smile'){ctx.beginPath();ctx.arc(ax,my-hr*.06,hr*.15,.3,Math.PI-.3);ctx.stroke();}
+  else if(ms==='Neutral'){ctx.beginPath();ctx.moveTo(ax-hr*.14,my);ctx.lineTo(ax+hr*.14,my);ctx.stroke();}
+  else if(ms==='Frown'){ctx.beginPath();ctx.arc(ax,my+hr*.17,hr*.18,Math.PI+.3,2*Math.PI-.3);ctx.stroke();}
+  else{ctx.beginPath();ctx.arc(ax,my-hr*.07,hr*.25,.15,Math.PI-.15);ctx.stroke();ctx.fillStyle='#fff';ctx.fillRect(ax-hr*.17,my-hr*.07,hr*.34,hr*.1);}
+  // Blush
+  if(P.blush===3){ctx.fillStyle='rgba(155,85,55,.4)';[[ax-hr*.49,headY+hr*.07],[ax-hr*.31,headY+hr*.2],[ax+hr*.49,headY+hr*.07],[ax+hr*.31,headY+hr*.2]].forEach(function(p){ctx.beginPath();ctx.arc(p[0],p[1],hr*.038,0,Math.PI*2);ctx.fill();});}
+  else if(P.blush>0){ctx.fillStyle=P.blush===1?'rgba(240,130,140,.32)':'rgba(225,95,110,.36)';[-.54,.54].forEach(function(bx){ctx.beginPath();ctx.ellipse(ax+hr*bx,headY+hr*.2,hr*.19,hr*.1,0,0,Math.PI*2);ctx.fill();});}
+  // Glasses
+  if(P.glasses>0){
+    ctx.strokeStyle='#333';ctx.lineWidth=1;
+    var gs=glassL[P.glasses];
+    if(gs==='Round'){[-.38,.38].forEach(function(ex){ctx.beginPath();ctx.arc(ax+hr*ex,headY-hr*.12,hr*.22,0,Math.PI*2);ctx.stroke();});ctx.beginPath();ctx.moveTo(ax-hr*.16,headY-hr*.12);ctx.lineTo(ax+hr*.16,headY-hr*.12);ctx.stroke();}
+    else if(gs==='Square'){[-.38,.38].forEach(function(ex){ctx.strokeRect(ax+hr*ex-hr*.22,headY-hr*.27,hr*.44,hr*.3);});ctx.beginPath();ctx.moveTo(ax-hr*.16,headY-hr*.12);ctx.lineTo(ax+hr*.16,headY-hr*.12);ctx.stroke();}
+    else if(gs==='Cat-eye'){[-.38,.38].forEach(function(ex){var gx=ax+hr*ex,gy=headY-hr*.12;ctx.beginPath();ctx.moveTo(gx-hr*.22,gy+hr*.1);ctx.lineTo(gx-hr*.22,gy-hr*.08);ctx.lineTo(gx,gy-hr*.18);ctx.lineTo(gx+hr*.22,gy-hr*.05);ctx.lineTo(gx+hr*.22,gy+hr*.1);ctx.closePath();ctx.stroke();});ctx.beginPath();ctx.moveTo(ax-hr*.16,headY-hr*.12);ctx.lineTo(ax+hr*.16,headY-hr*.12);ctx.stroke();}
+    ctx.lineWidth=1;
+  }
+  // Body
+  var bodyY=headY+hr+2,bw=hr*1.42,bh=hr*1.46;
+  ctx.fillStyle=shirtC[P.shirt];ctx.beginPath();ctx.roundRect(ax-bw/2,bodyY,bw,bh,4);ctx.fill();
+  // Status text above head (sick, dizzy, anxious etc)
+  if(statusText){
+    ctx.save();
+    ctx.font='bold '+(hr*.7)+'px sans-serif';ctx.textAlign='center';
+    // bubble behind text
+    var tw=ctx.measureText(statusText).width;
+    ctx.fillStyle='rgba(255,255,255,.88)';ctx.beginPath();ctx.roundRect(ax-tw/2-4,headY-hr*2.1-hr*.5,tw+8,hr*.65,6);ctx.fill();
+    ctx.fillStyle='#c00';ctx.fillText(statusText,ax,headY-hr*1.72);
+    ctx.restore();
+  }
+  // Action poses
+  if(action==='eat'){
+    ctx.fillStyle=skinC[P.skin];
+    ctx.save();ctx.translate(ax+bw/2,bodyY+bh*.2);ctx.rotate(-0.62);ctx.fillRect(-hr*.1,0,hr*.19,hr*.7);ctx.restore();
+    ctx.strokeStyle='#aaa';ctx.lineWidth=1.4;
+    ctx.save();ctx.translate(ax+bw*.62,bodyY-hr*.02);ctx.rotate(-0.48);ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,hr*.48);ctx.stroke();ctx.restore();
+  } else if(action==='read'){
+    ctx.fillStyle='#fffde7';ctx.fillRect(ax-hr*.6,bodyY+bh*.44,hr*1.2,hr*.62);
+    ctx.strokeStyle='#ccc';ctx.lineWidth=.8;ctx.strokeRect(ax-hr*.6,bodyY+bh*.44,hr*1.2,hr*.62);
+    [.15,.3,.46].forEach(function(y){ctx.beginPath();ctx.moveTo(ax-hr*.46,bodyY+bh*.44+hr*y);ctx.lineTo(ax+hr*.46,bodyY+bh*.44+hr*y);ctx.stroke();});
+  } else if(action==='sick'){
+    // green glow
+    ctx.fillStyle='rgba(80,200,80,.18)';ctx.beginPath();ctx.arc(ax,headY,hr*1.3,0,Math.PI*2);ctx.fill();
+  } else if(action==='dizzy'){
+    // spinning stars
+    var t=Date.now()/300;
+    ctx.fillStyle='#FFD700';
+    for(var i=0;i<4;i++){var a3=t+i*Math.PI/2;ctx.beginPath();ctx.arc(ax+Math.cos(a3)*hr*1.4,headY+Math.sin(a3)*hr*1.0,hr*.12,0,Math.PI*2);ctx.fill();}
+  } else if(action==='anxious'){
+    // sweat drops
+    ctx.fillStyle='rgba(100,180,255,.75)';
+    [[ax+hr*1.1,headY-hr*.3],[ax+hr*1.25,headY+hr*.1],[ax-hr*1.1,headY-hr*.1]].forEach(function(p){
+      ctx.beginPath();ctx.arc(p[0],p[1],hr*.1,0,Math.PI*2);ctx.fill();
+    });
+  } else if(action==='sleep'){
+    ctx.fillStyle='rgba(90,130,220,.58)';ctx.font='bold '+(hr*.66)+'px sans-serif';ctx.textAlign='center';
+    ctx.fillText('z',ax+hr*.98,headY-hr*.38);ctx.font='bold '+(hr*.46)+'px sans-serif';ctx.fillText('z',ax+hr*1.38,headY-hr*.8);ctx.textAlign='left';
+  } else if(action==='walk'){
+    var t2=Date.now()/80,sw=Math.sin(t2)*0.5;
+    ctx.fillStyle=bottomC[P.bottom];
+    ctx.save();ctx.translate(ax-hr*.26,bodyY+bh);ctx.rotate(sw);ctx.fillRect(-hr*.23,0,hr*.44,hr*.92);ctx.restore();
+    ctx.save();ctx.translate(ax+hr*.26,bodyY+bh);ctx.rotate(-sw);ctx.fillRect(-hr*.23,0,hr*.44,hr*.92);ctx.restore();
+    ctx.fillStyle=skinC[P.skin];
+    ctx.save();ctx.translate(ax-bw/2,bodyY+bh*.2);ctx.rotate(-sw*.52);ctx.fillRect(-hr*.1,0,hr*.19,hr*.66);ctx.restore();
+    ctx.save();ctx.translate(ax+bw/2,bodyY+bh*.2);ctx.rotate(sw*.52);ctx.fillRect(-hr*.1,0,hr*.19,hr*.66);ctx.restore();
+    ctx.fillStyle=shoeC[P.shoes];
+    ctx.save();ctx.translate(ax-hr*.26,bodyY+bh+hr*.92);ctx.rotate(sw*.22);ctx.beginPath();ctx.ellipse(0,0,hr*.38,hr*.15,0,0,Math.PI*2);ctx.fill();ctx.restore();
+    ctx.save();ctx.translate(ax+hr*.26,bodyY+bh+hr*.92);ctx.rotate(-sw*.22);ctx.beginPath();ctx.ellipse(0,0,hr*.38,hr*.15,0,0,Math.PI*2);ctx.fill();ctx.restore();
+    return;
+  }
+  // Static legs
+  var legY=bodyY+bh,lh=hr;
+  ctx.fillStyle=bottomC[P.bottom];
+  var bst=botSL[P.bottomstyle];
+  if(bst==='Skirt'){ctx.beginPath();ctx.moveTo(ax-bw/2,legY);ctx.lineTo(ax+bw/2,legY);ctx.lineTo(ax+bw/2+hr*.26,legY+lh*.8);ctx.lineTo(ax-bw/2-hr*.26,legY+lh*.8);ctx.closePath();ctx.fill();}
+  else if(bst==='Overalls'){ctx.fillRect(ax-bw/2-hr*.05,bodyY,bw+hr*.1,bh);ctx.fillStyle='#fff';ctx.fillRect(ax-hr*.2,bodyY+hr*.2,hr*.4,hr*.55);[-.25,.25].forEach(function(lx){ctx.fillStyle=bottomC[P.bottom];ctx.fillRect(ax+hr*lx-hr*.25,legY,hr*.49,lh);});}
+  else{[-.25,.25].forEach(function(lx){ctx.fillRect(ax+hr*lx-hr*.25,legY,hr*.49,lh);});}
+  ctx.fillStyle=shoeC[P.shoes];
+  [-.25,.25].forEach(function(lx){ctx.beginPath();ctx.ellipse(ax+hr*lx,legY+lh,hr*.37,hr*.14,0,0,Math.PI*2);ctx.fill();});
+}
+
+// ── FOOD DRAWING IN HAND ─────────────────────────────────────────
+// Called when action is 'eat' to draw recognizable food
+var currentFoodItem = '';
+function drawFoodInHand(ctx, ax, ay, hr, foodName) {
+  var bodyY = ay - hr*3.55 + hr + 2;
+  var bh = hr * 1.46;
+  var fx = ax + hr * 1.1, fy = bodyY + hr * 0.2;
+  if (!foodName) return;
+  var f = foodName.toLowerCase();
+  if (f.includes('cereal') || f.includes('oatmeal') || f.includes('yogurt')) {
+    // Bowl
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(fx, fy, hr*.35, hr*.22, 0, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#ddd'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = f.includes('cereal') ? '#F4A460' : f.includes('yogurt') ? '#FFDDC1' : '#D2B48C';
+    ctx.beginPath(); ctx.ellipse(fx, fy - hr*.04, hr*.28, hr*.15, 0, 0, Math.PI*2); ctx.fill();
+  } else if (f.includes('egg') || f.includes('pancake')) {
+    // Plate
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(fx, fy+hr*.1, hr*.38, hr*.18, 0, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#eee'; ctx.lineWidth = 1; ctx.stroke();
+    if (f.includes('egg')) {
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(fx, fy+hr*.05, hr*.2, hr*.15, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.arc(fx, fy+hr*.05, hr*.08, 0, Math.PI*2); ctx.fill();
+    } else {
+      ctx.fillStyle = '#F4D03F'; ctx.beginPath(); ctx.ellipse(fx, fy+hr*.05, hr*.22, hr*.1, 0, 0, Math.PI*2); ctx.fill();
+    }
+  } else if (f.includes('fruit') || f.includes('apple') || f.includes('banana')) {
+    ctx.fillStyle = '#E74C3C'; ctx.beginPath(); ctx.arc(fx, fy, hr*.22, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#27AE60'; ctx.fillRect(fx-hr*.03, fy-hr*.28, hr*.06, hr*.15);
+  } else if (f.includes('smoothie') || f.includes('juice')) {
+    ctx.fillStyle = '#E74C3C'; ctx.fillRect(fx-hr*.12, fy-hr*.25, hr*.24, hr*.35);
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(fx, fy-hr*.25, hr*.13, Math.PI, 2*Math.PI); ctx.fill();
+    ctx.fillStyle = '#eee'; ctx.fillRect(fx-hr*.02, fy-hr*.5, hr*.04, hr*.25); // straw
+  } else if (f.includes('sandwich') || f.includes('wrap') || f.includes('pb')) {
+    ctx.fillStyle = '#DEB887'; ctx.fillRect(fx-hr*.28, fy-hr*.15, hr*.56, hr*.28);
+    ctx.fillStyle = '#FF6B6B'; ctx.fillRect(fx-hr*.22, fy-hr*.1, hr*.44, hr*.1);
+    ctx.fillStyle = '#DEB887'; ctx.fillRect(fx-hr*.28, fy-hr*.25, hr*.56, hr*.12);
+  } else if (f.includes('salad')) {
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(fx, fy+hr*.1, hr*.35, hr*.18, 0, 0, Math.PI*2); ctx.fill();
+    ['#27AE60','#E74C3C','#F39C12'].forEach(function(col, i) {
+      ctx.fillStyle = col; ctx.beginPath(); ctx.arc(fx + (i-1)*hr*.12, fy+hr*.05, hr*.08, 0, Math.PI*2); ctx.fill();
+    });
+  } else if (f.includes('pizza')) {
+    ctx.fillStyle = '#DEB887'; ctx.beginPath(); ctx.moveTo(fx, fy-hr*.3); ctx.lineTo(fx-hr*.28, fy+hr*.18); ctx.lineTo(fx+hr*.28, fy+hr*.18); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#E74C3C'; ctx.beginPath(); ctx.moveTo(fx, fy-hr*.22); ctx.lineTo(fx-hr*.22, fy+hr*.12); ctx.lineTo(fx+hr*.22, fy+hr*.12); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#F39C12'; ctx.beginPath(); ctx.arc(fx, fy+hr*.02, hr*.05, 0, Math.PI*2); ctx.fill();
+  } else if (f.includes('pasta') || f.includes('lentil') || f.includes('stir') || f.includes('curry')) {
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(fx, fy+hr*.08, hr*.32, hr*.18, 0, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#eee'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = f.includes('pasta') ? '#F39C12' : '#E74C3C';
+    ctx.beginPath(); ctx.ellipse(fx, fy+hr*.04, hr*.24, hr*.12, 0, 0, Math.PI*2); ctx.fill();
+  } else if (f.includes('chicken') || f.includes('steak') || f.includes('fish') || f.includes('taco')) {
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(fx, fy+hr*.1, hr*.36, hr*.18, 0, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#eee'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = f.includes('fish') ? '#F5CBA7' : '#A04000';
+    ctx.fillRect(fx-hr*.18, fy, hr*.36, hr*.14);
+    ctx.fillStyle = '#27AE60'; ctx.fillRect(fx-hr*.18, fy-hr*.06, hr*.1, hr*.08);
+  } else if (f.includes('cookie') || f.includes('cracker') || f.includes('granola') || f.includes('chip')) {
+    ctx.fillStyle = '#DEB887'; ctx.beginPath(); ctx.arc(fx, fy, hr*.2, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#8B4513'; [[-hr*.06,-hr*.06],[hr*.06,-hr*.06],[0,hr*.06]].forEach(function(d){ctx.beginPath();ctx.arc(fx+d[0],fy+d[1],hr*.04,0,Math.PI*2);ctx.fill();});
+  } else {
+    // Generic food
+    ctx.fillStyle = '#F39C12'; ctx.beginPath(); ctx.arc(fx, fy, hr*.2, 0, Math.PI*2); ctx.fill();
+  }
+}
+
+// ── SCENE DRAWING ─────────────────────────────────────────────────
+function drawScene(ctx, scene, foodForScene) {
+  ctx.clearRect(0,0,W,H);
+  if (scene === 'bed') {
+    ctx.fillStyle='#1a1f38';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#5B3B10';ctx.fillRect(0,H*.62,W,H*.38);
+    // wallpaper pattern
+    ctx.fillStyle='rgba(255,255,255,.04)';
+    for(var wx=0;wx<W;wx+=30)for(var wy=0;wy<H*.62;wy+=30){ctx.beginPath();ctx.arc(wx+15,wy+15,8,0,Math.PI*2);ctx.fill();}
+    // window with moon and curtains
+    ctx.fillStyle='#0a0f25';ctx.fillRect(W*.58,H*.06,W*.34,H*.3);
+    ctx.strokeStyle='#7a8a99';ctx.lineWidth=2;ctx.strokeRect(W*.58,H*.06,W*.34,H*.3);
+    ctx.beginPath();ctx.moveTo(W*.58,H*.21);ctx.lineTo(W*.92,H*.21);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(W*.75,H*.06);ctx.lineTo(W*.75,H*.36);ctx.stroke();
+    // moon
+    ctx.fillStyle='#FFE87A';ctx.beginPath();ctx.arc(W*.84,H*.13,H*.065,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#0a0f25';ctx.beginPath();ctx.arc(W*.88,H*.115,H*.052,0,Math.PI*2);ctx.fill();
+    // stars
+    ctx.fillStyle='#fff';[[W*.62,H*.1],[W*.7,H*.09],[W*.79,H*.15],[W*.65,H*.26],[W*.83,H*.28]].forEach(function(p){ctx.beginPath();ctx.arc(p[0],p[1],1.1,0,Math.PI*2);ctx.fill();});
+    // curtains
+    ctx.fillStyle='#7B3F6E';ctx.fillRect(W*.55,H*.06,W*.07,H*.32);ctx.fillRect(W*.88,H*.06,W*.07,H*.32);
+    // bed frame
+    ctx.fillStyle='#5A3918';ctx.fillRect(W*.03,H*.42,W*.45,H*.34);
+    ctx.fillStyle='#7a5038';ctx.fillRect(W*.03,H*.42,W*.45,H*.09);
+    ctx.fillStyle='#3D2208';ctx.fillRect(W*.03,H*.42,W*.04,H*.34);ctx.fillRect(W*.44,H*.42,W*.04,H*.34);
+    // blanket
+    ctx.fillStyle='#4a7fbf';ctx.fillRect(W*.06,H*.51,W*.39,H*.22);
+    ctx.fillStyle='#3a6faf';ctx.fillRect(W*.06,H*.51,W*.39,H*.06);
+    // pillow
+    ctx.fillStyle='#FFDDC1';ctx.fillRect(W*.07,H*.53,W*.16,H*.12);ctx.strokeStyle='#ecc';ctx.lineWidth=1;ctx.strokeRect(W*.07,H*.53,W*.16,H*.12);
+    // nightstand
+    ctx.fillStyle='#6B4A20';ctx.fillRect(W*.49,H*.52,W*.13,H*.17);
+    ctx.fillStyle='rgba(255,248,150,.85)';ctx.beginPath();ctx.arc(W*.555,H*.5,H*.04,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,248,150,.25)';ctx.beginPath();ctx.arc(W*.555,H*.5,H*.1,0,Math.PI*2);ctx.fill();
+    // rug
+    ctx.fillStyle='#8B4513';ctx.fillRect(W*.03,H*.74,W*.45,H*.14);ctx.strokeStyle='#a0522d';ctx.lineWidth=2;ctx.strokeRect(W*.05,H*.76,W*.41,H*.1);
+  } else if (scene === 'bathroom') {
+    // Tiled walls
+    ctx.fillStyle='#d4eef5';ctx.fillRect(0,0,W,H*.62);
+    // tile grid
+    ctx.strokeStyle='#b8d8e8';ctx.lineWidth=.8;
+    for(var tx=0;tx<W;tx+=28){ctx.beginPath();ctx.moveTo(tx,0);ctx.lineTo(tx,H*.62);ctx.stroke();}
+    for(var ty=0;ty<H*.62;ty+=28){ctx.beginPath();ctx.moveTo(0,ty);ctx.lineTo(W,ty);ctx.stroke();}
+    // accent tiles
+    ctx.fillStyle='#a8d0e0';
+    [[28,0],[84,28],[140,0],[0,56],[56,56],[112,56]].forEach(function(t){ctx.fillRect(t[0],t[1],28,28);});
+    ctx.fillStyle='#7a5f40';ctx.fillRect(0,H*.62,W,H*.38);
+    // floor tiles
+    ctx.strokeStyle='#9a7f60';ctx.lineWidth=.5;
+    for(var ftx=0;ftx<W;ftx+=25){ctx.beginPath();ctx.moveTo(ftx,H*.62);ctx.lineTo(ftx,H);ctx.stroke();}
+    // Sink with details
+    ctx.fillStyle='#e8f4f8';ctx.beginPath();ctx.ellipse(W*.22,H*.57,W*.14,H*.075,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#8ab8cc';ctx.lineWidth=1.5;ctx.stroke();
+    ctx.fillStyle='#5b8a9a';ctx.fillRect(W*.2,H*.32,W*.04,H*.26);// pipe
+    ctx.fillStyle='#888';ctx.beginPath();ctx.arc(W*.225,H*.345,5,0,Math.PI*2);ctx.fill();// tap
+    ctx.fillStyle='rgba(180,220,240,.4)';ctx.beginPath();ctx.arc(W*.225,H*.42,3,0,Math.PI*2);ctx.fill();// water droplet
+    // Mirror with reflection
+    ctx.fillStyle='#c8ecf5';ctx.fillRect(W*.06,H*.05,W*.27,H*.25);
+    ctx.fillStyle='rgba(255,255,255,.5)';ctx.fillRect(W*.07,H*.06,W*.06,H*.22);// shine
+    ctx.strokeStyle='#7aafc0';ctx.lineWidth=2;ctx.strokeRect(W*.06,H*.05,W*.27,H*.25);
+    // Toilet
+    ctx.fillStyle='#e8f4f8';ctx.fillRect(W*.61,H*.32,W*.3,H*.11);ctx.fillRect(W*.62,H*.28,W*.28,H*.07);
+    ctx.beginPath();ctx.ellipse(W*.76,H*.54,W*.13,H*.1,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#8ab8cc';ctx.lineWidth=1.3;ctx.stroke();
+    // toilet roll
+    ctx.fillStyle='#f5f5f5';ctx.beginPath();ctx.arc(W*.93,H*.45,H*.04,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#ddd';ctx.stroke();
+    // towel
+    ctx.fillStyle='#ff8c69';ctx.fillRect(W*.36,H*.12,W*.06,H*.2);ctx.fillStyle='rgba(255,255,255,.3)';ctx.fillRect(W*.37,H*.13,W*.02,H*.18);
+  } else if (scene === 'kitchen') {
+    ctx.fillStyle='#fff8ee';ctx.fillRect(0,0,W,H);
+    // floor
+    ctx.fillStyle='#c8a878';ctx.fillRect(0,H*.62,W,H*.38);
+    ctx.strokeStyle='#b89868';ctx.lineWidth=.6;
+    for(var kfx=0;kfx<W;kfx+=32){ctx.beginPath();ctx.moveTo(kfx,H*.62);ctx.lineTo(kfx,H);ctx.stroke();}
+    for(var kfy=H*.62;kfy<H;kfy+=32){ctx.beginPath();ctx.moveTo(0,kfy);ctx.lineTo(W,kfy);ctx.stroke();}
+    // Upper cabinets
+    ctx.fillStyle='#c8a460';ctx.fillRect(0,0,W*.54,H*.22);
+    ctx.strokeStyle='#a8844a';ctx.lineWidth=1;
+    [W*.02,W*.19,W*.36].forEach(function(cx){ctx.strokeRect(cx,H*.02,W*.15,H*.18);});
+    ctx.fillStyle='#888';[W*.095,W*.265,W*.435].forEach(function(hx){ctx.beginPath();ctx.arc(hx,H*.11,3,0,Math.PI*2);ctx.fill();});
+    // Counter with backsplash
+    ctx.fillStyle='#9a8060';ctx.fillRect(0,H*.5,W*.55,H*.14);ctx.fillStyle='#b09070';ctx.fillRect(0,H*.48,W*.55,H*.04);
+    // backsplash tiles
+    ctx.fillStyle='#e8d8c0';ctx.fillRect(0,H*.3,W*.55,H*.2);
+    ctx.strokeStyle='#c8b8a0';ctx.lineWidth=.5;
+    for(var bty=H*.3;bty<H*.5;bty+=16){ctx.beginPath();ctx.moveTo(0,bty);ctx.lineTo(W*.55,bty);ctx.stroke();}
+    for(var btx=0;btx<W*.55;btx+=20){ctx.beginPath();ctx.moveTo(btx,H*.3);ctx.lineTo(btx,H*.5);ctx.stroke();}
+    // Stove
+    ctx.fillStyle='#555';ctx.fillRect(W*.3,H*.48,W*.22,H*.16);
+    ctx.fillStyle='#333';[W*.36,W*.48].forEach(function(bx){[H*.52,H*.58].forEach(function(by){ctx.beginPath();ctx.arc(bx,by,H*.03,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#888';ctx.lineWidth=1;ctx.stroke();});});
+    // Window with view
+    ctx.fillStyle='#87ceeb';ctx.fillRect(W*.07,H*.07,W*.28,H*.2);
+    ctx.fillStyle='#27ae60';ctx.fillRect(W*.07,H*.2,W*.28,H*.07);// garden
+    ctx.fillStyle='#5dade2';ctx.fillRect(W*.07,H*.07,W*.28,H*.08);// sky
+    ctx.fillStyle='rgba(255,255,255,.6)';ctx.fillRect(W*.09,H*.08,W*.05,H*.05);// cloud
+    ctx.strokeStyle='#b0bec5';ctx.lineWidth=1.5;ctx.strokeRect(W*.07,H*.07,W*.28,H*.2);
+    ctx.beginPath();ctx.moveTo(W*.21,H*.07);ctx.lineTo(W*.21,H*.27);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(W*.07,H*.17);ctx.lineTo(W*.35,H*.17);ctx.stroke();
+    // Fridge
+    ctx.fillStyle='#d0d8e0';ctx.fillRect(W*.65,H*.06,W*.3,H*.56);
+    ctx.strokeStyle='#b0b8c0';ctx.lineWidth=1.5;ctx.strokeRect(W*.65,H*.06,W*.3,H*.56);
+    ctx.beginPath();ctx.moveTo(W*.65,H*.28);ctx.lineTo(W*.95,H*.28);ctx.stroke();
+    ctx.fillStyle='#8899aa';ctx.beginPath();ctx.arc(W*.68,H*.17,3,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(W*.68,H*.37,3,0,Math.PI*2);ctx.fill();
+    // Table and chairs
+    ctx.fillStyle='#8d6e63';ctx.fillRect(W*.02,H*.63,W*.5,H*.06);
+    ctx.fillRect(W*.05,H*.69,W*.04,H*.22);ctx.fillRect(W*.44,H*.69,W*.04,H*.22);
+    // Food on counter if eating
+    if(foodForScene){
+      ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(W*.15,H*.5,W*.09,H*.04,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#eee';ctx.lineWidth=1;ctx.stroke();
+    }
+  } else if (scene === 'bus') {
+    // Detailed bus INTERIOR - we see from inside
+    // Sky outside windows
+    var skyG=ctx.createLinearGradient(0,0,0,H*.32);skyG.addColorStop(0,'#5DADE2');skyG.addColorStop(1,'#AED6F1');
+    ctx.fillStyle=skyG;ctx.fillRect(0,0,W,H*.32);
+    // buildings outside
+    ctx.fillStyle='#888';[W*.1,W*.28,W*.5,W*.7,W*.85].forEach(function(bx,i){var bh=[H*.15,H*.25,H*.18,H*.22,H*.12][i];ctx.fillRect(bx,H*.32-bh,W*.1,bh);});
+    // bus seat rows (view from inside)
+    // aisle floor
+    ctx.fillStyle='#5a5a5a';ctx.fillRect(0,H*.3,W,H*.7);
+    ctx.fillStyle='#444';ctx.fillRect(W*.38,H*.3,W*.12,H*.7);// aisle line
+    // seat rows - left side
+    ctx.fillStyle='#2e7d32';ctx.fillRect(0,H*.32,W*.36,H*.65);
+    // seat details left
+    for(var row=0;row<3;row++){
+      var ry=H*.35+row*H*.2;
+      ctx.fillStyle='#1b5e20';ctx.fillRect(W*.02,ry,W*.32,H*.05);// headrest
+      ctx.fillStyle='#388e3c';ctx.fillRect(W*.02,ry+H*.05,W*.32,H*.12);// seat back
+      ctx.fillStyle='#388e3c';ctx.fillRect(W*.02,ry+H*.17,W*.32,H*.05);// seat cushion edge
+    }
+    // seat rows - right side
+    ctx.fillStyle='#2e7d32';ctx.fillRect(W*.52,H*.32,W*.48,H*.65);
+    for(var row2=0;row2<3;row2++){
+      var ry2=H*.35+row2*H*.2;
+      ctx.fillStyle='#1b5e20';ctx.fillRect(W*.54,ry2,W*.42,H*.05);
+      ctx.fillStyle='#388e3c';ctx.fillRect(W*.54,ry2+H*.05,W*.42,H*.12);
+      ctx.fillStyle='#388e3c';ctx.fillRect(W*.54,ry2+H*.17,W*.42,H*.05);
+    }
+    // Windows with view - LEFT side wall
+    ctx.fillStyle='#1a2238';ctx.fillRect(0,H*.02,W*.36,H*.3);
+    [0,W*.18].forEach(function(wx){
+      // window frame
+      ctx.fillStyle='#c8b898';ctx.fillRect(wx+W*.02,H*.03,W*.14,H*.24);
+      // outside view through window (moving)
+      var t=Date.now()/1000;
+      ctx.fillStyle='#87ceeb';ctx.fillRect(wx+W*.03,H*.04,W*.12,H*.12);
+      ctx.fillStyle='#27ae60';ctx.fillRect(wx+W*.03,H*.16,W*.12,H*.09);
+      // moving trees
+      for(var tr=0;tr<3;tr++){var tx2=((t*60+tr*40)%130)-10+wx;ctx.fillStyle='#1a6b1a';if(tx2>wx+W*.03&&tx2<wx+W*.15){ctx.beginPath();ctx.arc(tx2,H*.15,H*.04,0,Math.PI*2);ctx.fill();ctx.fillStyle='#5a3010';ctx.fillRect(tx2-2,H*.16,4,H*.09);ctx.fillStyle='#1a6b1a';}}
+      ctx.strokeStyle='#a89878';ctx.lineWidth=2;ctx.strokeRect(wx+W*.02,H*.03,W*.14,H*.24);
+    });
+    // Windows RIGHT side  
+    [W*.52,W*.7].forEach(function(wx){
+      ctx.fillStyle='#c8b898';ctx.fillRect(wx,H*.03,W*.14,H*.24);
+      ctx.fillStyle='#87ceeb';ctx.fillRect(wx+W*.01,H*.04,W*.12,H*.12);
+      ctx.fillStyle='#27ae60';ctx.fillRect(wx+W*.01,H*.16,W*.12,H*.09);
+      ctx.strokeStyle='#a89878';ctx.lineWidth=2;ctx.strokeRect(wx,H*.03,W*.14,H*.24);
+    });
+    // ceiling
+    ctx.fillStyle='#d4c8a8';ctx.fillRect(0,0,W,H*.03);
+    // overhead handle bars
+    ctx.strokeStyle='#888';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,H*.08);ctx.lineTo(W,H*.08);ctx.stroke();
+    ctx.lineWidth=1.5;
+    [W*.1,W*.22,W*.6,W*.72,W*.84].forEach(function(hx){ctx.beginPath();ctx.moveTo(hx,H*.08);ctx.lineTo(hx,H*.16);ctx.stroke();ctx.beginPath();ctx.arc(hx,H*.16,5,0,Math.PI*2);ctx.stroke();});
+    // front of bus (driver area)
+    ctx.fillStyle='#333';ctx.fillRect(0,0,W*.02,H);ctx.fillRect(W*.98,0,W*.02,H);
+    // label
+    ctx.fillStyle='rgba(0,0,0,.3)';ctx.font='bold 10px system-ui';ctx.textAlign='left';ctx.fillText('On the School Bus',5,13);
+  } else if (scene === 'outside') {
+    var sky2=ctx.createLinearGradient(0,0,0,H*.55);sky2.addColorStop(0,'#3a8fd1');sky2.addColorStop(1,'#7ec8e3');
+    ctx.fillStyle=sky2;ctx.fillRect(0,0,W,H*.55);
+    // Sun with rays
+    ctx.fillStyle='#FFD700';ctx.beginPath();ctx.arc(W*.82,H*.12,H*.09,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='rgba(255,215,0,.5)';ctx.lineWidth=2;
+    for(var ra=0;ra<8;ra++){var rang=ra*Math.PI/4;ctx.beginPath();ctx.moveTo(W*.82+Math.cos(rang)*H*.1,H*.12+Math.sin(rang)*H*.1);ctx.lineTo(W*.82+Math.cos(rang)*H*.15,H*.12+Math.sin(rang)*H*.15);ctx.stroke();}ctx.lineWidth=1;
+    // Clouds
+    [[W*.15,H*.1,26],[W*.48,H*.08,20]].forEach(function(cl){ctx.fillStyle='rgba(255,255,255,.92)';[-cl[2]*.6,0,cl[2]*.6].forEach(function(dx){ctx.beginPath();ctx.arc(cl[0]+dx,cl[1],cl[2]*.54,0,Math.PI*2);ctx.fill();});});
+    // Grass with variation
+    var grassG=ctx.createLinearGradient(0,H*.55,0,H);grassG.addColorStop(0,'#2ecc71');grassG.addColorStop(1,'#1a8a45');
+    ctx.fillStyle=grassG;ctx.fillRect(0,H*.55,W,H*.45);
+    // path
+    ctx.fillStyle='#c8a878';ctx.beginPath();ctx.moveTo(W*.38,H*.55);ctx.lineTo(W*.5,H*.55);ctx.lineTo(W*.6,H);ctx.lineTo(W*.28,H);ctx.closePath();ctx.fill();
+    // House
+    ctx.fillStyle='#f0d9b0';ctx.fillRect(W*.58,H*.28,W*.34,H*.28);
+    ctx.fillStyle='#c0392b';ctx.beginPath();ctx.moveTo(W*.54,H*.28);ctx.lineTo(W*.75,H*.11);ctx.lineTo(W*.96,H*.28);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#7d4a1e';ctx.fillRect(W*.71,H*.42,W*.08,H*.14);
+    ctx.fillStyle='#aed6f1';ctx.fillRect(W*.6,H*.31,W*.1,H*.1);ctx.strokeStyle='#888';ctx.lineWidth=1;ctx.strokeRect(W*.6,H*.31,W*.1,H*.1);ctx.beginPath();ctx.moveTo(W*.65,H*.31);ctx.lineTo(W*.65,H*.41);ctx.stroke();ctx.beginPath();ctx.moveTo(W*.6,H*.36);ctx.lineTo(W*.7,H*.36);ctx.stroke();
+    ctx.fillStyle='#aed6f1';ctx.fillRect(W*.8,H*.31,W*.1,H*.1);ctx.strokeStyle='#888';ctx.strokeRect(W*.8,H*.31,W*.1,H*.1);
+    // Chimney
+    ctx.fillStyle='#888';ctx.fillRect(W*.84,H*.14,W*.06,H*.16);
+    ctx.fillStyle='rgba(180,180,180,.6)';for(var sm=0;sm<3;sm++){ctx.beginPath();ctx.arc(W*.87+sm*W*.01,(Date.now()/500%H*.25)+H*.05,3-sm,0,Math.PI*2);ctx.fill();}
+    // Trees
+    ctx.fillStyle='#1a7a1a';[W*.07,W*.2].forEach(function(ttx){ctx.beginPath();ctx.arc(ttx,H*.49,H*.08,0,Math.PI*2);ctx.fill();ctx.fillStyle='#2ecc71';ctx.beginPath();ctx.arc(ttx-H*.02,H*.46,H*.045,0,Math.PI*2);ctx.fill();ctx.fillStyle='#1a7a1a';ctx.fillStyle='#5a3010';ctx.fillRect(ttx-3,H*.55,6,H*.12);ctx.fillStyle='#1a7a1a';});
+    // Flowers
+    ctx.fillStyle='#e74c3c';[W*.32,W*.34,W*.36].forEach(function(fx2){ctx.beginPath();ctx.arc(fx2,H*.62,4,0,Math.PI*2);ctx.fill();});ctx.fillStyle='#f39c12';[W*.44,W*.46].forEach(function(fx3){ctx.beginPath();ctx.arc(fx3,H*.64,4,0,Math.PI*2);ctx.fill();});
+    ctx.fillStyle='rgba(0,0,0,.22)';ctx.font='bold 10px system-ui';ctx.textAlign='left';ctx.fillText('Outside',5,13);
+  } else if (scene === 'school') {
+    ctx.fillStyle='#f5f0e8';ctx.fillRect(0,0,W,H);
+    // floor with wood pattern
+    ctx.fillStyle='#c8a060';ctx.fillRect(0,H*.68,W,H*.32);
+    ctx.strokeStyle='#b08040';ctx.lineWidth=.5;
+    for(var fx4=0;fx4<W;fx4+=18){ctx.beginPath();ctx.moveTo(fx4,H*.68);ctx.lineTo(fx4,H);ctx.stroke();}
+    // Chalkboard with eraser marks
+    ctx.fillStyle='#1a4a22';ctx.fillRect(W*.03,H*.04,W*.58,H*.34);
+    ctx.fillStyle='rgba(255,255,255,.08)';ctx.fillRect(W*.05,H*.06,W*.54,H*.06);// eraser smear
+    ctx.strokeStyle='#6a3a28';ctx.lineWidth=2.5;ctx.strokeRect(W*.03,H*.04,W*.58,H*.34);
+    ctx.fillStyle='#5a3020';ctx.fillRect(W*.03,H*.38,W*.58,H*.028);// chalk tray
+    // chalk sticks in tray
+    ['#fff','#FFD700','#E74C3C'].forEach(function(cc,ci){ctx.fillStyle=cc;ctx.fillRect(W*.06+ci*W*.04,H*.382,W*.03,H*.018);});
+    // math on board
+    ctx.fillStyle='rgba(255,255,255,.82)';ctx.font=(H*.055)+'px monospace';ctx.textAlign='left';
+    ctx.fillText('3\u00d77 = ?',W*.07,H*.16);ctx.fillText('12\u00f74 = ?',W*.07,H*.27);
+    // Teacher's desk with apple
+    ctx.fillStyle='#7a5040';ctx.fillRect(W*.67,H*.38,W*.29,H*.14);
+    ctx.fillStyle='#e74c3c';ctx.beginPath();ctx.arc(W*.82,H*.36,H*.025,0,Math.PI*2);ctx.fill();// apple
+    ctx.fillStyle='#27ae60';ctx.fillRect(W*.818,H*.334,W*.004,H*.012);// apple stem
+    // Student desks (6 desks)
+    [[W*.03,H*.5],[W*.2,H*.5],[W*.37,H*.5],[W*.03,H*.62],[W*.2,H*.62],[W*.37,H*.62]].forEach(function(p,pi){
+      ctx.fillStyle='#d4c0a0';ctx.fillRect(p[0],p[1],W*.14,H*.09);
+      ctx.strokeStyle='#b8a080';ctx.lineWidth=1;ctx.strokeRect(p[0],p[1],W*.14,H*.09);
+      ctx.fillStyle='#8a6040';ctx.fillRect(p[0]+W*.01,p[1]+H*.09,W*.03,H*.07);ctx.fillRect(p[0]+W*.1,p[1]+H*.09,W*.03,H*.07);
+      // book on desk
+      if(pi%2===0){ctx.fillStyle='#e74c3c';ctx.fillRect(p[0]+W*.02,p[1]+H*.01,W*.09,H*.06);}
+      else{ctx.fillStyle='#3498db';ctx.fillRect(p[0]+W*.02,p[1]+H*.01,W*.09,H*.06);}
+    });
+    // Window with outside view
+    ctx.fillStyle='#87ceeb';ctx.fillRect(W*.68,H*.05,W*.28,H*.26);
+    ctx.fillStyle='#2ecc71';ctx.fillRect(W*.68,H*.22,W*.28,H*.09);
+    ctx.strokeStyle='#7a9aae';ctx.lineWidth=1.5;ctx.strokeRect(W*.68,H*.05,W*.28,H*.26);
+    ctx.beginPath();ctx.moveTo(W*.82,H*.05);ctx.lineTo(W*.82,H*.31);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(W*.68,H*.18);ctx.lineTo(W*.96,H*.18);ctx.stroke();
+    ctx.fillStyle='rgba(0,0,0,.22)';ctx.font='bold 10px system-ui';ctx.textAlign='left';ctx.fillText('Classroom',5,13);
+  } else if (scene === 'home') {
+    ctx.fillStyle='#fff8e8';ctx.fillRect(0,0,W,H);
+    // hardwood floor
+    ctx.fillStyle='#c09060';ctx.fillRect(0,H*.68,W,H*.32);ctx.strokeStyle='#a07040';ctx.lineWidth=.5;
+    for(var hfx=0;hfx<W;hfx+=22){ctx.beginPath();ctx.moveTo(hfx,H*.68);ctx.lineTo(hfx,H);ctx.stroke();}
+    ctx.fillStyle='#d8b870';ctx.fillRect(0,H*.68,W*.02,H*.32);
+    // Accent wall
+    ctx.fillStyle='#f5e8d0';ctx.fillRect(0,0,W,H*.68);
+    ctx.strokeStyle='rgba(200,180,140,.4)';ctx.lineWidth=15;ctx.strokeRect(8,8,W-16,H*.68-16);ctx.lineWidth=1;
+    // Sofa - detailed
+    ctx.fillStyle='#2d6a4f';ctx.fillRect(W*.03,H*.42,W*.47,H*.28);
+    ctx.fillStyle='#1b4332';ctx.fillRect(W*.03,H*.36,W*.47,H*.09);// backrest
+    ctx.fillStyle='#1b4332';ctx.fillRect(W*.03,H*.42,W*.06,H*.28);// left arm
+    ctx.fillRect(W*.44,H*.42,W*.06,H*.28);// right arm
+    ctx.fillStyle='#40916c';// cushions
+    ctx.fillRect(W*.1,H*.44,W*.15,H*.22);ctx.fillRect(W*.27,H*.44,W*.15,H*.22);
+    // sofa buttons
+    ctx.fillStyle='#1b4332';[[W*.175,H*.55],[W*.345,H*.55]].forEach(function(b){ctx.beginPath();ctx.arc(b[0],b[1],2,0,Math.PI*2);ctx.fill();});
+    // sofa legs
+    ctx.fillStyle='#8B4513';[[W*.05,H*.68],[W*.43,H*.68]].forEach(function(l){ctx.fillRect(l[0],l[1],W*.02,H*.06);});
+    // TV with stand
+    ctx.fillStyle='#1a1a1a';ctx.fillRect(W*.61,H*.15,W*.31,H*.26);
+    ctx.fillStyle='#0066cc';ctx.fillRect(W*.625,H*.165,W*.28,H*.22);// screen
+    // TV reflection
+    ctx.fillStyle='rgba(255,255,255,.1)';ctx.fillRect(W*.63,H*.17,W*.05,H*.18);
+    ctx.fillStyle='#333';ctx.fillRect(W*.735,H*.41,W*.07,H*.1);// stand
+    ctx.fillStyle='#444';ctx.fillRect(W*.69,H*.5,W*.16,H*.02);// base
+    // bookshelf
+    ctx.fillStyle='#8B6040';ctx.fillRect(W*.03,H*.1,W*.18,H*.28);
+    ['#e74c3c','#3498db','#27ae60','#f39c12','#9b59b6','#e74c3c'].forEach(function(bc,bi){ctx.fillStyle=bc;ctx.fillRect(W*.04+bi*W*.026,H*.12,W*.022,H*.08+(bi%2)*H*.03);});
+    // plant
+    ctx.fillStyle='#5a3010';ctx.fillRect(W*.93-3,H*.5,6,H*.12);
+    ctx.fillStyle='#27ae60';ctx.beginPath();ctx.arc(W*.93,H*.48,H*.09,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#1a7a30';ctx.beginPath();ctx.arc(W*.93-H*.04,H*.44,H*.055,0,Math.PI*2);ctx.fill();
+    // window
+    ctx.fillStyle='#87ceeb';ctx.fillRect(W*.22,H*.06,W*.3,H*.2);
+    ctx.fillStyle='#2ecc71';ctx.fillRect(W*.22,H*.19,W*.3,H*.07);
+    ctx.strokeStyle='#aaa';ctx.lineWidth=1.5;ctx.strokeRect(W*.22,H*.06,W*.3,H*.2);
+    ctx.beginPath();ctx.moveTo(W*.37,H*.06);ctx.lineTo(W*.37,H*.26);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(W*.22,H*.16);ctx.lineTo(W*.52,H*.16);ctx.stroke();
+    // rug
+    ctx.fillStyle='#8b2252';ctx.fillRect(W*.07,H*.68,W*.52,H*.13);
+    ctx.fillStyle='#6a1a40';ctx.fillRect(W*.09,H*.7,W*.48,H*.09);
+    ctx.strokeStyle='rgba(255,150,200,.4)';ctx.lineWidth=2;ctx.strokeRect(W*.09,H*.7,W*.48,H*.09);ctx.lineWidth=1;
+    ctx.fillStyle='rgba(0,0,0,.22)';ctx.font='bold 10px system-ui';ctx.textAlign='left';ctx.fillText('Living room',5,13);
+  }
+}
+
+function animLoop(){
+  var cv=document.getElementById('wcanvas');if(!cv){RAF=null;return;}
+  var ctx=cv.getContext('2d');
+  BREATH+=0.042;var bo=Math.sin(BREATH)*1.4;
+  drawScene(ctx,SCENE,currentFoodItem);
+  var dx=TX-AX,dy=TY-AY,dist=Math.sqrt(dx*dx+dy*dy);
+  if(dist>2.5){var spd=Math.min(11,dist);AX+=dx/dist*spd;AY+=dy/dist*spd;IS_MOVING=true;}
+  else{if(IS_MOVING){IS_MOVING=false;AX=TX;AY=TY;if(ARRIVED_CB){var cb=ARRIVED_CB;ARRIVED_CB=null;cb();}}IS_MOVING=false;}
+  var act=IS_MOVING?'walk':(curStatus?curStatus:ACTION);
+  drawAv(ctx,AX,AY,13,act,bo,curStatusText);
+  // Draw food in hand if eating
+  if(act==='eat'&&currentFoodItem){drawFoodInHand(ctx,AX,AY,13,currentFoodItem);}
+  RAF=requestAnimationFrame(animLoop);
+}
+var curStatus='',curStatusText='';
+function startWorld(){stopWorld();var pt=SPOS.bed;AX=pt.x;AY=pt.y;TX=pt.x;TY=pt.y;SCENE='bed';ACTION='sleep';curStatus='';curStatusText='';BREATH=0;ARRIVED_CB=null;IS_MOVING=false;RAF=requestAnimationFrame(animLoop);}
+function stopWorld(){if(RAF){cancelAnimationFrame(RAF);RAF=null;}}
+function walkTo(sn,act,statusAct,statusTxt,food,cb){
+  var pt=SPOS[sn]||{x:130,y:150};
+  if(sn!==SCENE){SCENE=sn;AX=pt.x<W/2?-18:W+18;AY=pt.y;}
+  TX=pt.x;TY=pt.y;ACTION=act||'idle';
+  curStatus=statusAct||'';curStatusText=statusTxt||'';
+  currentFoodItem=food||'';
+  ARRIVED_CB=cb||null;IS_MOVING=true;
+}
+
+// ── SWATCH/OPTION BUILDERS ────────────────────────────────────────
+function mkSw(id,arr,key){var el=document.getElementById(id);if(!el)return;el.innerHTML='';arr.forEach(function(c,i){var d=document.createElement('span');d.className='sw'+(P[key]===i?' on':'');d.style.background=c;if(c==='#FFFFFF'||c==='#F5F5F5')d.style.border='2.5px solid #ccc';d.onclick=function(){P[key]=i;el.querySelectorAll('.sw').forEach(function(x){x.classList.remove('on');});d.classList.add('on');drawPrev();};el.appendChild(d);});}
+function mkOp(id,arr,key){var el=document.getElementById(id);if(!el)return;el.innerHTML='';arr.forEach(function(l,i){var d=document.createElement('div');d.className='ob'+(P[key]===i?' on':'');d.textContent=l;d.onclick=function(){P[key]=i;el.querySelectorAll('.ob').forEach(function(x){x.classList.remove('on');});d.classList.add('on');drawPrev();};el.appendChild(d);});}
+function initSwatches(){mkSw('sw-skin',skinC,'skin');mkSw('sw-eyes',eyeC,'eyes');mkSw('sw-hair',hairC,'hair');mkSw('sw-shirt',shirtC,'shirt');mkSw('sw-bottom',bottomC,'bottom');mkOp('sw-nose',noseL,'nose');mkOp('sw-mouth',mouthL,'mouth');mkOp('sw-blush',blushL,'blush');mkOp('sw-glasses',glassL,'glasses');mkOp('sw-hairstyle',hairSL,'hairstyle');mkOp('sw-bottomstyle',botSL,'bottomstyle');mkOp('sw-shoes',shoeL,'shoes');}
+function drawPrev(){var cv=document.getElementById('char-canvas');if(!cv)return;var ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);var hr=18,ax=cv.width/2,ay=cv.height-14;drawHair(ctx,ax,ay-hr*3.55,hr,hairSL[P.hairstyle]);ctx.fillStyle=skinC[P.skin];ctx.beginPath();ctx.arc(ax,ay-hr*3.55,hr,0,Math.PI*2);ctx.fill();[-.38,.38].forEach(function(ex){var x2=ax+hr*ex,ey=ay-hr*3.55-hr*.12;ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(x2,ey,hr*.2,hr*.145,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=eyeC[P.eyes];ctx.beginPath();ctx.arc(x2,ey,hr*.105,0,Math.PI*2);ctx.fill();ctx.fillStyle='#111';ctx.beginPath();ctx.arc(x2,ey,hr*.056,0,Math.PI*2);ctx.fill();});var nx=ax,ny=ay-hr*3.55+hr*.12;ctx.strokeStyle=skinC[Math.min(P.skin+3,skinC.length-1)];ctx.lineWidth=.85;ctx.lineCap='round';ctx.beginPath();ctx.arc(nx,ny+hr*.05,hr*.055,0,Math.PI*2);ctx.stroke();ctx.strokeStyle='#333';ctx.lineWidth=.9;ctx.beginPath();ctx.arc(ax,ay-hr*3.55+hr*.42-hr*.06,hr*.15,.3,Math.PI-.3);ctx.stroke();if(P.blush>0&&P.blush<3){ctx.fillStyle='rgba(240,130,140,.32)';[-.54,.54].forEach(function(bx){ctx.beginPath();ctx.ellipse(ax+hr*bx,ay-hr*3.55+hr*.2,hr*.19,hr*.1,0,0,Math.PI*2);ctx.fill();});}var bodyY=ay-hr*3.55+hr+2,bw=hr*1.42,bh=hr*1.46;ctx.fillStyle=shirtC[P.shirt];ctx.beginPath();ctx.roundRect(ax-bw/2,bodyY,bw,bh,4);ctx.fill();var legY=bodyY+bh;ctx.fillStyle=bottomC[P.bottom];var bst=botSL[P.bottomstyle];if(bst==='Skirt'){ctx.beginPath();ctx.moveTo(ax-bw/2,legY);ctx.lineTo(ax+bw/2,legY);ctx.lineTo(ax+bw/2+hr*.26,legY+hr*.8);ctx.lineTo(ax-bw/2-hr*.26,legY+hr*.8);ctx.closePath();ctx.fill();}else{[-.25,.25].forEach(function(lx){ctx.fillRect(ax+hr*lx-hr*.25,legY,hr*.49,hr);});}ctx.fillStyle=shoeC[P.shoes];[-.25,.25].forEach(function(lx){ctx.beginPath();ctx.ellipse(ax+hr*lx,legY+hr,hr*.37,hr*.14,0,0,Math.PI*2);ctx.fill();});}
+
+// ── FOOD ─────────────────────────────────────────────────────────
+var DAIRY=['Cereal & milk','Yogurt & granola','Mac & cheese','Pizza','Crackers & cheese'];
+var PEANUT=['PB&J'];
+var GLUTEN=['Eggs & toast','Pancakes','Turkey sandwich','Pizza','Chicken wrap','Pasta & meatballs','Beef tacos','Crackers & cheese','Granola bar'];
+var FISH=['Fish & rice'];
+var allFoods={bfast:[{n:'Cereal & milk',t:'dairy'},{n:'Eggs & toast',t:'r'},{n:'Oatmeal',t:'v'},{n:'Pancakes',t:'r'},{n:'Fruit bowl',t:'v'},{n:'Yogurt & granola',t:'dairy'},{n:'Avocado toast',t:'v'},{n:'Smoothie',t:'v'},{n:'Skip breakfast',t:'skip'}],lunch:[{n:'School lunch',t:'r'},{n:'PB&J',t:'peanut'},{n:'Turkey sandwich',t:'meat'},{n:'Salad',t:'v'},{n:'Mac & cheese',t:'dairy'},{n:'Rice & veggies',t:'v'},{n:'Pizza',t:'dairy'},{n:'Chicken wrap',t:'meat'},{n:'Skip lunch',t:'skip'}],dinner:[{n:'Pasta & meatballs',t:'meat'},{n:'Grilled chicken',t:'meat'},{n:'Veggie stir-fry',t:'v'},{n:'Fish & rice',t:'fish'},{n:'Beef tacos',t:'meat'},{n:'Veggie tacos',t:'v'},{n:'Lentil soup',t:'v'},{n:'Pizza',t:'dairy'},{n:'Steak',t:'meat'}],snacks:[{n:'Apple',t:'v'},{n:'Banana',t:'v'},{n:'Crackers & cheese',t:'dairy'},{n:'Chips',t:'v'},{n:'Granola bar',t:'v'},{n:'Carrots & hummus',t:'v'},{n:'Juice box',t:'v'},{n:'No snacks',t:'skip'}]};
+function fConflict(fn,diet){if(diet==='vegan'){var b=false;Object.keys(allFoods).forEach(function(m){allFoods[m].forEach(function(f){if(f.n===fn&&['meat','dairy','r','fish','peanut'].indexOf(f.t)>=0)b=true;});});return b;}if(diet==='vegetarian'){var b2=false;Object.keys(allFoods).forEach(function(m){allFoods[m].forEach(function(f){if(f.n===fn&&['meat','fish'].indexOf(f.t)>=0)b2=true;});});return b2;}if(diet==='dairyfree'&&DAIRY.indexOf(fn)>=0)return true;return false;}
+function aConflict(fn){if(medicals.indexOf('Nut allergy')>=0&&PEANUT.indexOf(fn)>=0)return true;if(medicals.indexOf('Lactose intolerant')>=0&&DAIRY.indexOf(fn)>=0)return true;if(medicals.indexOf('Celiac disease')>=0&&GLUTEN.indexOf(fn)>=0)return true;if(medicals.indexOf('Shellfish allergy')>=0&&FISH.indexOf(fn)>=0)return true;return false;}
+function isBad(fn){return fConflict(fn,document.getElementById('p-diet').value)||aConflict(fn);}
+function mealBad(meal){return FC[meal].some(function(fn){return isBad(fn);});}
+function initFoods(){Object.keys(allFoods).forEach(function(meal){var el=document.getElementById('food-'+meal);if(!el)return;el.innerHTML='';allFoods[meal].forEach(function(f){var d=document.createElement('div');d.className='fb';d.textContent=f.n;d.onclick=function(){if(d.classList.contains('on')){d.classList.remove('on','bad');FC[meal]=FC[meal].filter(function(x){return x!==f.n;});}else{if(FC[meal].length>=2)return;d.classList.add('on');if(isBad(f.n))d.classList.add('bad');FC[meal].push(f.n);}checkWarn();};el.appendChild(d);});});}
+function checkWarn(){var bad=0;Object.keys(FC).forEach(function(m){FC[m].forEach(function(fn){if(isBad(fn))bad++;});});document.getElementById('diet-warn').textContent=bad>0?'\u26a0 '+bad+' conflict(s)!':'';}
+function resetFood(){FC={bfast:[],lunch:[],dinner:[],snacks:[]};document.querySelectorAll('.fb').forEach(function(b){b.classList.remove('on','bad');});checkWarn();}
+
+// ── SCHEDULE ─────────────────────────────────────────────────────
+function tOpts(sh,sm,eh,em,step){step=step||30;var r=[];for(var h=sh;h<=eh;h++)for(var m=0;m<60;m+=step){if(h===eh&&m>em)break;if(h===sh&&m<sm)continue;var hh=h%12||12,ap=h<12?'AM':'PM';r.push({v:h+':'+(m<10?'0':'')+m,l:hh+':'+(m<10?'0':'')+m+' '+ap});}return r;}
+function fillSel(id,opts,def){var el=document.getElementById(id);if(!el)return;el.innerHTML='';opts.forEach(function(o){var op=document.createElement('option');op.value=o.v;op.textContent=o.l;if(o.v===def)op.selected=true;el.appendChild(op);});}
+function gv(id){var el=document.getElementById(id);return el?el.value:'';}
+function initSchedule(){
+  fillSel('s-bed',[{v:'none',l:'No bedtime'}].concat(tOpts(18,0,23,30)),'23:30');
+  fillSel('s-wake',tOpts(4,0,10,0),'4:00');
+  fillSel('s-bfast',[{v:'none',l:'Skip breakfast'}].concat(tOpts(4,30,10,30)),'none');
+  fillSel('s-msnack',[{v:'none',l:'None'}].concat(tOpts(9,0,11,30)),'none');
+  fillSel('s-lunch',tOpts(10,30,14,0),'13:30');
+  fillSel('s-asnack',[{v:'none',l:'None'}].concat(tOpts(14,0,17,0)),'none');
+  fillSel('s-dinner',tOpts(16,0,22,0),'22:00');
+  fillSel('s-esnack',[{v:'none',l:'None'}].concat(tOpts(18,0,23,30)),'none');
+  fillSel('s-b1',tOpts(4,0,9,0),'9:00');
+  fillSel('s-b2',[{v:'none',l:'Skip'}].concat(tOpts(6,0,9,30)),'none');
+  fillSel('s-b3',[{v:'none',l:'Skip'}].concat(tOpts(9,0,12,0)),'none');
+  fillSel('s-b4',[{v:'none',l:'Skip'}].concat(tOpts(11,30,14,0)),'none');
+  fillSel('s-b5',[{v:'none',l:'Skip'}].concat(tOpts(14,0,18,0)),'none');
+  fillSel('s-b6',[{v:'none',l:'Skip'}].concat(tOpts(18,0,23,30)),'none');
+  fillSel('s-play',[{v:'0',l:'None'},{v:'15',l:'15 min'},{v:'30',l:'30 min'},{v:'60',l:'1 hour'},{v:'90',l:'1.5 hrs'},{v:'120',l:'2 hrs'}],'0');
+  fillSel('s-screen',[{v:'0',l:'None'},{v:'30',l:'30 min'},{v:'60',l:'1 hour'},{v:'90',l:'1.5 hrs'},{v:'120',l:'2 hrs'}],'120');
+  refreshMini();
+  ['s-bed','s-wake','s-bfast','s-lunch','s-dinner'].forEach(function(id){var el=document.getElementById(id);if(el)el.addEventListener('change',refreshMini);});
+}
+function refreshMini(){
+  function toM(t){if(!t||t==='none')return null;var p=t.split(':').map(Number);return p[0]*60+p[1];}
+  function fmt(t){if(!t||t==='none')return'\u2014';var p=t.split(':');var hh=Number(p[0])%12||12,ap=Number(p[0])<12?'AM':'PM';return hh+':'+(p[1].length<2?'0':'')+p[1]+' '+ap;}
+  var wm=toM(gv('s-wake')),bm=toM(gv('s-bed'));
+  var slp='\u2014';if(wm!=null&&bm!=null){var s=(bm-wm+1440)%1440;slp=s<60?s+' min':(s/60).toFixed(1)+' hrs';}
+  document.getElementById('mini-cards').innerHTML=['Wake|'+fmt(gv('s-wake')),'Bed|'+fmt(gv('s-bed')),'Sleep|'+slp,'Breakfast|'+fmt(gv('s-bfast')),'Lunch|'+fmt(gv('s-lunch')),'Dinner|'+fmt(gv('s-dinner'))].map(function(x){var p=x.split('|');return'<span class="mc"><div class="ml">'+p[0]+'</div><div class="mv">'+p[1]+'</div></span>';}).join('');
+}
+function initActivities(){var acts=['Violin','Viola','Piano','Guitar','Drums','Choir','Soccer','Basketball','Swimming','Dance','Drama','Art class','Chess club','Karate','Coding club'];var el=document.getElementById('activity-tags');el.innerHTML='';activities=[];acts.forEach(function(a){var t=document.createElement('span');t.className='tag';t.textContent=a;t.onclick=function(){t.classList.toggle('on');activities=acts.filter(function(_,i){return el.querySelectorAll('.tag')[i].classList.contains('on');});};el.appendChild(t);});}
+function initMedical(){var aKeys=['Nut allergy','Lactose intolerant','Celiac disease','Shellfish allergy'];var conds=['Asthma','Anemia','Type 1 diabetes','ADHD','Anxiety','Migraines','Insomnia','Motion sickness'];var el=document.getElementById('medical-tags');el.innerHTML='';medicals=[];var nt=document.createElement('span');nt.className='tag on';nt.textContent='None';nt.onclick=function(){el.querySelectorAll('.tag').forEach(function(x){x.classList.remove('on','rd');});nt.classList.add('on');medicals=[];checkWarn();};el.appendChild(nt);aKeys.forEach(function(k){var t=document.createElement('span');t.className='tag';t.textContent=k+' \u26a0';t.onclick=function(){nt.classList.remove('on');t.classList.toggle('on');t.classList.toggle('rd');medicals=aKeys.filter(function(_,j){return el.querySelectorAll('.tag')[j+1].classList.contains('on');}).concat(conds.filter(function(_,j){return el.querySelectorAll('.tag')[j+aKeys.length+1].classList.contains('on');}));checkWarn();};el.appendChild(t);});conds.forEach(function(c){var t=document.createElement('span');t.className='tag';t.textContent=c;t.onclick=function(){nt.classList.remove('on');t.classList.toggle('on');medicals=aKeys.filter(function(_,j){return el.querySelectorAll('.tag')[j+1].classList.contains('on');}).concat(conds.filter(function(_,j){return el.querySelectorAll('.tag')[j+aKeys.length+1].classList.contains('on');}));};el.appendChild(t);});}
+function initLessons(){var byG={3:['Addition','Multiplication intro','Phonics','Spelling','Community helpers','Nature science','Art'],4:['Long multiplication','Division','Grammar','Creative writing','US geography','Animals & habitats','PE'],5:['Multiplication','Long division','Distributive property','Reading comprehension','US history','Life science','PE','Art'],6:['Fractions','Pre-algebra','Essay writing','Ancient civilizations','Earth science','Spanish','PE'],7:['Algebra','Ratios','Literature analysis','World history','Life science','Spanish','PE'],8:['Geometry','Linear equations','Research writing','Civics','Chemistry','Spanish 2','PE']};var g=parseInt(gv('p-grade'))||5,lsn=byG[g]||byG[5];var el=document.getElementById('school-lesson-tags');el.innerHTML='';lessons=[];lsn.forEach(function(l){var t=document.createElement('span');t.className='tag on';t.textContent=l;t.onclick=function(){t.classList.toggle('on');lessons=lsn.filter(function(_,i){return el.querySelectorAll('.tag')[i].classList.contains('on');});updateLC();};el.appendChild(t);lessons.push(l);});updateLC();}
+function updateLC(){document.getElementById('lesson-count').textContent=lessons.length;}
+function go(id){stopWorld();document.querySelectorAll('.scr').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');if(id==='sl')setTimeout(drawPrev,20);if(id==='sa')initLessons();if(id==='ss')refreshMini();}
+
+// ── EVENT BUILDER ─────────────────────────────────────────────────
+function toMin(t){if(!t||t==='none')return null;var p=t.split(':').map(Number);return p[0]*60+p[1];}
+function fmtMin(m){var h=Math.floor(m/60)%24,mn=m%60,ap=h<12?'AM':'PM',hh=h%12||12;return hh+':'+(mn<10?'0':'')+mn+' '+ap;}
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+
+// scene/action/status/food mapping per event type
+var EV_MAP = {
+  wake:   {sc:'bed',    ac:'sleep',   st:'',       tx:''},
+  bath:   {sc:'bathroom',ac:'idle',  st:'',       tx:''},
+  bfast:  {sc:'kitchen',ac:'eat',    st:'',       tx:''},
+  leave:  {sc:'outside',ac:'walk',   st:'',       tx:''},
+  bus:    {sc:'bus',    ac:'idle',   st:'',       tx:''},
+  school: {sc:'school', ac:'walk',   st:'',       tx:''},
+  class:  {sc:'school', ac:'read',   st:'',       tx:''},
+  lunch:  {sc:'school', ac:'eat',    st:'',       tx:''},
+  toilet: {sc:'bathroom',ac:'idle', st:'',       tx:''},
+  home:   {sc:'home',   ac:'walk',   st:'',       tx:''},
+  nap:    {sc:'home',   ac:'sleep',  st:'',       tx:''},
+  snack:  {sc:'home',   ac:'eat',    st:'',       tx:''},
+  hw:     {sc:'home',   ac:'read',   st:'',       tx:''},
+  music:  {sc:'home',   ac:'idle',   st:'',       tx:''},
+  sport:  {sc:'outside',ac:'walk',  st:'',       tx:''},
+  play:   {sc:'outside',ac:'walk',  st:'',       tx:''},
+  tv:     {sc:'home',   ac:'idle',   st:'',       tx:''},
+  dinner: {sc:'kitchen',ac:'eat',   st:'',       tx:''},
+  cookie: {sc:'home',   ac:'eat',   st:'',       tx:''},
+  bed:    {sc:'bed',    ac:'sleep',  st:'',       tx:''},
+  allergy:{sc:'bathroom',ac:'sick', st:'sick',   tx:'ALLERGIC REACTION!'},
+  sick:   {sc:'bathroom',ac:'sick', st:'sick',   tx:'Feeling sick \ud83e\udd22'},
+  dizzy:  {sc:'school', ac:'dizzy', st:'dizzy',  tx:'Dizzy \ud83d\ude35'},
+  adhd:   {sc:'school', ac:'read',  st:'',       tx:''},
+  anxiety:{sc:'school', ac:'anxious',st:'anxious',tx:'Anxious \ud83d\ude30'},
+  asthma: {sc:'school', ac:'sick',  st:'sick',   tx:'Can\'t breathe! \ud83d\udca8'},
+  diabetes:{sc:'home',  ac:'idle',  st:'',       tx:''},
+  sad:    {sc:'home',   ac:'idle',  st:'',       tx:''},
+  exhaust:{sc:'home',   ac:'idle',  st:'',       tx:'Exhausted \ud83d\ude29'},
+  bully:  {sc:'school', ac:'sad',   st:'sad',    tx:'Being bullied... \ud83d\ude22'},
+  recover:{sc:'home',   ac:'sleep', st:'',       tx:'Recovering...'},
+  moon:   {sc:'bed',    ac:'sleep', st:'',       tx:''},
+  migraine:{sc:'bed',   ac:'sleep', st:'sick',   tx:'Migraine \ud83e\udd15'},
+  snackLate:{sc:'kitchen',ac:'eat', st:'',       tx:'Woke up to eat! \ud83d\ude33'}
+};
+
+function appearanceBullyRisk(){
+  var gender=gv('p-gender');
+  var hs=hairSL[P.hairstyle];
+  var shirtName=shirtC[P.shirt];
+  var longOrGirlyHair=['Low ponytail','High ponytail','Side bun','Top bun','Pigtails','French braid','Braids down','Long straight','Long curly'];
+  var pinkOrFemShirts=['#F8BBD0','#FF69B4'];
+  var isLongOrGirly=longOrGirlyHair.indexOf(hs)>=0;
+  var isPinkShirt=pinkOrFemShirts.indexOf(shirtName)>=0;
+  var skirtOrLeggings=botSL[P.bottomstyle]==='Skirt'||botSL[P.bottomstyle]==='Leggings';
+  if(gender==='boy'&&(isLongOrGirly||isPinkShirt||skirtOrLeggings))return true;
+  if(gender==='girl'&&(hs==='Buzz cut'||hs==='Crew cut'||hs==='Short spiky'))return false;// not a risk for girls
+  return false;
+}
+
+function buildEvents(){
+  var ev=[];
+  function push(min,type,title,r,mood,food){
+    if(min==null)return;
+    var m=EV_MAP[type]||EV_MAP.home;
+    ev.push({min:min,type:type,title:title,reaction:r,mood:mood||null,
+      scene:m.sc,action:m.ac,statusAct:m.st,statusTxt:m.tx,food:food||''});
+  }
+  var wm=toMin(gv('s-wake'))||390,bm=toMin(gv('s-bed'))||1260;
+  var bfast=toMin(gv('s-bfast')),msnack=toMin(gv('s-msnack')),lunch=toMin(gv('s-lunch'))||720;
+  var asnack=toMin(gv('s-asnack')),dinner=toMin(gv('s-dinner'))||1080,esnack=toMin(gv('s-esnack'));
+  var nap=parseInt(gv('s-nap'))||0,sleepHrs=((bm-wm+1440)%1440)/60;
+  var attn=gv('p-attention'),commute=gv('p-commute');
+  var cMin=commute==='walk'?8:commute==='bus'?25:commute==='car'?15:45;
+  var arrSch=Math.max(480,wm+cMin+5),schEnd=900,homeArr=schEnd+cMin;
+  var hwMins=parseInt(gv('s-hw'))||45,hwTime=gv('s-hwtime');
+  var playMins=parseInt(gv('s-play'))||0,screenMins=parseInt(gv('s-screen'))||0;
+  var bf_f=FC.bfast.filter(function(f){return f!=='Skip breakfast';}).join(' & ')||null;
+  var lu_f=FC.lunch.filter(function(f){return f!=='Skip lunch';}).join(' & ')||null;
+  var di_f=FC.dinner.join(' & ')||null;
+  var sn_f=FC.snacks.filter(function(f){return f!=='No snacks';}).join(' & ')||null;
+  var rt=sleepHrs<7.5||(!bfast&&attn!=='focused');
+  var gender=gv('p-gender');
+  var pronoun=gender==='girl'?'she':gender==='boy'?'he':'they';
+  var pronounCap=gender==='girl'?'She':gender==='boy'?'He':'They';
+  var hasBullyRisk=appearanceBullyRisk()&&medicals.indexOf('Anxiety')>=0;
+  var lR={
+    focused:["Fully locked in. Every word the teacher says makes total sense and I write it all down perfectly.","Hand flying across the page taking notes. The concept clicks completely — this is how school should feel!"],
+    tries:["Giving it everything I have. Some parts still fuzzy but I refuse to give up — I will ask for help.","Writing every single thing down even when unsure. My brain is working hard and things are starting to click."],
+    distracted:["I blinked and the teacher is on a completely different topic. I have no idea what happened. Ugh.","My eyes drifted to the window again. I missed the key explanation. Big blank spot in my notes."],
+    sleepy:["Head so heavy. Fighting to keep eyes open. Words on the board blur together. This is really bad.","I just jolted awake — I was actually asleep for a few minutes. Someone nudged me. So embarrassed."],
+    tired:["No sleep + no food = brain completely offline. Staring at board but nothing goes in at all.","Every sentence evaporates the second it enters my ears. Total waste of a lesson and it is my own fault."]
+  };
+  var classR=rt?lR.tired:lR[attn]||lR.tries;
+
+  // ── WAKE ──
+  push(wm,'wake','Waking up',
+    wm<=300?"It is "+fmtMin(wm)+" and the alarm goes off. It is pitch black outside. My whole body aches and my eyes feel like sandpaper. This is genuinely unhealthy — nobody should wake up this early on a school day. I feel sick just from tiredness.":
+    wm>=390&&wm<=420?"My alarm goes off and I actually feel rested! Eyes open easily, I feel energised and ready. The perfect wake-up time. Today is going to go well!":
+    wm<=480?"A bit groggy but manageable. I splash water on my face and start to feel human.":
+    "I overslept! I bolt upright in a panic. Everything will be rushed and I will forget something important."
+  ,wm>=390&&wm<=420?'happy':'neutral');
+
+  // ── MORNING BATHROOM ──
+  var b1=toMin(gv('s-b1'));
+  if(b1)push(b1,'bath','Morning bathroom & wash up',
+    b1-wm>90?"I finally made it to the bathroom but I waited almost two hours after waking up! I was so uncomfortable. I need to go straight to the bathroom when I wake up.":
+    "Cold water on my face, brush my teeth, wash up properly. I am starting to feel like an actual human being. Good start to the day."
+  );
+
+  // ── BREAKFAST ──
+  if(bfast){
+    var g2=bfast-wm;
+    var bfReact=mealBad('bfast')?
+      "I ate "+(bf_f||'breakfast')+" but it completely conflicts with my diet and allergies. My stomach started complaining almost right away. I should have checked first. This is going to be a rough morning.":
+      g2<10?"Breakfast straight after waking? Stomach not ready — I feel slightly queasy.":
+      g2>120?"Finally food! Been awake for over two hours starving. My hands were shaking slightly.":
+      (bf_f?"Sitting down to "+bf_f+". ":" ")+(g2<=60?"The timing is perfect — I feel the energy spreading through my body. I am ready for the day!":"A bit late but so much better than nothing. The fog is lifting.");
+    push(bfast,'bfast','Breakfast',bfReact,g2>90?'sad':mealBad('bfast')?'disgust':'happy',bf_f||'');
+    // Allergy reactions — ALWAYS 1 hour recovery
+    if(mealBad('bfast')&&medicals.indexOf('Nut allergy')>=0&&FC.bfast.some(function(f){return PEANUT.indexOf(f)>=0;})){
+      push(bfast+5,'allergy','NUT ALLERGY REACTION at breakfast!',
+        "Within minutes of eating my throat starts tightening and my tongue swells. This is a severe allergic reaction. My EpiPen had to be used and 911 was called. I sat on the floor trying not to panic. One full hour of recovery begins now. Peanuts are NEVER safe for me."
+      ,'disgust');
+      push(bfast+65,'recover','Recovered from nut allergy (1 hour later)',
+        "After a full hour of monitoring I am finally stable again. Throat back to normal. But I lost over an hour, my parents had to leave work, and I feel shaky and exhausted. I will be so much more careful from now on."
+      ,'sleepy');
+    }
+    if(mealBad('bfast')&&medicals.indexOf('Lactose intolerant')>=0&&FC.bfast.some(function(f){return DAIRY.indexOf(f)>=0;})){
+      push((bfast||300)+8,'sick','Lactose reaction at breakfast',
+        "Within twenty minutes my stomach went from fine to agonising. Cramping, bloating, repeated bathroom trips. I spent half an hour unable to leave the bathroom. Dairy does this to me every single time. An entire hour of my morning is gone."
+      ,'disgust');
+      push((bfast||300)+68,'recover','Recovered from lactose reaction (1 hour later)',
+        "The worst has passed. My stomach is still tender but I can function again. I lost over an hour. Never again. Dairy is simply not worth it."
+      ,'sleepy');
+    }
+  } else {
+    push((wm+5)||300,'sad','Skipped breakfast',
+      "I left the house without eating a thing. I can feel my stomach hollowing out already. By the time I get to school my blood sugar will be dropping and my concentration will be gone. I know this ruins my mornings — and yet here I am again."
+    ,'sad');
+  }
+
+  // ── BATHROOM BEFORE LEAVING ──
+  var b2=toMin(gv('s-b2'));if(b2)push(b2,'bath','Bathroom before leaving',"One more stop — teeth brushed, bag checked. Everything is packed. Ready to go!");
+
+  // ── COMMUTE ──
+  var commIcon=commute==='bus'||commute==='far'?'bus':'leave';
+  push(wm+cMin-3,'leave','Getting ready to leave',wm>450?"Scrambling — running really late! Did I pack everything? Not sure.":"Bag packed, shoes on, lunch box in hand. Organised and ready.");
+  push(wm+cMin+2,commIcon,'Commute to school ('+Math.round(cMin)+' min)',
+    commute==='walk'?"Walking to school. The fresh morning air is waking me up better than any alarm clock. I love this part of my day.":
+    commute==='bus'?"On the school bus watching the neighbourhood roll past foggy windows. Noisy but I kind of enjoy it. Twenty-five minutes goes fast.":
+    commute==='car'?"Car ride — warm and quiet. We chat about the day ahead. I like this calm time before school begins.":
+    "Forty-five minutes on this bus. Cramped, bumpy, my back already stiff. I wish school was so much closer."
+  ,commute==='far'?'sad':'neutral');
+  if(medicals.indexOf('Motion sickness')>=0&&commute!=='walk'){
+    push(wm+cMin-2,'sick','Motion sickness on the bus',
+      "The bus starts moving and within minutes nausea rises up from my stomach. I stare at the horizon through the window and breathe slowly. My stomach churns the whole ride. This happens every single morning and never gets easier."
+    ,'disgust');
+  }
+
+  // ── ARRIVE SCHOOL ──
+  push(arrSch,'school','Arrived at school!',
+    bfast?"Walking through the school gates feeling "+(rt?"tired but here. Let us see what the day brings.":"alert and ready. I find my locker and head to class with real energy.")+" ":
+    "Walking through the school gates but already starving. Head starting to throb from low blood sugar. This morning is going to be really hard."
+  ,bfast?'happy':'sad');
+
+  // ── BULLY EVENT (appearance-based, if anxiety + risky appearance) ──
+  if(hasBullyRisk){
+    push(arrSch+30,'bully','Being teased about appearance at school',
+      "Some kids in the hallway noticed my hairstyle and outfit and started making comments. Laughing, pointing, saying things I do not want to repeat. My face went bright red and I could feel everyone looking. I already have anxiety and this made everything ten times worse. I spent the next twenty minutes in the bathroom trying to calm down. It took over an hour before I felt okay enough to focus in class."
+    ,'sad');
+    push(arrSch+95,'recover','Calmed down after being teased (1 hour later)',
+      "I finally feel okay enough to go back to class. My eyes are a little red. I did not deserve that. What I wear and how I look should not matter. But it still hurts. I am going to try to focus on lessons now."
+    ,'neutral');
+  }
+
+  // ── MID-MORNING BATHROOM ──
+  var b3=toMin(gv('s-b3'));if(b3)push(b3,'toilet','Bathroom break at school',"Quick pass between classes. Cool, quiet hallway. A small reset in the middle of a busy morning. Back to class feeling refreshed.");
+
+  // ── MORNING SNACK ──
+  if(msnack)push(msnack,'snack','Morning snack break',(sn_f||'A snack')+" — genuinely grateful for this. My energy was dipping and concentration getting shaky. A few bites and my brain sharpens right back up.",'happy',sn_f||'');
+
+  // ── LESSONS ──
+  var numAM=Math.min(lessons.length,3),amGap=Math.floor(Math.max(18,(lunch-arrSch-30)/Math.max(numAM,1)));
+  lessons.slice(0,numAM).forEach(function(l,i){push(arrSch+30+amGap*i+(hasBullyRisk?70:0),'class','Class: '+l,pick(classR));});
+
+  // ── MANDATORY MEDICAL EVENTS ──
+  if(medicals.indexOf('ADHD')>=0)push(arrSch+80,'adhd','ADHD moment during class',
+    "My brain splinters into a dozen directions. The lesson matters but my attention keeps jumping — to sounds, to memories, to anything except the board. I grip my pencil and drag focus back piece by piece. I miss some things I will have to piece together later."
+  ,'sleepy');
+  if(medicals.indexOf('Anxiety')>=0&&!hasBullyRisk)push(arrSch+110,'anxiety','Anxiety spike',
+    "Out of nowhere my heart starts pounding. Palms clammy, breathing shallow. No obvious reason. I breathe in for four counts, hold for four, out for four. It passes eventually but anxiety is exhausting even when nothing actually happens."
+  ,'sad');
+  if(medicals.indexOf('Asthma')>=0)push(schEnd-55,'asthma','Asthma flare during PE',
+    "We are doing laps and halfway through my chest tightens like a fist is squeezing it from inside. I stop, lean against the wall, and reach for my inhaler. Two puffs. The tightness slowly eases but I have to sit out the rest of PE. I hate when this happens in front of everyone."
+  ,'sleepy');
+  if(medicals.indexOf('Type 1 diabetes')>=0)push(lunch-25,'diabetes','Blood sugar check before lunch',
+    "My glucose is running lower than it should be. I take a glucose tablet quickly. Managing this requires constant attention — every meal, every activity, every unexpected thing can shift my levels. It is like playing a never-ending game with my own body."
+  ,'neutral');
+  if(medicals.indexOf('Anemia')>=0)push(schEnd-28,'dizzy','Dizzy spell from anemia',
+    "I stand up and the room tilts sideways. I grab the desk edge and sit back down, head between my knees while the dizziness passes. Anemia means not enough oxygen getting to my brain. I need to eat more iron-rich food."
+  ,'sad');
+  if(medicals.length===0){
+    push(arrSch+90,'sad','A small tired moment',
+      "Around mid-morning I notice I am yawning more than usual and my eyes feel strained. Nothing dramatic — just a reminder that even a healthy body has limits and needs rest."
+    ,'neutral');
+  }
+
+  // ── LUNCH ──
+  var lw=lunch-arrSch;
+  push(lunch,'lunch','Lunch',
+    mealBad('lunch')?"I open my lunch and "+(lu_f?"eat "+lu_f+" but":"eat it and")+' I realise it completely conflicts with my diet or allergies. Going to pay for this all afternoon.':
+    lw>210?"FINALLY. I had a real hunger headache for the last 45 minutes and could not focus at all. "+(lu_f?"Having "+lu_f+". ":"")+"I eat every single bite.":
+    lw<90?"Lunch feels too early — not that hungry yet."+(lu_f?" Having "+lu_f+".":""):
+    "Lunchtime! Hungry at exactly the right level. "+(lu_f?"Having "+lu_f+". ":"")+"Sitting with friends, talking, laughing. Best part of the school day."
+  ,mealBad('lunch')?'disgust':lw>210?'sad':'happy',lu_f||'school lunch');
+
+  // Lunch allergy reactions
+  if(mealBad('lunch')&&medicals.indexOf('Nut allergy')>=0&&FC.lunch.some(function(f){return PEANUT.indexOf(f)>=0;})){
+    push(lunch+5,'allergy','NUT ALLERGY REACTION at school!',
+      "Minutes after eating I realise what I did. The PB&J — I forgot. Throat closing up. Teacher noticed and administered my EpiPen. 911 called. I was taken out of school. Scared, embarrassed, heart pounding. A full hour of recovery begins NOW. This pushes everything back."
+    ,'disgust');
+    push(lunch+65,'recover','Recovered from nut allergy (1 hour later)',
+      "Back at school after being cleared by the nurse. Still wobbly and exhausted. The rest of the afternoon will be a struggle. But I am okay. I MUST check what is in my food before eating. Always."
+    ,'sleepy');
+  }
+  if(mealBad('lunch')&&medicals.indexOf('Lactose intolerant')>=0&&FC.lunch.some(function(f){return DAIRY.indexOf(f)>=0;})){
+    push(lunch+10,'sick','Lactose reaction at school',
+      "Fifteen minutes after lunch — sharp cramps. I had to leave class and spent nearly the entire next period in the bathroom. My classmates noticed my absence. Humiliated, in pain, an entire hour of school gone. Dairy is simply not worth it."
+    ,'disgust');
+    push(lunch+70,'recover','Recovered from lactose reaction (1 hour later)',
+      "Finally feeling stable enough to return to class. Pale and wrung out. Lost a full hour. The lesson learned for the hundredth time: dairy hurts me every single time."
+    ,'sleepy');
+  }
+
+  var b4=toMin(gv('s-b4'));if(b4)push(b4,'toilet','Bathroom after lunch',"Post-lunch stop. Wash hands, check shirt. Back to class feeling settled.");
+  lessons.slice(numAM,numAM+2).forEach(function(l,i){push(lunch+35+i*52,'class','Afternoon: '+l,pick(lw>180?lR.tired:classR));});
+
+  // Not enough lessons
+  if(lessons.length<3){
+    push(arrSch+200,'sad','Not enough learning today!',
+      "I have only covered "+lessons.length+" topic"+(lessons.length===1?'':'s')+" today — far below the 3 things I need to learn every day. My teacher reminded me I am falling behind. Learning fewer than 3 new things per school day is not acceptable. My brain did not grow enough today."
+    ,'sad');
+  }
+
+  push(schEnd,'leave','School over!',
+    activities.length>=4?"Bell rings — relief followed by immediate anxiety about "+activities.length+" activities still to get through plus homework. When will I even sleep?":
+    activities.length>0?"Bell rings. Good day overall. A few activities this afternoon but manageable.":
+    "Bell rings and I practically float out. No activities today — just home, snack, homework, and then whatever I want. A good evening ahead."
+  ,activities.length>=4?'sad':'happy');
+  push(schEnd+3,commute==='bus'||commute==='far'?'bus':'leave','Heading home',
+    commute==='far'?"Forty-five minutes on the bus again. Back aching. Staring out the window, brain quietly shutting down.":"On the way home. Decompressing from the day. Almost there."
+  ,'neutral');
+  push(homeArr,'home','Arrived home!',
+    nap>0?"Home! Shoes off. I desperately need that nap.":
+    activities.length>=4?"Home but barely a moment to breathe before activities start again.":
+    "The door opens and I am hit by the smell of home. Shoulders drop. Shoes off. Bag down. Best feeling."
+  ,activities.length>=4?'sad':'happy');
+
+  var b5=toMin(gv('s-b5'));if(b5)push(b5,'toilet','Home — bathroom!','First thing. Needed that since after lunch. The relief is wonderful.');
+  if(nap>0)push(homeArr+10,'nap',nap+'-minute nap',nap>=30?"Set my alarm and lie down. When I wake up I feel completely different — like a brain reset. Naps are genuinely magical.":"Quick power nap. When I open my eyes I feel slightly better. Even ten minutes helped.",'sleepy');
+  if(asnack&&sn_f)push(asnack,'snack','After-school snack',sn_f+"! Been looking forward to this since 2 PM. "+(mealBad('snacks')?"Wait — this conflicts with my diet or allergies. Oh no, not again.":"I sit at the kitchen table and eat slowly. No school, no homework yet. Pure peace."),'happy',sn_f||'');
+
+  // ── HOMEWORK ──
+  var hwStart=homeArr+20;
+  if(hwTime==='after-snack')hwStart=(asnack||homeArr+35)+10;
+  if(hwTime==='evening')hwStart=(dinner||1080)+20;
+  push(hwStart,'hw','Homework ('+hwMins+' min)',
+    (rt||activities.length>=4)?"Spread my homework out and stare at it blankly. Brain completely empty. I read the same question four times without understanding a single word. This is what not taking care of myself looks like.":
+    attn==='distracted'?"Started homework but somehow my phone is in my hand again. Put it in another room. Did two problems. Started thinking about dinner. This is taking twice as long as it should.":
+    "Settled into homework and found a rhythm. I remember quite a lot from today's lessons. Working steadily, checking answers. Done in about "+hwMins+" minutes. It feels good to do it properly."
+  ,rt||activities.length>=4?'sleepy':'happy');
+
+  // ── ACTIVITIES ──
+  // Calculate when activities ACTUALLY end
+  var actStart=homeArr+25;if(nap>0)actStart+=nap+5;
+  var actCount=Math.min(activities.length,5);
+  var lastActEnd=actStart+activities.length*70;
+
+  var actCount2=activities.length;activities.forEach(function(a,i){
+    var isSport=['Soccer','Basketball','Swimming','Karate'].indexOf(a)>=0;
+    push(actStart+i*70,isSport?'sport':'music',a+' practice',
+      i>=4?"FIVE activities. I am barely functioning. Going through the motions. My body gave out an hour ago.":
+      i>=3?"Fourth activity and everything hurts. Making mistakes I would not normally make. Way too many.":
+      i>=2?"Third in a row. Genuinely tired now. Concentration getting shorter. Still trying my best.":
+      isSport?"Running around feels INCREDIBLE after a full day of sitting at a desk. This is why I love sport!":
+      "Warming up and something clicks — muscle memory kicks in and I am completely in the zone. Love this."
+    ,i>=3?'sad':i>=2?'neutral':'happy');
+  });
+  if(activities.length>=4)push(actStart+activities.length*70-10,'exhaust','Exhausted from too many activities',
+    "I have completed "+activities.length+" activities this afternoon and I am completely done. Muscles aching, eyes dry, still have homework. I love all of these things but not all crammed into one afternoon. Less is genuinely more."
+  ,'sad');
+
+  // ── ACTIVITIES MUST FINISH BEFORE BED ──
+  // If lastActEnd > bm, activities push bedtime back
+  var actualBed=bm;
+  if(lastActEnd>bm&&activities.length>0){
+    actualBed=lastActEnd+30;// forced later bedtime
+    push(lastActEnd+5,'sad','Activities ran past bedtime!',
+      "I just finished my last activity at "+fmtMin(lastActEnd)+" — which is AFTER my planned bedtime of "+fmtMin(bm)+"! I could not go to sleep while I was still at "+activities[activities.length-1]+" practice. My actual bedtime has been pushed to "+fmtMin(actualBed)+". This means less sleep tomorrow and points are being deducted."
+    ,'sad');
+  }
+
+  // ── FREE PLAY ──
+  if(playMins>0){
+    var ps=Math.max(lastActEnd,hwStart+hwMins+10);
+    push(ps,'play','Free play ('+playMins+' min)',
+      playMins>=60?"No schedule, no goals, no timers. Just me deciding what to do with my own time. Running around, making things up, just existing freely. This is what being a kid is actually supposed to feel like. An hour of this makes everything else worth it.":
+      "Half an hour of pure free time. No goals attached. I feel lighter and happier and more like myself. Thirty minutes genuinely changed my whole mood."
+    ,'happy');
+  } else {
+    push(homeArr+Math.max(lastActEnd-homeArr+15,50),'sad','No free play today',
+      "Zero unstructured time today. School then activities then homework, back to back with no breathing room. I feel like a schedule, not a person. Children need time that belongs only to them. I did not get any of that today."
+    ,'sad');
+  }
+
+  if(screenMins>0)push(homeArr+Math.max(lastActEnd-homeArr+20,55),'tv','Screen time ('+screenMins+' min)',
+    screenMins>90?"Told myself just a little while but two hours later I am still watching. Eyes hurt, neck stiff, lost track of time completely. I need a real time limit.":
+    "Some screen time to wind down. I watch something I actually enjoy and feel genuinely recharged. A bit of TV after a hard day is completely reasonable."
+  ,screenMins>90?'sad':'neutral');
+
+  // ── DINNER ──
+  push(dinner,'dinner','Dinner',
+    mealBad('dinner')?"Dinner is "+(di_f||'something')+" and it conflicts with my diet or allergies. Third food incident today. My stomach is in real pain now. I need to plan meals much more carefully.":
+    dinner>1200?"It is "+fmtMin(dinner)+" and I am only eating now?! I have been starving for hours. Eating this late makes sleep so much harder.":
+    dinner<1020?"Dinner feels too early — still not hungry from after-school snack.":
+    "Dinner! "+(di_f?"Having "+di_f+". ":"")+"Hungry at exactly the right moment. Whole family together. Food is warm. This is one of life's simple pleasures."
+  ,mealBad('dinner')?'disgust':dinner>1200?'sad':'happy',di_f||'dinner');
+
+  // ── EVENING SNACK ──
+  if(esnack){
+    var esMin=toMin(gv('s-esnack'));
+    if(esMin&&esMin>actualBed){
+      push(esMin,'snackLate','Woke up for snack — after bedtime!',
+        "Wait — I was ASLEEP! It is "+fmtMin(esMin)+" and I had to get out of bed to eat a snack because it was scheduled AFTER my bedtime of "+fmtMin(actualBed)+". This makes no sense at all. I shuffled to the kitchen half-asleep, ate something while barely conscious, and now have to fall back asleep again. This is hugely disruptive to my sleep cycle. This scheduling error costs points!"
+      ,'disgust');
+    } else {
+      push(esMin||actualBed-30,'cookie','Evening snack',(sn_f||'A small snack')+" before bed. Just enough to feel comfortable. A gentle, quiet full stop at the end of a long day.",'neutral',sn_f||'');
+    }
+  }
+
+  var b6=toMin(gv('s-b6'));if(b6)push(b6,'bath','Evening routine & bathroom',"Brush teeth properly, wash face, change into pyjamas, tidy my space. I feel the whole day leave my body with each step. Clean and calm and ready for rest.");
+
+  // Medical before bed
+  if(medicals.indexOf('Insomnia')>=0)push(actualBed+25,'moon','Cannot fall asleep — insomnia',"Lying here wide awake. Mind running through every conversation, every task, every awkward moment from the past week. The room is dark and quiet but my brain refuses to stop. This happens to me often. Tired but unable to sleep — the worst kind of exhausted.",'sleepy');
+  if(medicals.indexOf('Migraines')>=0)push(actualBed-38,'migraine','Migraine warning signs before bed',"The familiar pressure builds behind my right eye. Visual distortion at the edges. I take my medication immediately and lie very still in the dark. Please do not let this become a full migraine — those last all night and destroy the following day.",'sad');
+
+  // ── BEDTIME ──
+  push(actualBed,'bed','Bedtime',
+    actualBed!==bm?"I am going to bed at "+fmtMin(actualBed)+" instead of my planned "+fmtMin(bm)+" because my activities ran over. This means less sleep than planned. I really need to schedule activities to finish well before bedtime!":
+    bm<=1020?"It is only "+fmtMin(bm)+" and I am nowhere near sleepy. I will lie in the dark for hours. Early bedtimes only work when you are actually tired.":
+    bm>=1110&&bm<=1170?"Getting sleepy at exactly the right time. This feels perfect. I will fall asleep quickly and wake up feeling genuinely rested.":
+    bm<=1260?"A little late but I am tired enough to fall asleep okay. The day is done.":
+    bm<=1380?"It is "+fmtMin(bm)+" and pretty late. I am going to struggle waking up tomorrow.":
+    "It is "+fmtMin(bm)+" — far too late. I am overtired and now somehow wired. Tomorrow will be brutal."
+  ,actualBed!==bm?'sad':bm>=1110&&bm<=1170?'happy':bm>1320?'sad':'neutral');
+
+  // Store actual bedtime for scoring
+  ev._actualBed=actualBed;
+  return ev.filter(function(e){return e.min!=null;}).sort(function(a,b){return a.min-b.min;});
+}
+
+// ── SIMULATION ────────────────────────────────────────────────────
+var BN, actualBedTime=1260;
+function goSim(){
+  simEvents=buildEvents();
+  actualBedTime=simEvents._actualBed||1260;
+  simIdx=0;go('sim');
+  document.getElementById('sim-name').textContent=gv('p-name')||'Alex';
+  document.getElementById('sim-log').innerHTML='';
+  BN=document.getElementById('b-next');BN.disabled=true;BN.textContent='Next \u2197';
+  document.getElementById('sim-hint').textContent='Starting...';
+  document.getElementById('sim-bubble').textContent='';
+  document.getElementById('mood-lbl').textContent='';
+  setTimeout(function(){startWorld();showEv();},60);
+}
+function showEv(){
+  if(simIdx>=simEvents.length){doReview();return;}
+  var e=simEvents[simIdx];
+  document.getElementById('sim-prog').style.width=Math.round((simIdx+1)/simEvents.length*100)+'%';
+  document.getElementById('sim-ctr').textContent='Event '+(simIdx+1)+' of '+simEvents.length;
+  document.getElementById('sim-clock').textContent=fmtMin(e.min);
+  document.getElementById('sim-title').textContent=e.title;
+  document.getElementById('sim-bubble').textContent='';
+  document.getElementById('mood-lbl').textContent='';
+  document.getElementById('sim-hint').textContent='Walking to location...';
+  if(BN)BN.disabled=true;
+  walkTo(e.scene,e.action,e.statusAct,e.statusTxt,e.food,function(){
+    var mood=e.mood||moodFor(e.reaction,e.type);
+    playMood(mood);
+    var mls={happy:'\ud83d\ude0a Happy & bright',sleepy:'\ud83d\ude34 Tired & slow',sad:'\ud83d\ude1f Quiet & blue',disgust:'\ud83e\udd22 Ugh...',neutral:'\ud83d\ude10 Calm'};
+    document.getElementById('mood-lbl').textContent='Mood: '+(mls[mood]||'');
+    document.getElementById('sim-bubble').textContent='"'+e.reaction+'"';
+    document.getElementById('sim-hint').textContent=simIdx>=simEvents.length-1?'Last event!':'Read, then tap Next \u2197';
+    if(BN){BN.disabled=false;BN.textContent=simIdx>=simEvents.length-1?'See review \u2197':'Next \u2197';}
+    var log=document.getElementById('sim-log');
+    var row=document.createElement('div');row.className='lrow';
+    row.innerHTML='<strong>'+fmtMin(e.min)+'</strong> '+e.title;
+    log.appendChild(row);log.scrollTop=log.scrollHeight;
+  });
+}
+function simNext(){simIdx++;if(simIdx>=simEvents.length){doReview();return;}showEv();}
+
+// ── REVIEW ────────────────────────────────────────────────────────
+function doReview(){
+  stopWorld();
+  var name=gv('p-name')||'Alex';var issues=[],goods=[];
+  var wm=toMin(gv('s-wake'))||390,bm=toMin(gv('s-bed'))||1260;
+  var bfast=toMin(gv('s-bfast')),lunch=toMin(gv('s-lunch'))||720,dinner=toMin(gv('s-dinner'))||1080;
+  var sleepHrs=((actualBedTime-wm+1440)%1440)/60;
+  var attn=gv('p-attention'),playMins=parseInt(gv('s-play'))||0,screenMins=parseInt(gv('s-screen'))||0;
+  var cc=0;Object.keys(FC).forEach(function(m){FC[m].forEach(function(fn){if(isBad(fn))cc++;});});
+  var esMin=toMin(gv('s-esnack'));
+  var snackAfterBed=esMin&&esMin>actualBedTime;
+  var actsPushedBed=actualBedTime>bm&&activities.length>0;
+  var hasBullyRisk=appearanceBullyRisk()&&medicals.indexOf('Anxiety')>=0;
+
+  if(snackAfterBed)issues.push('Evening snack AFTER bedtime \u2192 had to wake up mid-sleep! (-points)');
+  if(actsPushedBed)issues.push('Activities ran past bedtime \u2192 pushed to '+fmtMin(actualBedTime)+' (planned '+fmtMin(bm)+')');
+  if(hasBullyRisk)issues.push('Appearance caused social issues \u2192 lost 1 hr to bullying recovery');
+
+  if(sleepHrs<8.5)issues.push('Too little sleep ('+sleepHrs.toFixed(1)+' hrs \u2014 need 9\u201311)');
+  else if(sleepHrs>=9&&sleepHrs<=11)goods.push('Perfect sleep ('+sleepHrs.toFixed(1)+' hrs)');
+  else goods.push('Decent sleep ('+sleepHrs.toFixed(1)+' hrs)');
+
+  if(wm<=240)issues.push('Woke before 4 AM \u2014 dangerously early');
+  else if(wm<360)issues.push('Woke before 6 AM \u2014 too early');
+  else if(wm>=390&&wm<=420)goods.push('Perfect wake-up (6:30\u20137:00 AM)');
+  else if(wm<=480)issues.push('Woke too late \u2014 rushed morning');
+  else issues.push('Very late wake-up \u2014 chaotic morning');
+
+  if(!bfast)issues.push('Skipped breakfast \u2014 crashed focus all morning');
+  else if(bfast-wm>120)issues.push('Breakfast over 2 hrs after waking');
+  else if(bfast-wm<10)issues.push('Breakfast too soon \u2014 queasy');
+  else goods.push('Breakfast well timed');
+
+  if(lunch>780)issues.push('Lunch too late \u2014 hunger headache in class');
+  else if(lunch>=660)goods.push('Lunch well timed');
+  else issues.push('Lunch too early');
+
+  if(dinner>1200)issues.push('Dinner too late \u2014 hurts sleep');
+  else if(dinner>=1080&&dinner<=1140)goods.push('Dinner perfectly timed');
+  else if(dinner<1020)issues.push('Dinner too early \u2014 hungry before bed');
+  else goods.push('Dinner at a good time');
+
+  if(cc>0)issues.push(cc+' food(s) conflicted with diet/allergies \u2014 reactions!');
+  else if(FC.bfast.length+FC.lunch.length+FC.dinner.length>=3)goods.push('All meals matched diet & allergies');
+
+  if(activities.length>=4)issues.push(activities.length+' activities \u2014 fatigue & exhaustion');
+  else if(activities.length>=1)goods.push('Good activity balance ('+activities.length+')');
+  else goods.push('Relaxed afternoon');
+
+  if(attn==='focused'&&sleepHrs>=9&&bfast)goods.push('Well-rested, fed & focused all day in school');
+  else if(sleepHrs<8||attn==='sleepy')issues.push('Dozing in class \u2014 missed material');
+  else if(attn==='distracted')issues.push('Distracted during lessons');
+
+  if(lessons.length<3)issues.push('Only '+lessons.length+' lesson(s) \u2014 need 3+ new things per day!');
+  else goods.push('Learned '+lessons.length+' new things today!');
+
+  if(playMins===0)issues.push('Zero free play \u2014 no mental rest at all');
+  else if(playMins<30)issues.push('Not enough free play (need 30+ min)');
+  else goods.push('Healthy free play ('+playMins+' min)');
+
+  if(screenMins>90)issues.push('Too much screen time ('+screenMins+' min)');
+  else goods.push('Screen time managed well');
+
+  if(actualBedTime<=1020)issues.push('Bedtime too early ('+fmtMin(actualBedTime)+') \u2014 won\u2019t sleep for hours');
+  else if(actualBedTime>=1110&&actualBedTime<=1170)goods.push('Perfect bedtime (8:30\u20139:30 PM)');
+  else if(actualBedTime<=1260)goods.push('Acceptable bedtime');
+  else if(actualBedTime<=1380)issues.push('Bedtime too late');
+  else issues.push('Very late bedtime \u2014 sleep deprived tomorrow');
+
+  var total=issues.length+goods.length,score=total>0?Math.round(goods.length/total*100):100,perfect=issues.length===0;
+
+  var parts=[];
+  if(actsPushedBed)parts.push("My activities ran past my planned bedtime — I literally could not go to sleep until they were finished, which pushed everything back to "+fmtMin(actualBedTime)+". Activities must always be scheduled to finish before bedtime!");
+  if(snackAfterBed)parts.push("The evening snack was scheduled AFTER my bedtime, so I had to physically wake up mid-sleep to eat it. That is completely disruptive and makes no sense. The snack must always come before bed.");
+  if(hasBullyRisk)parts.push("Some kids at school teased me about my appearance today. It was really upsetting and I lost over an hour recovering. Nobody deserves that. But I also learned that when anxiety is already a struggle, unusual style choices can draw unwanted attention.");
+  if(issues.some(function(i){return i.includes('sleep');}))parts.push("I only got "+sleepHrs.toFixed(1)+" hours of sleep. The whole day felt like walking through fog — slower, more mistakes, could not concentrate properly. Sleep is everything.");
+  if(issues.some(function(i){return i.includes('breakfast');}))parts.push("Skipping or delaying breakfast left my brain with no fuel for the most important part of the morning. Foggy, slow, and grumpy before I even got to school.");
+  if(issues.some(function(i){return i.includes('Lunch too late');}))parts.push("Lunch was so late I had a real hunger headache during the last class before it. Could not focus on anything.");
+  if(issues.some(function(i){return i.includes('diet')||i.includes('allerg');}))parts.push("I ate "+cc+" thing"+(cc>1?'s':'')+' that conflicted with my diet or allergies. Each caused a reaction that made me feel terrible and cost me over an hour. My diet is a health necessity, not a preference.');
+  if(issues.some(function(i){return i.includes('activities');}))parts.push("Having "+activities.length+" activities in one afternoon was genuinely too much. I was going through the motions by the end — exhausted and not actually enjoying or improving at any of them.");
+  if(issues.some(function(i){return i.includes('lesson');}))parts.push("I only covered "+lessons.length+" topic"+(lessons.length===1?'':'s')+" today. Learning at least 3 new things every day is essential. My brain did not grow enough today.");
+  if(issues.some(function(i){return i.includes('play');}))parts.push("Zero free time means I felt like a machine, not a kid. Unstructured play is not a luxury — it is essential for mental health.");
+  if(goods.some(function(g){return g.includes('Perfect sleep');}))parts.push("I slept "+sleepHrs.toFixed(1)+" hours — exactly right. I felt genuinely energised all day and everything was easier because of it.");
+  if(goods.some(function(g){return g.includes('Breakfast');}))parts.push("Breakfast at the right time gave my brain fuel from the very start. I was sharp and ready from the first bell.");
+  if(goods.some(function(g){return g.includes('focused');}))parts.push("Well-rested and well-fed, I was genuinely focused in every lesson today. I understood everything and I feel proud of what I learned.");
+  if(goods.some(function(g){return g.includes('play');}))parts.push(playMins+' minutes of free play was the absolute highlight of my afternoon. No goals, just pure freedom. I felt like a real kid again.');
+  if(goods.some(function(g){return g.includes('Learned');}))parts.push("Learning "+lessons.length+" different things today felt so satisfying. My brain stretched and grew. This is exactly what school should feel like.");
+  if(goods.some(function(g){return g.includes('diet');}))parts.push("All my meals fit my diet and allergies perfectly — not a single reaction all day. Such a relief.");
+  if(parts.length===0)parts.push(perfect?"Today was genuinely, completely perfect. Every decision was exactly right. I felt wonderful from morning to night.":"An okay day — some things went well but there is real room to improve.");
+  parts.push(perfect?"PERFECT DAY! \ud83c\udf1f\ud83c\udf1f\ud83c\udf1f Every single decision was right. This is what a truly healthy, balanced day looks like!":score>=80?"Really strong day! Just "+issues.length+" thing"+(issues.length>1?'s':'')+' to fix.':score>=55?"Okay day. "+issues.length+" things dragged it down. Keep adjusting!":"Difficult day. "+issues.length+" things went wrong — but you can see exactly what to change. Try again!");
+
+  go('srev');
+  setTimeout(function(){
+    var cv=document.getElementById('rev-char');if(!cv)return;
+    var ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);
+    var hr=11,ax=cv.width/2,ay=cv.height-6;
+    drawHair(ctx,ax,ay-hr*3.55,hr,hairSL[P.hairstyle]);
+    ctx.fillStyle=skinC[P.skin];ctx.beginPath();ctx.arc(ax,ay-hr*3.55,hr,0,Math.PI*2);ctx.fill();
+    [-.38,.38].forEach(function(ex){var x2=ax+hr*ex,ey=ay-hr*3.55-hr*.12;ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(x2,ey,hr*.2,hr*.145,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=eyeC[P.eyes];ctx.beginPath();ctx.arc(x2,ey,hr*.105,0,Math.PI*2);ctx.fill();ctx.fillStyle='#111';ctx.beginPath();ctx.arc(x2,ey,hr*.056,0,Math.PI*2);ctx.fill();});
+    var bodyY=ay-hr*3.55+hr+2,bh=hr*1.46,legY=bodyY+bh;
+    ctx.fillStyle=shirtC[P.shirt];ctx.beginPath();ctx.roundRect(ax-hr*.71,bodyY,hr*1.42,bh,3);ctx.fill();
+    ctx.fillStyle=bottomC[P.bottom];[-.25,.25].forEach(function(lx){ctx.fillRect(ax+hr*lx-hr*.25,legY,hr*.49,hr);});
+    ctx.fillStyle=shoeC[P.shoes];[-.25,.25].forEach(function(lx){ctx.beginPath();ctx.ellipse(ax+hr*lx,legY+hr,hr*.37,hr*.14,0,0,Math.PI*2);ctx.fill();});
+  },25);
+
+  document.getElementById('rev-name').textContent=name;
+  document.getElementById('rev-mood').textContent=perfect?'\ud83c\udf1f':score>=80?'\ud83d\ude0a':score>=60?'\ud83d\ude10':'\ud83d\ude1f';
+  var bc=perfect?'#1D9E75':score>=80?'#5DCAA5':score>=60?'#F39C12':'#E74C3C';
+  document.getElementById('rev-score').innerHTML='<div style="font-size:12px;color:#666;margin-bottom:3px">Day score: <strong style="color:'+bc+'">'+score+'%'+(perfect?' \u2014 PERFECT DAY! \ud83c\udf1f':'')+'</strong></div><div style="height:7px;background:#eee;border-radius:3px;overflow:hidden;max-width:240px;margin:0 auto"><div style="height:100%;width:'+score+'%;background:'+bc+';border-radius:3px"></div></div>';
+  document.getElementById('rev-text').textContent='"'+parts.join(' ')+'"';
+  var pills=document.getElementById('rev-pills');pills.innerHTML='';
+  goods.forEach(function(g){var p=document.createElement('span');p.className='pill gp';p.textContent='\u2713 '+g;pills.appendChild(p);});
+  issues.forEach(function(i){var p=document.createElement('span');p.className='pill rp';p.textContent='\u2717 '+i;pills.appendChild(p);});
+  var tl=document.getElementById('rev-tl');tl.innerHTML='<h3 style="margin-bottom:.3rem">Full day timeline</h3>';
+  simEvents.forEach(function(e){tl.innerHTML+='<div class="lrow"><strong>'+fmtMin(e.min)+'</strong> '+e.title+'</div>';});
+  playMood(perfect?'happy':score>=80?'happy':score>=55?'neutral':'sad');
+}
+
+// ── WIRE BUTTONS ─────────────────────────────────────────────────
+document.getElementById('b-welcome').onclick=function(){go('si');};
+document.getElementById('b-i-next').onclick=function(){document.getElementById('cnametag').textContent=gv('p-name')||'Alex';go('sl');};
+document.getElementById('b-l-back').onclick=function(){go('si');};
+document.getElementById('b-l-next').onclick=function(){go('sh');};
+document.getElementById('b-h-back').onclick=function(){go('sl');};
+document.getElementById('b-h-next').onclick=function(){go('ss');};
+document.getElementById('b-s-back').onclick=function(){go('sh');};
+document.getElementById('b-s-next').onclick=function(){go('sa');};
+document.getElementById('b-a-back').onclick=function(){go('ss');};
+document.getElementById('b-a-start').onclick=function(){goSim();};
+document.getElementById('b-next').onclick=function(){simNext();};
+document.getElementById('b-tweak').onclick=function(){go('ss');};
+document.getElementById('b-fresh').onclick=function(){go('sw');};
+
+// ── INIT ─────────────────────────────────────────────────────────
+initSwatches();initSchedule();initActivities();initMedical();initFoods();
+var currentFoodItem='';
+</script>
+</body>
+</html>
