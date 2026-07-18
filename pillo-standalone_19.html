@@ -1940,40 +1940,22 @@ body.time-night .hero-mood-greeting {
     margin-bottom: 24px;
 }
 
-/* ===== BALLOON SCHOOL GAME SCREEN (fullscreen, own iframe) ===== */
-.balloon-screen {
-    background: linear-gradient(180deg, #EAF7F2 0%, #DDF1F7 100%) !important;
-    align-items: stretch;
-    justify-content: stretch;
-    padding: 0 !important;
-}
-
-.balloon-exit {
-    position: absolute;
-    top: 18px;
-    left: 18px;
-    background: rgba(255, 255, 255, 0.9);
-    border: 2px solid #98D8C8;
-    color: #1f6954;
-    font-weight: 700;
-    font-size: 0.9rem;
-    padding: 10px 20px;
+/* ===== BALLOON SCHOOL GAME SCREEN (contained modal, own iframe) ===== */
+.balloon-card {
+    background: #EAF7F2;
     border-radius: 20px;
-    cursor: pointer;
-    z-index: 10;
-    transition: transform 0.15s ease;
-}
-
-.balloon-exit:hover {
-    transform: scale(1.05);
+    padding: 16px;
+    width: min(760px, 94vw);
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
+    position: relative;
+    animation: sessionPop 0.35s ease;
 }
 
 .balloon-frame {
-    position: absolute;
-    inset: 0;
     width: 100%;
-    height: 100%;
+    aspect-ratio: 680 / 480;
     border: none;
+    border-radius: 12px;
     display: block;
 }
 
@@ -2644,10 +2626,12 @@ body.time-night .hero-mood-greeting {
             </div>
         </div>
 
-        <!-- Balloon School (featured game, fullscreen, own game+music in an iframe) -->
-        <div class="session-overlay balloon-screen" id="session-balloon">
-            <button class="balloon-exit" onclick="closeSession('balloon')">← Back to my Calming Pill</button>
-            <iframe class="balloon-frame" id="balloon-frame" title="Balloon School game" allow="autoplay"></iframe>
+        <!-- Balloon School (featured game, contained modal, own game+music in an iframe) -->
+        <div class="session-overlay" id="session-balloon">
+            <div class="balloon-card">
+                <button class="session-close" onclick="closeSession('balloon')" aria-label="Close">✕</button>
+                <iframe class="balloon-frame" id="balloon-frame" title="Balloon School game" allow="autoplay"></iframe>
+            </div>
         </div>
     </section>
 
@@ -4100,7 +4084,7 @@ function startBalloonGame() {
     // Lazy-load once; leaving it in the DOM after that means progress within
     // a visit (current level, score) survives closing and reopening the session.
     if (!balloonFrameLoaded) {
-        frame.src = 'balloon_school_20_embed.html';
+        frame.src = 'balloon_school_20.html';
         balloonFrameLoaded = true;
     }
 }
