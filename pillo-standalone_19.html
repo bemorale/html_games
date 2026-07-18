@@ -1,0 +1,4218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pillo's Calming Pill - Wellness & Self-Care</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='100' cy='100' r='95' fill='%23A8E6CF'/%3E%3Cpath d='M 20 145 C 60 135 140 155 180 145 L 180 200 L 20 200 Z' fill='%23BEE9DC'/%3E%3Cellipse cx='100' cy='125' rx='62' ry='42' fill='%238FD3BC' stroke='%234d8a72' stroke-width='4'/%3E%3Cg fill='%231a1a1a'%3E%3Ccircle cx='100' cy='72' r='17'/%3E%3Cpath d='M 84 94 C 84 86 116 86 116 94 L 120 128 C 120 137 80 137 80 128 Z'/%3E%3Cpath d='M 78 128 C 60 131 50 137 48 144 C 47 151 56 154 67 151 C 81 147 91 142 100 142 C 109 142 119 147 133 151 C 144 154 153 151 152 144 C 150 137 140 131 122 128 C 112 133 88 133 78 128 Z'/%3E%3C/g%3E%3C/svg%3E">
+    <style>
+/* ===== GENERAL STYLES ===== */
+:root {
+    --bg-1: #A8E6CF;
+    --bg-2: #98D8C8;
+    --bg-3: #B5E8D9;
+    --bg-transition: background 3s ease;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #1a1a1a;
+    background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
+    transition: var(--bg-transition);
+    min-height: 100vh;
+}
+
+/* Time-of-day ambient lighting — the page's mood shifts gently with the
+   visitor's local clock, like sunlight moving across a room */
+body.time-morning {
+    --bg-1: #FFE9C7;
+    --bg-2: #BFE8CE;
+    --bg-3: #FFF3E0;
+}
+
+body.time-evening {
+    --bg-1: #F5C6B8;
+    --bg-2: #9AD3C5;
+    --bg-3: #D9BEDD;
+}
+
+body.time-night {
+    --bg-1: #4A6572;
+    --bg-2: #35505C;
+    --bg-3: #5C7A87;
+}
+
+/* The hero sits directly on the body gradient (no opaque panel behind it,
+   unlike About/Interests/etc.), so its text needs to stay readable when
+   night mode darkens that gradient. Other sections are unaffected. */
+body.time-night .hero-title,
+body.time-night .hero-subtitle,
+body.time-night .hero-mood-greeting {
+    color: #F3F8F6;
+}
+
+/* ===== NAVIGATION BAR ===== */
+.navbar {
+    background: rgba(152, 216, 200, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 1rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.logo-svg {
+    width: 40px;
+    height: 40px;
+}
+
+.nav-menu {
+    display: flex;
+    list-style: none;
+    gap: 2rem;
+}
+
+.nav-link {
+    color: #1a1a1a;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+    color: #1f6954;
+}
+
+/* ===== HERO SECTION ===== */
+.hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-content {
+    text-align: center;
+    max-width: 700px;
+    z-index: 10;
+}
+
+.hero-title {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 20px;
+    line-height: 1.3;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.hero-subtitle {
+    font-size: 1.3rem;
+    color: #1f6954;
+    margin-bottom: 40px;
+    font-weight: 300;
+    line-height: 1.8;
+    letter-spacing: 0.5px;
+}
+
+.hero-mood-greeting {
+    display: inline-block;
+    font-size: 1.02rem;
+    color: #1f6954;
+    font-weight: 500;
+    margin-top: -16px;
+    margin-bottom: 30px;
+    font-style: italic;
+    background: rgba(255, 255, 255, 0.55);
+    padding: 10px 22px;
+    border-radius: 24px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.07);
+}
+
+/* Logo easter egg — click to make Pillo take a little breath */
+.logo-svg,
+.large-logo {
+    transition: transform 0.2s ease;
+}
+
+.logo-svg:hover,
+.large-logo:hover {
+    transform: scale(1.04);
+}
+
+.logo-svg.logo-breathe,
+.large-logo.logo-breathe {
+    animation: logoBreathe 2.2s ease-in-out;
+}
+
+@keyframes logoBreathe {
+    0%, 100% {
+        transform: scale(1);
+        filter: none;
+    }
+    50% {
+        transform: scale(1.22);
+        filter: drop-shadow(0 0 10px rgba(45, 138, 120, 0.55));
+    }
+}
+
+/* Fade-in letter animation */
+.fade-letter {
+    animation: fadeInLetter 0.4s ease-out forwards;
+    display: inline;
+    opacity: 0;
+}
+
+@keyframes fadeInLetter {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Simple block fade-in, used for the hero subtitle (too long for per-letter) */
+.fade-in-block {
+    opacity: 0;
+    animation: fadeInUp 0.9s ease-out both;
+}
+
+/* CTA Button */
+.cta-button {
+    padding: 16px 40px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: white;
+    background: linear-gradient(135deg, #2d8a78 0%, #1f6954 100%);
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    animation: fadeInUp 0.6s ease-out 0.4s both;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.cta-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.cta-button:active {
+    transform: translateY(-1px);
+}
+
+/* Decorative background elements */
+.bg-leaf {
+    position: absolute;
+    opacity: 0.1;
+    z-index: 1;
+}
+
+.bg-leaf-1 {
+    top: 10%;
+    left: 5%;
+    width: 200px;
+    height: 200px;
+    transform: rotate(-30deg);
+}
+
+.bg-leaf-2 {
+    bottom: 10%;
+    right: 5%;
+    width: 250px;
+    height: 250px;
+    transform: rotate(40deg);
+}
+
+/* Soft floating particles for extra depth in the hero */
+.hero-particles {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.particle {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0));
+    animation: floatParticle 10s ease-in-out infinite;
+}
+
+.p1 { width: 14px; height: 14px; top: 22%; left: 15%; animation-delay: 0s; animation-duration: 9s; }
+.p2 { width: 9px; height: 9px; top: 65%; left: 22%; animation-delay: 1.5s; animation-duration: 11s; }
+.p3 { width: 11px; height: 11px; top: 30%; right: 18%; animation-delay: 0.7s; animation-duration: 10s; }
+.p4 { width: 7px; height: 7px; top: 75%; right: 28%; animation-delay: 2.2s; animation-duration: 8s; }
+.p5 { width: 16px; height: 16px; top: 50%; left: 48%; animation-delay: 1.1s; animation-duration: 12s; }
+
+@keyframes floatParticle {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+        opacity: 0.5;
+    }
+    50% {
+        transform: translateY(-24px) scale(1.15);
+        opacity: 0.9;
+    }
+}
+
+/* ===== SECTION DECORATION (wave transitions + corner sprigs) ===== */
+.wave-divider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 50px;
+    z-index: 2;
+    pointer-events: none;
+    line-height: 0;
+}
+
+.wave-divider svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.corner-sprig {
+    position: absolute;
+    width: 70px;
+    height: 70px;
+    opacity: 0.55;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.sprig-tl {
+    top: 20px;
+    left: 20px;
+    transform: rotate(-15deg);
+}
+
+.sprig-tr {
+    top: 20px;
+    right: 20px;
+    transform: rotate(105deg) scaleX(-1);
+}
+
+.sprig-bl {
+    bottom: 20px;
+    left: 20px;
+    transform: rotate(-105deg) scaleX(-1);
+}
+
+.sprig-br {
+    bottom: 20px;
+    right: 20px;
+    transform: rotate(195deg) scaleX(-1);
+}
+
+/* Exercises section decorations sit below the wall-band, near the grid */
+.exercises-sprig {
+    top: 510px;
+    opacity: 0.55;
+    z-index: 0;
+}
+
+.exercises-particles {
+    position: absolute;
+    top: 520px;
+    left: 0;
+    width: 100%;
+    height: 520px;
+    z-index: 0;
+}
+
+/* ===== ABOUT SECTION ===== */
+.about {
+    background: linear-gradient(180deg, #DFF2EA 0%, #FAFDFB 45%, #FDF6EC 100%);
+    padding: 80px 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.about-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 3;
+}
+
+.section-title {
+    font-size: 2.5rem;
+    color: #1a1a1a;
+    text-align: center;
+    margin-bottom: 50px;
+    font-weight: 700;
+}
+
+.about-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: center;
+}
+
+.about-text p {
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+    color: #333;
+    line-height: 1.8;
+}
+
+.intro-text {
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: #1f6954;
+}
+
+.about-visual {
+    display: flex;
+    justify-content: center;
+}
+
+.large-logo {
+    width: 250px;
+    height: 250px;
+    filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.15));
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
+}
+
+/* ===== INTERESTS SECTION ===== */
+.interests {
+    background: linear-gradient(180deg, #FDF6EC 0%, #FFF6EA 40%, #EDF7F0 100%);
+    padding: 80px 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.interests-container {
+    max-width: 800px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 3;
+}
+
+.interests-list {
+    display: flex;
+    flex-direction: column;
+    gap: 34px;
+    margin-top: 10px;
+}
+
+.interest-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 22px;
+    text-align: left;
+}
+
+.interest-emoji {
+    font-size: 2.6rem;
+    line-height: 1;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.65);
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+.interest-body h4 {
+    font-size: 1.35rem;
+    color: #1f6954;
+    margin-bottom: 8px;
+    letter-spacing: 0.3px;
+}
+
+.interest-body p {
+    font-size: 1.15rem;
+    color: #333;
+    line-height: 1.9;
+    letter-spacing: 0.3px;
+}
+
+/* ===== EXERCISES SECTION ===== */
+.exercises {
+    padding: 0 0 280px;
+    background: linear-gradient(135deg, rgba(168, 230, 207, 0.3), rgba(152, 216, 200, 0.3));
+    position: relative;
+    overflow: hidden;
+}
+
+.exercises-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 50px 20px 0;
+    position: relative;
+    z-index: 1;
+}
+
+/* Decorative plant windowsill along the bottom of the section */
+.windowsill-bg {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 260px;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.windowsill-bg svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* ===== WALL WITH HANGING MOOD CALENDAR ===== */
+.wall-band {
+    background: #EFE6D8;
+    background-image: repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.015) 0px, rgba(0, 0, 0, 0.015) 2px, transparent 2px, transparent 40px);
+    padding: 50px 20px 46px;
+    display: flex;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+}
+
+.wall-calendar-wrap {
+    position: relative;
+    padding-top: 34px;
+    text-align: center;
+}
+
+.nail {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #8a7a63;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 8px;
+}
+
+.string {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    width: 1px;
+    height: 26px;
+    background: #8a7a63;
+    transform: translateX(-50%) rotate(2deg);
+}
+
+.wall-calendar {
+    width: 320px;
+    max-width: 84vw;
+    background: #fffdf8;
+    border-radius: 10px;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.15);
+    transform: rotate(-1.4deg);
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    text-align: left;
+    touch-action: none;
+}
+
+.wall-calendar-hint {
+    margin-top: 14px;
+    font-size: 0.85rem;
+    color: #8a7a63;
+}
+
+.cal-header {
+    background: linear-gradient(135deg, #2d8a78 0%, #1f6954 100%);
+    color: white;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+.cal-nav-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s ease;
+}
+
+.cal-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.cal-nav-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.cal-body {
+    padding: 14px 14px 18px;
+}
+
+.cal-weekdays,
+.cal-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    text-align: center;
+}
+
+.cal-weekdays div {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #999;
+    padding-bottom: 6px;
+}
+
+.cal-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    color: #444;
+    cursor: pointer;
+    background: #f6f3ec;
+    border: none;
+    font-family: inherit;
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.cal-day:hover:not(.future):not(.empty):not(.past-readonly) {
+    transform: scale(1.08);
+    background: #eae4d5;
+}
+
+.cal-day.today {
+    outline: 2px solid #2d8a78;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.cal-day.has-mood {
+    font-size: 1.05rem;
+}
+
+.cal-day.future {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.cal-day.past-readonly {
+    cursor: default;
+}
+
+.cal-day.empty {
+    background: transparent;
+    cursor: default;
+}
+
+/* Subtle page-turn feel when the month changes */
+.wall-calendar.flipping {
+    animation: pageFlip 0.4s ease;
+}
+
+@keyframes pageFlip {
+    0% {
+        opacity: 1;
+        transform: rotate(-1.4deg) translateY(0);
+    }
+    40% {
+        opacity: 0.45;
+        transform: rotate(-1.4deg) translateY(-8px);
+    }
+    100% {
+        opacity: 1;
+        transform: rotate(-1.4deg) translateY(0);
+    }
+}
+
+.cal-picker {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid #eee;
+    animation: slideDown 0.25s ease-out;
+}
+
+.cal-picker-date {
+    font-weight: 600;
+    color: #1f6954;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+}
+
+.cal-picker-emojis {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.cal-picker-emojis button {
+    font-size: 1.4rem;
+    background: #f6f3ec;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    width: 42px;
+    height: 42px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.cal-picker-emojis button:hover {
+    transform: scale(1.1);
+}
+
+.cal-picker-emojis button.selected {
+    border-color: #2d8a78;
+    background: #e3f3ee;
+}
+
+.cal-picker-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cal-picker-clear {
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 0.85rem;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.cal-picker-close {
+    background: linear-gradient(135deg, #2d8a78 0%, #1f6954 100%);
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 16px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.section-subtitle {
+    text-align: center;
+    font-size: 1.2rem;
+    color: #1f6954;
+    margin-bottom: 50px;
+}
+
+/* Exercise Grid */
+.exercise-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    margin-bottom: 50px;
+}
+
+/* Exercise Card */
+.exercise-card {
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border: 2px solid transparent;
+}
+
+.exercise-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    border-color: #98D8C8;
+}
+
+.exercise-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+
+.exercise-card h3 {
+    font-size: 1.5rem;
+    color: #1a1a1a;
+    margin-bottom: 10px;
+}
+
+.exercise-card p {
+    color: #666;
+    margin-bottom: 15px;
+}
+
+/* Journal Textarea (reused inside session reflection flows) */
+.journal-textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 15px;
+    border: 2px solid #98D8C8;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 1rem;
+    resize: vertical;
+    margin-bottom: 10px;
+}
+
+.journal-textarea:focus {
+    outline: none;
+    border-color: #2d8a78;
+    box-shadow: 0 0 8px rgba(152, 216, 200, 0.3);
+}
+
+.start-timer-btn {
+    background: linear-gradient(135deg, #2d8a78 0%, #1f6954 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    width: 100%;
+    margin-top: 5px;
+}
+
+.start-timer-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(45, 138, 120, 0.3);
+}
+
+.start-timer-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+    transform: none;
+}
+
+/* ===== SESSION OVERLAYS (full-screen, enter/exit anytime) ===== */
+.session-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 40, 35, 0.55);
+    backdrop-filter: blur(8px);
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.session-overlay.active {
+    opacity: 1;
+}
+
+.session-card {
+    background: white;
+    border-radius: 24px;
+    padding: 45px 40px;
+    max-width: 480px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
+    animation: sessionPop 0.35s ease;
+}
+
+@keyframes sessionPop {
+    from {
+        opacity: 0;
+        transform: scale(0.94) translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.session-card h3 {
+    font-size: 1.7rem;
+    color: #1a1a1a;
+    margin-bottom: 10px;
+}
+
+.session-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: #f0f0f0;
+    color: #555;
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+    transition: all 0.2s ease;
+}
+
+.session-close:hover {
+    background: #e2e2e2;
+    transform: rotate(90deg);
+}
+
+.session-hint {
+    color: #777;
+    font-size: 0.95rem;
+    margin: 10px 0 20px;
+}
+
+.pillo-note {
+    font-style: italic;
+    color: #2d8a78;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 12px auto 6px;
+    max-width: 380px;
+    text-align: center;
+    opacity: 0;
+    animation: fadeInUp 0.9s ease-out 0.5s both;
+}
+
+.pillo-signature {
+    display: block;
+    font-style: normal;
+    font-size: 0.8rem;
+    color: #8a7a63;
+    margin-top: 4px;
+}
+
+.exercise-quote {
+    font-style: italic;
+    color: #5a6b63;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    margin: 4px auto 6px;
+    padding-top: 12px;
+    max-width: 380px;
+    text-align: center;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    opacity: 0;
+    animation: fadeInUp 0.9s ease-out 0.9s both;
+}
+
+.quote-author {
+    display: block;
+    font-style: normal;
+    font-size: 0.78rem;
+    color: #999;
+    margin-top: 4px;
+}
+
+.session-controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.session-btn {
+    background: linear-gradient(135deg, #2d8a78 0%, #1f6954 100%);
+    color: white;
+    border: none;
+    padding: 12px 26px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.session-btn:hover {
+    transform: scale(1.05);
+}
+
+.session-btn.secondary {
+    background: #eef7f4;
+    color: #1f6954;
+}
+
+/* ===== BREATHING VISUAL ===== */
+.breathing-visual {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    margin: 20px auto 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.breathing-circle {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 32% 30%, #7AC9B0, #1f6954);
+    box-shadow: 0 0 45px rgba(45, 138, 120, 0.45);
+    transform: scale(1);
+    transition: transform 4s ease-in-out;
+}
+
+.breathing-circle.grow {
+    transform: scale(1.7);
+}
+
+.breathing-text {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: white;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.breathing-phase {
+    font-size: 1.15rem;
+    font-weight: 700;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+}
+
+.breathing-count {
+    font-size: 1.6rem;
+    font-weight: 700;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+}
+
+/* ===== STEP-BASED SESSIONS (Stretching / Meditation) ===== */
+.step-progress {
+    color: #1f6954;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.step-display {
+    background: rgba(168, 230, 207, 0.15);
+    border-radius: 16px;
+    padding: 30px 20px;
+    margin-bottom: 20px;
+}
+
+.step-name {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 10px;
+}
+
+.step-instruction {
+    color: #444;
+    margin-bottom: 20px;
+}
+
+.step-timer {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #2d8a78;
+    font-family: 'Courier New', monospace;
+}
+
+/* ===== REFLECTION FLOWS (Gratitude / Journal / Jar) ===== */
+.reflection-flow {
+    text-align: left;
+    margin-top: 10px;
+}
+
+.reflection-block {
+    margin-bottom: 20px;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.reflection-question {
+    font-weight: 600;
+    color: #1f6954;
+    margin-bottom: 10px;
+    font-size: 1.05rem;
+}
+
+.reflection-done {
+    text-align: center;
+    color: #1f6954;
+    font-weight: 600;
+    margin: 15px 0;
+}
+
+.journal-history {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e5e5;
+}
+
+.journal-history-title {
+    font-weight: 600;
+    color: #1f6954;
+    margin-bottom: 12px;
+}
+
+.journal-entry {
+    background: rgba(168, 230, 207, 0.15);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+}
+
+.journal-entry-date {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #2d8a78;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.journal-entry p {
+    color: #333;
+    font-size: 0.92rem;
+}
+
+.journal-clear {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 0.85rem;
+    text-decoration: underline;
+    cursor: pointer;
+    margin-top: 6px;
+    padding: 4px 0;
+}
+
+.journal-clear:hover {
+    color: #555;
+}
+
+/* ===== CALM TIMELINE (freeform, running list) ===== */
+.timeline-list {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #eee;
+    text-align: left;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.timeline-empty {
+    color: #999;
+    font-style: italic;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+/* ===== GRATITUDE JAR (freely add/remove) ===== */
+.jar-list {
+    margin-top: 18px;
+    max-height: 260px;
+    overflow-y: auto;
+    text-align: left;
+}
+
+.jar-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: rgba(168, 230, 207, 0.15);
+    border-radius: 10px;
+    padding: 10px 12px 10px 14px;
+    margin-bottom: 8px;
+    animation: slideDown 0.25s ease-out;
+}
+
+.jar-item-text {
+    color: #333;
+    font-size: 0.92rem;
+    flex: 1;
+    word-break: break-word;
+}
+
+.jar-item-remove {
+    background: none;
+    border: none;
+    color: #b0574a;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 5px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    transition: background 0.15s ease;
+}
+
+.jar-item-remove:hover {
+    background: rgba(176, 87, 74, 0.12);
+}
+
+.timeline-entry {
+    position: relative;
+    padding-left: 20px;
+    padding-bottom: 18px;
+    border-left: 2px solid #cdeee2;
+}
+
+.timeline-entry:last-child {
+    border-left-color: transparent;
+    padding-bottom: 0;
+}
+
+.timeline-entry::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #2d8a78;
+}
+
+.timeline-entry-date {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #2d8a78;
+    margin-bottom: 4px;
+}
+
+.timeline-entry p {
+    color: #333;
+    font-size: 0.92rem;
+    white-space: pre-wrap;
+}
+
+/* ===== LETTER TO FUTURE SELF ===== */
+.capsule-form label {
+    display: block;
+    text-align: left;
+    font-weight: 600;
+    color: #1f6954;
+    margin: 14px 0 6px;
+    font-size: 0.9rem;
+}
+
+.capsule-date-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid #98D8C8;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 1rem;
+    margin-bottom: 6px;
+}
+
+.capsule-date-input:focus {
+    outline: none;
+    border-color: #2d8a78;
+}
+
+.capsule-hint {
+    font-size: 0.8rem;
+    color: #888;
+    text-align: left;
+    margin-bottom: 6px;
+}
+
+.capsule-locked {
+    text-align: center;
+    padding: 20px 10px;
+}
+
+.capsule-lock-icon {
+    font-size: 2.8rem;
+    margin-bottom: 12px;
+}
+
+.capsule-locked h4 {
+    color: #1a1a1a;
+    margin-bottom: 8px;
+}
+
+.capsule-locked p {
+    color: #666;
+    font-size: 0.92rem;
+    margin-bottom: 4px;
+}
+
+.capsule-unlocked {
+    text-align: left;
+}
+
+.capsule-unlocked-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #98D8C8 0%, #7AC9B0 100%);
+    color: #1a1a1a;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.capsule-letter-text {
+    background: rgba(168, 230, 207, 0.15);
+    border-radius: 10px;
+    padding: 16px;
+    white-space: pre-wrap;
+    color: #333;
+    line-height: 1.6;
+    margin-bottom: 14px;
+}
+
+.capsule-list-item {
+    background: rgba(168, 230, 207, 0.15);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+.capsule-list-item .capsule-item-status {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.capsule-list-item .capsule-item-status.locked-status { color: #b8873f; }
+.capsule-list-item .capsule-item-status.unlocked-status { color: #2d8a78; }
+
+.capsule-list-item .capsule-item-date {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 2px;
+}
+
+/* ===== CONTACT SECTION ===== */
+.contact {
+    background: linear-gradient(180deg, #E9F5EE 0%, #F6FBF8 55%, #DCEFE7 100%);
+    padding: 80px 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.contact-container {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+    position: relative;
+    z-index: 3;
+}
+
+.contact-content {
+    margin-top: 40px;
+}
+
+.contact-content p {
+    font-size: 1.1rem;
+    color: #333;
+    margin-bottom: 30px;
+}
+
+.contact-links {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.contact-thanks {
+    margin-top: 30px !important;
+    margin-bottom: 0 !important;
+    font-size: 1.05rem !important;
+    color: #1f6954 !important;
+    font-weight: 500;
+}
+
+.contact-link {
+    background: linear-gradient(135deg, #98D8C8 0%, #7AC9B0 100%);
+    color: #1a1a1a;
+    padding: 12px 30px;
+    border-radius: 20px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.contact-link:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== FOOTER ===== */
+.footer {
+    background: rgba(152, 216, 200, 0.9);
+    color: #1a1a1a;
+    text-align: center;
+    padding: 32px 20px 20px;
+    font-weight: 500;
+    position: relative;
+    overflow: hidden;
+}
+
+.footer p {
+    position: relative;
+    z-index: 3;
+}
+
+/* ===== AMBIENT AUDIO WIDGET ===== */
+.ambient-audio-widget {
+    position: fixed;
+    bottom: 22px;
+    right: 22px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    border-radius: 30px;
+    padding: 8px 14px 8px 8px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    z-index: 3000;
+}
+
+.audio-toggle-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #2d8a78 0%, #1f6954 100%);
+    color: white;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.audio-toggle-btn:hover {
+    transform: scale(1.08);
+}
+
+.audio-toggle-btn.pulse-hint {
+    animation: audioPulseHint 2.4s ease-in-out infinite;
+}
+
+@keyframes audioPulseHint {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(45, 138, 120, 0.45);
+    }
+    50% {
+        box-shadow: 0 0 0 9px rgba(45, 138, 120, 0);
+    }
+}
+
+.audio-volume-slider {
+    width: 80px;
+    accent-color: #2d8a78;
+    cursor: pointer;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2.5rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1.1rem;
+    }
+
+    .nav-menu {
+        gap: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .about-content {
+        grid-template-columns: 1fr;
+    }
+
+    .large-logo {
+        width: 200px;
+        height: 200px;
+    }
+
+    .section-title {
+        font-size: 2rem;
+    }
+
+    .exercise-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .session-card {
+        padding: 35px 24px;
+    }
+
+    .breathing-visual {
+        width: 180px;
+        height: 180px;
+    }
+
+    .breathing-circle {
+        width: 90px;
+        height: 90px;
+    }
+
+    .session-controls {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-title {
+        font-size: 1.8rem;
+    }
+
+    .hero {
+        min-height: auto;
+        padding: 20px;
+    }
+
+    .nav-menu {
+        gap: 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    .logo {
+        font-size: 1rem;
+    }
+
+    .logo-svg {
+        width: 30px;
+        height: 30px;
+    }
+
+    .about {
+        padding: 40px 20px;
+    }
+
+    .exercises {
+        padding: 0 0 220px;
+    }
+
+    .exercises-container {
+        padding: 30px 20px 0;
+    }
+
+    .wall-band {
+        padding: 30px 16px 30px;
+    }
+
+    .windowsill-bg {
+        height: 200px;
+    }
+
+    .ambient-audio-widget {
+        bottom: 14px;
+        right: 14px;
+        padding: 6px 10px 6px 6px;
+    }
+
+    .audio-toggle-btn {
+        width: 34px;
+        height: 34px;
+        font-size: 1rem;
+    }
+
+    .audio-volume-slider {
+        width: 56px;
+    }
+
+    .cta-button {
+        padding: 12px 24px;
+        font-size: 1rem;
+    }
+
+    .contact-links {
+        flex-direction: column;
+    }
+
+    .contact-link {
+        width: 100%;
+    }
+}
+
+/* ===== REDUCED MOTION SUPPORT ===== */
+/* Some people find heavy animation the opposite of calming, and their
+   browser/OS lets them ask pages not to animate. We honor that here by
+   disabling all decorative animation. The breathing circle's guide is
+   intentionally kept, since it IS the exercise — but its motion is slowed
+   and softened elsewhere in the cascade if needed. */
+@media (prefers-reduced-motion: reduce) {
+
+    html {
+        scroll-behavior: auto;
+    }
+
+    body {
+        transition: none;
+    }
+
+    .fade-letter,
+    .fade-in-block,
+    .hero-mood-greeting,
+    .cta-button,
+    .pillo-note,
+    .exercise-quote {
+        animation: none !important;
+        opacity: 1 !important;
+    }
+
+    .particle,
+    .hero-particles,
+    .exercises-particles {
+        display: none;
+    }
+
+    .large-logo {
+        animation: none;
+    }
+
+    .logo-breathe {
+        animation: none;
+    }
+
+    .logo-svg,
+    .large-logo,
+    .cal-day,
+    .cal-picker-emojis button,
+    .exercise-card,
+    .audio-toggle-btn,
+    .contact-link {
+        transition: none;
+    }
+
+    .wall-calendar.flipping {
+        animation: none;
+    }
+
+    .cal-picker {
+        animation: none;
+    }
+
+    .jar-item {
+        animation: none;
+    }
+
+    .audio-toggle-btn.pulse-hint {
+        animation: none;
+    }
+}
+
+/* ===== BUBBLE POP MINI-GAME ===== */
+.bubbles-card {
+    max-width: 520px;
+}
+
+.bubble-arena {
+    position: relative;
+    height: 340px;
+    margin-top: 14px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(168, 230, 207, 0.25), rgba(152, 216, 200, 0.45));
+    overflow: hidden;
+}
+
+.bubble {
+    position: absolute;
+    bottom: -60px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.85);
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9), rgba(190, 233, 220, 0.35));
+    cursor: pointer;
+    padding: 0;
+    animation: bubbleRise linear forwards;
+    transition: transform 0.1s ease;
+}
+
+.bubble:hover {
+    transform: scale(1.1);
+}
+
+.bubble.popping {
+    animation: bubblePopAnim 0.2s ease-out forwards;
+}
+
+@keyframes bubbleRise {
+    from { bottom: -60px; }
+    to { bottom: 105%; }
+}
+
+@keyframes bubblePopAnim {
+    to {
+        transform: scale(1.6);
+        opacity: 0;
+    }
+}
+
+.bubble-count {
+    margin-top: 12px;
+    color: #1f6954;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* ===== MY CALM PLANT ===== */
+.plant-stage-emoji {
+    font-size: 5rem;
+    margin: 18px 0 6px;
+    animation: float 3.5s ease-in-out infinite;
+}
+
+.plant-stage-name {
+    font-weight: 700;
+    color: #1f6954;
+    font-size: 1.15rem;
+    margin-bottom: 8px;
+}
+
+.plant-message {
+    color: #444;
+    font-size: 0.95rem;
+    max-width: 340px;
+    margin: 0 auto 16px;
+    line-height: 1.6;
+}
+
+.plant-days {
+    color: #333;
+    font-size: 0.92rem;
+    margin-bottom: 6px;
+}
+
+.plant-progress {
+    color: #2d8a78;
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .plant-stage-emoji {
+        animation: none;
+    }
+    .bubble {
+        animation-duration: 14s !important;
+    }
+}
+
+/* ===== 5-4-3-2-1 GROUNDING ===== */
+.grounding-step {
+    padding: 10px 0 4px;
+}
+
+.grounding-emoji {
+    font-size: 3.4rem;
+    margin-bottom: 10px;
+}
+
+.grounding-sense {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f6954;
+    margin-bottom: 10px;
+    letter-spacing: 0.4px;
+}
+
+.grounding-count {
+    display: inline-block;
+    background: linear-gradient(135deg, #2d8a78 0%, #1f6954 100%);
+    color: white;
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    border-radius: 50%;
+    font-size: 1.3rem;
+    margin-right: 6px;
+}
+
+.grounding-prompt {
+    color: #444;
+    font-size: 1rem;
+    line-height: 1.7;
+    max-width: 360px;
+    margin: 0 auto 20px;
+}
+
+/* Interests rows stack on small screens */
+@media (max-width: 480px) {
+    .interest-item {
+        gap: 14px;
+    }
+    .interest-emoji {
+        font-size: 2rem;
+        padding: 10px;
+    }
+    .interest-body h4 {
+        font-size: 1.15rem;
+    }
+    .interest-body p {
+        font-size: 1.02rem;
+    }
+}
+
+/* ===== FEATURED PROJECT: BALLOON SCHOOL ===== */
+.featured-project {
+    margin-top: 44px;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    background: linear-gradient(120deg, #E3F4FB 0%, #EAF7F2 60%, #FDF6EC 100%);
+    border: 2px dashed #9CCFE0;
+    border-radius: 22px;
+    padding: 26px 32px;
+    cursor: pointer;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.featured-project:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.1);
+}
+
+.featured-balloon-art {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    flex-shrink: 0;
+}
+
+.featured-balloon {
+    font-size: 4rem;
+    position: absolute;
+    left: 22px;
+    top: 14px;
+    animation: float 3s ease-in-out infinite;
+}
+
+.featured-cloud {
+    position: absolute;
+    font-size: 1.5rem;
+    opacity: 0.8;
+}
+
+.featured-cloud.c1 { top: 0; right: 0; }
+.featured-cloud.c2 { bottom: 4px; left: 0; font-size: 1.1rem; }
+
+.featured-text {
+    text-align: left;
+}
+
+.featured-tag {
+    display: inline-block;
+    background: #FFE9C7;
+    color: #8a6a2f;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 12px;
+    margin-bottom: 8px;
+}
+
+.featured-text h3 {
+    font-size: 1.6rem;
+    color: #1a1a1a;
+    margin-bottom: 6px;
+}
+
+.featured-text p {
+    color: #444;
+    font-size: 0.98rem;
+    line-height: 1.6;
+    max-width: 560px;
+}
+
+.featured-play {
+    display: inline-block;
+    margin-top: 12px;
+    background: linear-gradient(135deg, #6FBFDD 0%, #4A9BBD 100%);
+    color: white;
+    font-weight: 700;
+    padding: 9px 26px;
+    border-radius: 20px;
+    font-size: 0.95rem;
+}
+
+/* ===== FUN GAMES SECTION (inside My Projects) ===== */
+.fun-games-section {
+    margin-top: 54px;
+    padding-top: 40px;
+    border-top: 1px dashed rgba(31, 105, 84, 0.2);
+}
+
+.fun-games-title {
+    font-size: 1.5rem;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.fun-games-subtitle {
+    color: #557a6e;
+    font-size: 1rem;
+    margin-bottom: 24px;
+}
+
+/* ===== BALLOON SCHOOL GAME SCREEN (fullscreen, own iframe) ===== */
+.balloon-screen {
+    background: linear-gradient(180deg, #EAF7F2 0%, #DDF1F7 100%) !important;
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 0 !important;
+}
+
+.balloon-exit {
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid #98D8C8;
+    color: #1f6954;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    z-index: 10;
+    transition: transform 0.15s ease;
+}
+
+.balloon-exit:hover {
+    transform: scale(1.05);
+}
+
+.balloon-frame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
+
+</style>
+</head>
+<body>
+    <!-- ===== NAVIGATION ===== -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <svg class="logo-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <clipPath id="frameClip-nav">
+                            <circle cx="100" cy="100" r="93"/>
+                        </clipPath>
+                        <linearGradient id="leafGrad-nav" x1="15%" y1="10%" x2="90%" y2="95%">
+                            <stop offset="0%" stop-color="#BFEEDD"/>
+                            <stop offset="55%" stop-color="#8FD3BC"/>
+                            <stop offset="100%" stop-color="#4f9d81"/>
+                        </linearGradient>
+                        <linearGradient id="waterGrad-nav" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#DFF6EE"/>
+                            <stop offset="100%" stop-color="#BEE9DC"/>
+                        </linearGradient>
+                        <radialGradient id="shadowGrad-nav" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#1a1a1a" stop-opacity="0.2"/>
+                            <stop offset="100%" stop-color="#1a1a1a" stop-opacity="0"/>
+                        </radialGradient>
+                    </defs>
+                    <circle cx="100" cy="100" r="95" fill="none" stroke="#98D8C8" stroke-width="3"/>
+                    <g clip-path="url(#frameClip-nav)">
+                        <path d="M 0 160 C 30 150 55 168 90 158 C 125 148 150 166 200 156 L 200 200 L 0 200 Z" fill="url(#waterGrad-nav)"/>
+                        <path d="M 0 172 C 35 165 60 178 100 170 C 140 163 165 176 200 168" fill="none" stroke="#BEE9DC" stroke-width="2" opacity="0.9"/>
+                        <path d="M 0 184 C 40 178 70 190 110 183 C 150 176 175 187 200 181" fill="none" stroke="#cdeee2" stroke-width="2" opacity="0.8"/>
+                        <g transform="rotate(-16 100 118)">
+                            <path d="M 100 55 C 148 55 180 88 178 122 C 176 152 150 166 118 163 C 110 163 104 158 100 152 C 96 158 90 163 82 163 C 50 166 24 152 22 122 C 20 88 52 55 100 55 Z"
+                                  fill="url(#leafGrad-nav)" stroke="#4d8a72" stroke-width="2.5"/>
+                            <ellipse cx="76" cy="80" rx="32" ry="20" fill="#ffffff" opacity="0.25" transform="rotate(-25 76 80)"/>
+                            <g stroke="#4d8a72" stroke-width="1.4" opacity="0.5" fill="none">
+                                <path d="M 100 152 L 100 64"/>
+                                <path d="M 100 142 L 58 90"/>
+                                <path d="M 100 142 L 142 90"/>
+                                <path d="M 100 147 L 38 118"/>
+                                <path d="M 100 147 L 162 118"/>
+                                <path d="M 100 152 L 55 145"/>
+                                <path d="M 100 152 L 145 145"/>
+                            </g>
+                        </g>
+                        <ellipse cx="106" cy="167" rx="56" ry="8" fill="url(#shadowGrad-nav)"/>
+                        <g fill="#1a1a1a" transform="translate(7,-3)">
+                            <circle cx="100" cy="74" r="11"/>
+                            <path d="M 90 88 C 90 82 110 82 110 88 L 113 126 C 113 133 87 133 87 126 Z"/>
+                            <path d="M 85 126 C 72 128 64 133 62 139 C 61 144 67 147 75 145 C 85 142 92 138 100 138 C 108 138 115 142 125 145 C 133 147 139 144 138 139 C 136 133 128 128 115 126 C 108 130 92 130 85 126 Z"/>
+                            <path d="M 90 90 C 80 96 73 108 70 121" fill="none" stroke="#1a1a1a" stroke-width="5" stroke-linecap="round"/>
+                            <circle cx="69" cy="122" r="4.5"/>
+                            <path d="M 110 90 C 120 96 127 108 130 121" fill="none" stroke="#1a1a1a" stroke-width="5" stroke-linecap="round"/>
+                            <circle cx="131" cy="122" r="4.5"/>
+                        </g>
+                    </g>
+                </svg>
+                <span>Pillo</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#home" class="nav-link">Home</a></li>
+                <li><a href="#about" class="nav-link">About</a></li>
+                <li><a href="#interests" class="nav-link">Interests</a></li>
+                <li><a href="#exercises" class="nav-link">Projects</a></li>
+                <li><a href="#contact" class="nav-link">Contact</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- ===== HERO/HOME SECTION ===== -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                <span class="fade-letter" style="animation-delay: 0s;">W</span><span class="fade-letter" style="animation-delay: 0.1s;">e</span><span class="fade-letter" style="animation-delay: 0.2s;">l</span><span class="fade-letter" style="animation-delay: 0.3s;">c</span><span class="fade-letter" style="animation-delay: 0.4s;">o</span><span class="fade-letter" style="animation-delay: 0.5s;">m</span><span class="fade-letter" style="animation-delay: 0.6s;">e</span><span class="fade-letter" style="animation-delay: 0.7s;"> </span><span class="fade-letter" style="animation-delay: 0.8s;">t</span><span class="fade-letter" style="animation-delay: 0.9s;">o</span><span class="fade-letter" style="animation-delay: 1s;"> </span><span class="fade-letter" style="animation-delay: 1.1s;">P</span><span class="fade-letter" style="animation-delay: 1.2s;">i</span><span class="fade-letter" style="animation-delay: 1.3s;">l</span><span class="fade-letter" style="animation-delay: 1.4s;">l</span><span class="fade-letter" style="animation-delay: 1.5s;">o</span><span class="fade-letter" style="animation-delay: 1.6s;">'</span><span class="fade-letter" style="animation-delay: 1.7s;">s</span><span class="fade-letter" style="animation-delay: 1.8s;"> </span><span class="fade-letter" style="animation-delay: 1.9s;">C</span><span class="fade-letter" style="animation-delay: 2s;">a</span><span class="fade-letter" style="animation-delay: 2.1s;">l</span><span class="fade-letter" style="animation-delay: 2.2s;">m</span><span class="fade-letter" style="animation-delay: 2.3s;">i</span><span class="fade-letter" style="animation-delay: 2.4s;">n</span><span class="fade-letter" style="animation-delay: 2.5s;">g</span><span class="fade-letter" style="animation-delay: 2.6s;"> </span><span class="fade-letter" style="animation-delay: 2.7s;">P</span><span class="fade-letter" style="animation-delay: 2.8s;">i</span><span class="fade-letter" style="animation-delay: 2.9s;">l</span><span class="fade-letter" style="animation-delay: 3s;">l</span>
+            </h1>
+            <p class="hero-subtitle fade-in-block" style="animation-delay: 3.2s;">
+                Whether you've had lots of energy, worried moments, or simply want a quiet break, this website is here to help you slow down, take a deep breath, and enjoy your own peaceful self-moment.
+            </p>
+            <button class="cta-button" style="animation-delay: 0.4s;" onclick="scrollToExercises()">Start Your Calm Break</button>
+        </div>
+        <!-- Decorative background elements -->
+        <svg class="bg-leaf bg-leaf-1" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 100 20 Q 140 30 150 80 Q 140 120 100 130 Q 60 120 50 80 Q 60 30 100 20" fill="#98D8C8" opacity="0.2" stroke="#7AC9B0" stroke-width="2"/>
+        </svg>
+        <svg class="bg-leaf bg-leaf-2" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 100 20 Q 140 30 150 80 Q 140 120 100 130 Q 60 120 50 80 Q 60 30 100 20" fill="#98D8C8" opacity="0.2" stroke="#7AC9B0" stroke-width="2"/>
+        </svg>
+        <div class="hero-particles" aria-hidden="true">
+            <span class="particle p1"></span>
+            <span class="particle p2"></span>
+            <span class="particle p3"></span>
+            <span class="particle p4"></span>
+            <span class="particle p5"></span>
+        </div>
+    </section>
+
+    <!-- ===== ABOUT SECTION ===== -->
+    <section id="about" class="about">
+        <div class="wave-divider" aria-hidden="true">
+            <svg viewBox="0 0 1440 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0,30 C240,58 480,2 720,22 C960,42 1200,8 1440,30 L1440,0 L0,0 Z" style="fill: var(--bg-2);"/>
+            </svg>
+        </div>
+        <svg class="corner-sprig sprig-tl" viewBox="0 0 60 60" aria-hidden="true">
+            <path d="M30 55 C30 40 30 25 30 10" stroke="#4d8a72" stroke-width="1.5" fill="none"/>
+            <path d="M30 40 C20 35 12 28 10 18 C18 20 26 26 30 35" fill="#8FD3BC"/>
+            <path d="M30 30 C40 25 48 18 50 8 C42 10 34 16 30 25" fill="#A8E6CF"/>
+            <path d="M30 20 C22 16 16 10 15 3 C22 5 28 10 30 16" fill="#7AC9B0"/>
+        </svg>
+        <svg class="corner-sprig sprig-br" viewBox="0 0 60 60" aria-hidden="true">
+            <path d="M30 55 C30 40 30 25 30 10" stroke="#4d8a72" stroke-width="1.5" fill="none"/>
+            <path d="M30 40 C20 35 12 28 10 18 C18 20 26 26 30 35" fill="#8FD3BC"/>
+            <path d="M30 30 C40 25 48 18 50 8 C42 10 34 16 30 25" fill="#A8E6CF"/>
+            <path d="M30 20 C22 16 16 10 15 3 C22 5 28 10 30 16" fill="#7AC9B0"/>
+        </svg>
+        <div class="about-container">
+            <h2 class="section-title">About Me</h2>
+            <div class="about-content">
+                <div class="about-text">
+                    <p class="intro-text">
+                        My name is <strong>Pillo</strong>, and I'm a sixth grader. I built this entire wellness website myself, one exercise at a time, because I wanted to create a calming place where friends and family can relax, reflect, and take care of themselves. 🌿
+                    </p>
+                </div>
+                <div class="about-visual">
+                    <svg class="large-logo" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <clipPath id="frameClip-large">
+                                <circle cx="100" cy="100" r="93"/>
+                            </clipPath>
+                            <linearGradient id="leafGrad-large" x1="15%" y1="10%" x2="90%" y2="95%">
+                                <stop offset="0%" stop-color="#BFEEDD"/>
+                                <stop offset="55%" stop-color="#8FD3BC"/>
+                                <stop offset="100%" stop-color="#4f9d81"/>
+                            </linearGradient>
+                            <linearGradient id="waterGrad-large" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="#DFF6EE"/>
+                                <stop offset="100%" stop-color="#BEE9DC"/>
+                            </linearGradient>
+                            <radialGradient id="shadowGrad-large" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="#1a1a1a" stop-opacity="0.2"/>
+                                <stop offset="100%" stop-color="#1a1a1a" stop-opacity="0"/>
+                            </radialGradient>
+                        </defs>
+                        <circle cx="100" cy="100" r="95" fill="none" stroke="#98D8C8" stroke-width="3"/>
+                        <g clip-path="url(#frameClip-large)">
+                            <path d="M 0 160 C 30 150 55 168 90 158 C 125 148 150 166 200 156 L 200 200 L 0 200 Z" fill="url(#waterGrad-large)"/>
+                            <path d="M 0 172 C 35 165 60 178 100 170 C 140 163 165 176 200 168" fill="none" stroke="#BEE9DC" stroke-width="2" opacity="0.9"/>
+                            <path d="M 0 184 C 40 178 70 190 110 183 C 150 176 175 187 200 181" fill="none" stroke="#cdeee2" stroke-width="2" opacity="0.8"/>
+                            <g transform="rotate(-16 100 118)">
+                                <path d="M 100 55 C 148 55 180 88 178 122 C 176 152 150 166 118 163 C 110 163 104 158 100 152 C 96 158 90 163 82 163 C 50 166 24 152 22 122 C 20 88 52 55 100 55 Z"
+                                      fill="url(#leafGrad-large)" stroke="#4d8a72" stroke-width="2.5"/>
+                                <ellipse cx="76" cy="80" rx="32" ry="20" fill="#ffffff" opacity="0.25" transform="rotate(-25 76 80)"/>
+                                <g stroke="#4d8a72" stroke-width="1.4" opacity="0.5" fill="none">
+                                    <path d="M 100 152 L 100 64"/>
+                                    <path d="M 100 142 L 58 90"/>
+                                    <path d="M 100 142 L 142 90"/>
+                                    <path d="M 100 147 L 38 118"/>
+                                    <path d="M 100 147 L 162 118"/>
+                                    <path d="M 100 152 L 55 145"/>
+                                    <path d="M 100 152 L 145 145"/>
+                                </g>
+                            </g>
+                            <ellipse cx="106" cy="167" rx="56" ry="8" fill="url(#shadowGrad-large)"/>
+                            <g fill="#1a1a1a" transform="translate(7,-3)">
+                                <circle cx="100" cy="74" r="11"/>
+                                <path d="M 90 88 C 90 82 110 82 110 88 L 113 126 C 113 133 87 133 87 126 Z"/>
+                                <path d="M 85 126 C 72 128 64 133 62 139 C 61 144 67 147 75 145 C 85 142 92 138 100 138 C 108 138 115 142 125 145 C 133 147 139 144 138 139 C 136 133 128 128 115 126 C 108 130 92 130 85 126 Z"/>
+                                <path d="M 90 90 C 80 96 73 108 70 121" fill="none" stroke="#1a1a1a" stroke-width="5" stroke-linecap="round"/>
+                                <circle cx="69" cy="122" r="4.5"/>
+                                <path d="M 110 90 C 120 96 127 108 130 121" fill="none" stroke="#1a1a1a" stroke-width="5" stroke-linecap="round"/>
+                                <circle cx="131" cy="122" r="4.5"/>
+                            </g>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== INTERESTS SECTION ===== -->
+    <section id="interests" class="interests">
+        <div class="wave-divider" aria-hidden="true">
+            <svg viewBox="0 0 1440 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0,28 C260,54 520,4 780,26 C1040,48 1220,10 1440,28 L1440,0 L0,0 Z" fill="#FDF6EC"/>
+            </svg>
+        </div>
+        <svg class="corner-sprig sprig-tr" viewBox="0 0 60 60" aria-hidden="true">
+            <path d="M30 55 C30 40 30 25 30 10" stroke="#4d8a72" stroke-width="1.5" fill="none"/>
+            <path d="M30 40 C20 35 12 28 10 18 C18 20 26 26 30 35" fill="#8FD3BC"/>
+            <path d="M30 30 C40 25 48 18 50 8 C42 10 34 16 30 25" fill="#A8E6CF"/>
+            <path d="M30 20 C22 16 16 10 15 3 C22 5 28 10 30 16" fill="#7AC9B0"/>
+        </svg>
+        <svg class="corner-sprig sprig-bl" viewBox="0 0 60 60" aria-hidden="true">
+            <path d="M30 55 C30 40 30 25 30 10" stroke="#4d8a72" stroke-width="1.5" fill="none"/>
+            <path d="M30 40 C20 35 12 28 10 18 C18 20 26 26 30 35" fill="#8FD3BC"/>
+            <path d="M30 30 C40 25 48 18 50 8 C42 10 34 16 30 25" fill="#A8E6CF"/>
+            <path d="M30 20 C22 16 16 10 15 3 C22 5 28 10 30 16" fill="#7AC9B0"/>
+        </svg>
+        <div class="interests-container">
+            <h2 class="section-title">Interests</h2>
+            <div class="interests-list">
+                <div class="interest-item">
+                    <div class="interest-emoji">🎁</div>
+                    <div class="interest-body">
+                        <h4>Thoughtful gifts</h4>
+                        <p>I love figuring out exactly the right thing for someone — there's nothing more satisfying than seeing it land.</p>
+                    </div>
+                </div>
+                <div class="interest-item">
+                    <div class="interest-emoji">✂️</div>
+                    <div class="interest-body">
+                        <h4>Crafts of every kind</h4>
+                        <p>From drawing to building little projects out of whatever materials I can find lying around.</p>
+                    </div>
+                </div>
+                <div class="interest-item">
+                    <div class="interest-emoji">🏃</div>
+                    <div class="interest-body">
+                        <h4>Exercising</h4>
+                        <p>Moving my body is one of the best ways I know to reset — it's why the stretching exercises exist on this site.</p>
+                    </div>
+                </div>
+                <div class="interest-item">
+                    <div class="interest-emoji">💻</div>
+                    <div class="interest-body">
+                        <h4>Coding</h4>
+                        <p>Making something on a screen actually work, piece by piece, is my favorite kind of puzzle.</p>
+                    </div>
+                </div>
+                <div class="interest-item">
+                    <div class="interest-emoji">💚</div>
+                    <div class="interest-body">
+                        <h4>Designing things that make people smile</h4>
+                        <p>Put it all together and you get this website — creativity plus caring, combined into everyone's own self-moment.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== EXERCISES SECTION (styled like a cozy room) ===== -->
+    <section id="exercises" class="exercises">
+        <div class="wave-divider" aria-hidden="true">
+            <svg viewBox="0 0 1440 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0,26 C240,50 520,6 760,28 C1000,50 1240,8 1440,30 L1440,0 L0,0 Z" fill="#EDF7F0"/>
+            </svg>
+        </div>
+
+        <!-- Wall with hanging mood calendar -->
+        <div class="wall-band">
+            <div class="wall-calendar-wrap">
+                <div class="nail"></div>
+                <div class="string"></div>
+                <div class="wall-calendar" id="wall-calendar">
+                    <div class="cal-header">
+                        <span id="cal-month-label"></span>
+                    </div>
+                    <div class="cal-body">
+                        <div class="cal-weekdays">
+                            <div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div>
+                        </div>
+                        <div class="cal-days" id="cal-days"></div>
+                        <div class="cal-picker" id="cal-picker" style="display:none;">
+                            <p class="cal-picker-date" id="cal-picker-date"></p>
+                            <div class="cal-picker-emojis" id="cal-picker-emojis"></div>
+                            <div class="cal-picker-actions">
+                                <button class="cal-picker-clear" id="cal-picker-clear" onclick="clearMood()">Clear</button>
+                                <button class="cal-picker-close" onclick="closeMoodPicker()">Done</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <p class="wall-calendar-hint">Swipe up or down to flip the month · only today can be marked</p>
+            </div>
+        </div>
+
+        <svg class="corner-sprig sprig-tl exercises-sprig" viewBox="0 0 60 60" aria-hidden="true">
+            <path d="M30 55 C30 40 30 25 30 10" stroke="#ffffff" stroke-width="1.5" fill="none"/>
+            <path d="M30 40 C20 35 12 28 10 18 C18 20 26 26 30 35" fill="#eafaf3"/>
+            <path d="M30 30 C40 25 48 18 50 8 C42 10 34 16 30 25" fill="#ffffff"/>
+            <path d="M30 20 C22 16 16 10 15 3 C22 5 28 10 30 16" fill="#f2fbf7"/>
+        </svg>
+        <svg class="corner-sprig sprig-tr exercises-sprig" viewBox="0 0 60 60" aria-hidden="true">
+            <path d="M30 55 C30 40 30 25 30 10" stroke="#ffffff" stroke-width="1.5" fill="none"/>
+            <path d="M30 40 C20 35 12 28 10 18 C18 20 26 26 30 35" fill="#eafaf3"/>
+            <path d="M30 30 C40 25 48 18 50 8 C42 10 34 16 30 25" fill="#ffffff"/>
+            <path d="M30 20 C22 16 16 10 15 3 C22 5 28 10 30 16" fill="#f2fbf7"/>
+        </svg>
+        <div class="hero-particles exercises-particles" aria-hidden="true">
+            <span class="particle p1"></span>
+            <span class="particle p2"></span>
+            <span class="particle p3"></span>
+            <span class="particle p4"></span>
+            <span class="particle p5"></span>
+        </div>
+
+        <div class="exercises-container">
+            <h2 class="section-title">My Projects</h2>
+            <p class="section-subtitle">This wellness website is my main project — here's the full collection of exercises I built for it. Choose one to start your calming journey.</p>
+
+            <!-- Exercise Cards -->
+            <div class="exercise-grid">
+                <div class="exercise-card" onclick="openSession('breathing')">
+                    <div class="exercise-icon">🌬️</div>
+                    <h3>Deep Breathing</h3>
+                    <p>Calm your mind with a guided 4-7-8 breathing cycle</p>
+                </div>
+
+                <div class="exercise-card" onclick="openSession('stretching')">
+                    <div class="exercise-icon">🧘</div>
+                    <h3>Stretching Routine</h3>
+                    <p>A full, unhurried head-to-toe stretch sequence</p>
+                </div>
+
+                <div class="exercise-card" onclick="openSession('pmr')">
+                    <div class="exercise-icon">💆</div>
+                    <h3>Muscle Relaxation</h3>
+                    <p>Tense and release each muscle group to let go of tension</p>
+                </div>
+
+                <div class="exercise-card" onclick="openSession('meditation')">
+                    <div class="exercise-icon">🧘‍♀️</div>
+                    <h3>Meditation</h3>
+                    <p>A longer guided body scan into quiet reflection</p>
+                </div>
+
+                <div class="exercise-card" onclick="openSession('gratitude')">
+                    <div class="exercise-icon">🙏</div>
+                    <h3>Gratitude Prompts</h3>
+                    <p>Reflect and appreciate the good things</p>
+                </div>
+
+                <div class="exercise-card" onclick="openSession('jar')">
+                    <div class="exercise-icon">🎁</div>
+                    <h3>Gratitude Jar</h3>
+                    <p>Keep a running collection — add or remove anytime</p>
+                </div>
+
+                <div class="exercise-card" onclick="openSession('journal')">
+                    <div class="exercise-icon">📝</div>
+                    <h3>Journaling</h3>
+                    <p>Express your feelings and thoughts — saved for later</p>
+                </div>
+
+                <div class="exercise-card" onclick="openSession('timeline')">
+                    <div class="exercise-icon">🕰️</div>
+                    <h3>Calm Timeline</h3>
+                    <p>A quick, freeform place to jot a thought — no prompts</p>
+                </div>
+
+                <div class="exercise-card" onclick="openSession('capsule')">
+                    <div class="exercise-icon">💌</div>
+                    <h3>Letter to Future Self</h3>
+                    <p>Write yourself something kind to open on a later day</p>
+                </div>
+
+                <div class="exercise-card" onclick="openSession('bubbles')">
+                    <div class="exercise-icon">💦</div>
+                    <h3>Bubble Pop</h3>
+                    <p>Pop gentle bubbles as they drift by — calm, but playable</p>
+                </div>
+
+                <div class="exercise-card" onclick="openSession('plant')">
+                    <div class="exercise-icon">🌱</div>
+                    <h3>My Calm Plant</h3>
+                    <p>It grows a little every day you take care of yourself</p>
+                </div>
+
+                <div class="exercise-card" onclick="openSession('grounding')">
+                    <div class="exercise-icon">🖐️</div>
+                    <h3>5-4-3-2-1 Grounding</h3>
+                    <p>Use your five senses to gently land back in the present</p>
+                </div>
+            </div>
+
+            <!-- Fun Games subsection — part of My Projects, but its own thing -->
+            <div class="fun-games-section">
+                <h3 class="fun-games-title">🎮 Fun Games</h3>
+                <p class="fun-games-subtitle">Not calming exercises — games I made! Open one whenever you want a break.</p>
+
+                <div class="featured-project" onclick="openSession('balloon')">
+                    <div class="featured-balloon-art" aria-hidden="true">
+                        <span class="featured-balloon">🎈</span>
+                        <span class="featured-cloud c1">☁️</span>
+                        <span class="featured-cloud c2">☁️</span>
+                    </div>
+                    <div class="featured-text">
+                        <span class="featured-tag">Bonus Game</span>
+                        <h3>Balloon School</h3>
+                        <p>Float a balloon through 50 school-day levels and dodge the hazards. Pause or exit anytime — come back to my Calming Pill whenever you want.</p>
+                        <span class="featured-play">▶ Play</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Decorative plant windowsill background -->
+        <div class="windowsill-bg" aria-hidden="true">
+            <svg viewBox="0 0 1200 280" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
+                <defs>
+                    <linearGradient id="glow" cx="50%" cy="0%" r="70%">
+                        <stop offset="0%" stop-color="#fff8e6" stop-opacity="0.9"/>
+                        <stop offset="100%" stop-color="#fff8e6" stop-opacity="0"/>
+                    </linearGradient>
+                    <linearGradient id="sillWood" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#d9b48a"/>
+                        <stop offset="100%" stop-color="#b9885c"/>
+                    </linearGradient>
+                    <linearGradient id="potTerracotta" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#e2a679"/>
+                        <stop offset="100%" stop-color="#c97f4f"/>
+                    </linearGradient>
+                    <linearGradient id="potCream" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#f3ece0"/>
+                        <stop offset="100%" stop-color="#ddd1bd"/>
+                    </linearGradient>
+                    <linearGradient id="leafGreen1" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#8FD3BC"/>
+                        <stop offset="100%" stop-color="#4f9d81"/>
+                    </linearGradient>
+                    <linearGradient id="leafGreen2" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#A8E6CF"/>
+                        <stop offset="100%" stop-color="#6ab897"/>
+                    </linearGradient>
+                </defs>
+                <ellipse cx="600" cy="20" rx="500" ry="180" fill="url(#glow)"/>
+                <g stroke="#ffffff" stroke-width="3" opacity="0.15">
+                    <line x1="300" y1="0" x2="300" y2="150"/>
+                    <line x1="900" y1="0" x2="900" y2="150"/>
+                    <line x1="0" y1="90" x2="1200" y2="90"/>
+                </g>
+                <rect x="0" y="200" width="1200" height="30" fill="url(#sillWood)"/>
+                <rect x="0" y="196" width="1200" height="6" fill="#c99a6c"/>
+                <g transform="translate(140,0)">
+                    <path d="M 20 200 L 30 150 L 90 150 L 100 200 Z" fill="url(#potTerracotta)"/>
+                    <ellipse cx="60" cy="150" rx="30" ry="6" fill="#b8734a"/>
+                    <g fill="url(#leafGreen1)">
+                        <path d="M 40 152 C 30 110 35 70 45 40 C 50 30 56 30 55 42 C 50 75 48 115 52 152 Z"/>
+                        <path d="M 55 152 C 50 100 55 55 65 20 C 68 12 74 14 72 24 C 65 62 62 108 63 152 Z"/>
+                        <path d="M 68 152 C 68 105 76 65 88 32 C 92 24 98 27 95 36 C 84 68 78 110 78 152 Z"/>
+                        <path d="M 80 152 C 84 118 95 88 108 62 C 112 55 118 59 114 67 C 102 92 92 122 90 152 Z"/>
+                    </g>
+                </g>
+                <g transform="translate(340,0)">
+                    <path d="M 15 195 C 15 185 90 185 90 195 L 100 200 L 5 200 Z" fill="url(#potCream)"/>
+                    <ellipse cx="52" cy="185" rx="38" ry="7" fill="#c9bda6"/>
+                    <g fill="url(#leafGreen2)">
+                        <path d="M 30 188 C 10 200 -5 220 -10 245 C -12 252 -3 253 0 246 C 8 224 20 206 36 192 Z"/>
+                        <path d="M 45 188 C 32 208 24 232 24 258 C 24 265 33 265 35 258 C 37 233 44 210 55 192 Z"/>
+                        <path d="M 65 188 C 78 205 88 226 92 250 C 94 257 85 259 82 252 C 76 229 65 210 55 194 Z"/>
+                        <ellipse cx="40" cy="178" rx="34" ry="16"/>
+                    </g>
+                </g>
+                <g transform="translate(560,0)">
+                    <path d="M 15 200 L 22 165 L 68 165 L 75 200 Z" fill="url(#potTerracotta)"/>
+                    <ellipse cx="45" cy="165" rx="23" ry="5" fill="#b8734a"/>
+                    <ellipse cx="45" cy="128" rx="26" ry="38" fill="url(#leafGreen1)"/>
+                    <g stroke="#3f7d64" stroke-width="1" opacity="0.5">
+                        <path d="M 45 92 L 45 164" fill="none"/>
+                        <path d="M 27 100 C 24 120 24 140 27 158" fill="none"/>
+                        <path d="M 63 100 C 66 120 66 140 63 158" fill="none"/>
+                    </g>
+                    <circle cx="38" cy="105" r="9" fill="#e8a3c4"/>
+                </g>
+                <g transform="translate(720,0)">
+                    <path d="M 20 200 L 28 155 L 92 155 L 100 200 Z" fill="url(#potCream)"/>
+                    <ellipse cx="60" cy="155" rx="32" ry="6" fill="#c9bda6"/>
+                    <g fill="url(#leafGreen2)">
+                        <path d="M 60 158 C 40 140 24 112 20 78 C 18 68 28 65 32 74 C 40 104 50 130 66 152 Z"/>
+                        <path d="M 60 158 C 62 128 74 98 96 74 C 102 67 110 74 105 82 C 88 104 72 130 66 156 Z"/>
+                        <path d="M 60 158 C 52 122 54 86 68 52 C 72 44 82 47 79 56 C 68 88 64 124 66 156 Z"/>
+                        <path d="M 60 158 C 68 130 84 106 108 90 C 115 85 121 93 115 99 C 96 112 80 132 68 156 Z"/>
+                    </g>
+                </g>
+                <g transform="translate(960,0)">
+                    <path d="M 18 200 L 24 172 L 66 172 L 72 200 Z" fill="url(#potTerracotta)"/>
+                    <ellipse cx="45" cy="172" rx="21" ry="5" fill="#b8734a"/>
+                    <g fill="url(#leafGreen1)">
+                        <ellipse cx="30" cy="160" rx="10" ry="16" transform="rotate(-20 30 160)"/>
+                        <ellipse cx="45" cy="152" rx="10" ry="18"/>
+                        <ellipse cx="60" cy="160" rx="10" ry="16" transform="rotate(20 60 160)"/>
+                    </g>
+                </g>
+            </svg>
+        </div>
+
+        <!-- ===== SESSION OVERLAYS ===== -->
+        <!-- Each one is its own full-screen page you can open and close at any time. -->
+
+        <!-- Deep Breathing -->
+        <div class="session-overlay" id="session-breathing">
+            <div class="session-card">
+                <button class="session-close" onclick="closeSession('breathing')" aria-label="Close">✕</button>
+                <h3>Deep Breathing</h3>
+                <p class="pillo-note">"After I exercise, I need a moment to calm down and get the ring of my heartbeat out of my ears. Deep breathing allows me to do that." <span class="pillo-signature">— Pillo</span></p>
+                <p class="exercise-quote">"Breathing in, I calm body and mind. Breathing out, I smile." <span class="quote-author">— Thich Nhat Hanh</span></p>
+                <div class="breathing-visual">
+                    <div class="breathing-circle" id="breathing-circle"></div>
+                    <div class="breathing-text">
+                        <div class="breathing-phase" id="breathing-phase">Breathe In</div>
+                        <div class="breathing-count" id="breathing-count">4</div>
+                    </div>
+                </div>
+                <p class="session-hint">The classic 4-7-8 technique: in for 4, hold for 7, out for 8. Pause or leave whenever you want.</p>
+                <div class="session-controls">
+                    <button class="session-btn" id="breathing-toggle" onclick="toggleBreathing()">Pause</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stretching -->
+        <div class="session-overlay" id="session-stretching">
+            <div class="session-card">
+                <button class="session-close" onclick="closeSession('stretching')" aria-label="Close">✕</button>
+                <h3>Stretching Routine</h3>
+                <p class="pillo-note">"Stretching any time, including before and after exercising, helps me feel more flexible and relaxed." <span class="pillo-signature">— Pillo</span></p>
+                <p class="exercise-quote">"Take care of your body. It's the only place you have to live." <span class="quote-author">— Jim Rohn</span></p>
+                <div class="step-progress" id="stretching-progress"></div>
+                <div class="step-display">
+                    <div class="step-name" id="stretching-name"></div>
+                    <div class="step-instruction" id="stretching-instruction"></div>
+                    <div class="step-timer" id="stretching-timer"></div>
+                </div>
+                <div class="session-controls">
+                    <button class="session-btn secondary" onclick="prevStep('stretching')">◀ Back</button>
+                    <button class="session-btn" id="stretching-pause" onclick="pauseStepTimer('stretching')">Pause</button>
+                    <button class="session-btn secondary" onclick="nextStep('stretching')">Next ▶</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progressive Muscle Relaxation -->
+        <div class="session-overlay" id="session-pmr">
+            <div class="session-card">
+                <button class="session-close" onclick="closeSession('pmr')" aria-label="Close">✕</button>
+                <h3>Muscle Relaxation</h3>
+                <p class="pillo-note">"Before a big test or a busy day, my shoulders get tight without me even noticing. Tensing and releasing each muscle helps me actually feel that tension let go." <span class="pillo-signature">— Pillo</span></p>
+                <p class="exercise-quote">"Almost everything will work again if you unplug it for a few minutes." <span class="quote-author">— Anne Lamott</span></p>
+                <div class="step-progress" id="pmr-progress"></div>
+                <div class="step-display">
+                    <div class="step-name" id="pmr-name"></div>
+                    <div class="step-instruction" id="pmr-instruction"></div>
+                    <div class="step-timer" id="pmr-timer"></div>
+                </div>
+                <div class="session-controls">
+                    <button class="session-btn secondary" onclick="prevStep('pmr')">◀ Back</button>
+                    <button class="session-btn" id="pmr-pause" onclick="pauseStepTimer('pmr')">Pause</button>
+                    <button class="session-btn secondary" onclick="nextStep('pmr')">Next ▶</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meditation -->
+        <div class="session-overlay" id="session-meditation">
+            <div class="session-card">
+                <button class="session-close" onclick="closeSession('meditation')" aria-label="Close">✕</button>
+                <h3>Meditation</h3>
+                <p class="pillo-note">"Some nights my brain won't stop replaying the whole day. Sitting quietly and scanning through my body helps me slow all of that down." <span class="pillo-signature">— Pillo</span></p>
+                <p class="exercise-quote">"Meditation is not evasion; it is a serene encounter with reality." <span class="quote-author">— Thich Nhat Hanh</span></p>
+                <div class="step-progress" id="meditation-progress"></div>
+                <div class="step-display">
+                    <div class="step-name" id="meditation-name"></div>
+                    <div class="step-instruction" id="meditation-instruction"></div>
+                    <div class="step-timer" id="meditation-timer"></div>
+                </div>
+                <div class="session-controls">
+                    <button class="session-btn secondary" onclick="prevStep('meditation')">◀ Back</button>
+                    <button class="session-btn" id="meditation-pause" onclick="pauseStepTimer('meditation')">Pause</button>
+                    <button class="session-btn secondary" onclick="nextStep('meditation')">Next ▶</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gratitude Prompts -->
+        <div class="session-overlay" id="session-gratitude">
+            <div class="session-card">
+                <button class="session-close" onclick="closeSession('gratitude')" aria-label="Close">✕</button>
+                <h3>Gratitude Prompts</h3>
+                <p class="pillo-note">"Writing down one thing I'm grateful for reminds me that even on a rough day, there's usually still something good in it." <span class="pillo-signature">— Pillo</span></p>
+                <p class="exercise-quote">"Gratitude is the fairest blossom which springs from the soul." <span class="quote-author">— Henry Ward Beecher</span></p>
+                <div class="reflection-flow" id="gratitude-flow"></div>
+            </div>
+        </div>
+
+        <!-- Journaling -->
+        <div class="session-overlay" id="session-journal">
+            <div class="session-card">
+                <button class="session-close" onclick="closeSession('journal')" aria-label="Close">✕</button>
+                <h3>Journaling</h3>
+                <p class="pillo-note">"Sometimes I don't know what I'm actually feeling until I start writing it out. This is where I figure out what's really going on in my head." <span class="pillo-signature">— Pillo</span></p>
+                <p class="exercise-quote">"Paper has more patience than people." <span class="quote-author">— Anne Frank</span></p>
+                <div class="reflection-flow" id="journal-flow"></div>
+            </div>
+        </div>
+
+        <!-- Gratitude Jar (freely editable — add or remove anytime) -->
+        <div class="session-overlay" id="session-jar">
+            <div class="session-card">
+                <button class="session-close" onclick="closeSession('jar')" aria-label="Close">✕</button>
+                <h3>Gratitude Jar</h3>
+                <p class="pillo-note">"I like coming back to this jar on hard days — reading through everything I've added reminds me how much good stuff adds up over time." <span class="pillo-signature">— Pillo</span></p>
+                <p class="exercise-quote">"Gratitude is not only the greatest of virtues, but the parent of all others." <span class="quote-author">— Cicero</span></p>
+                <p class="session-hint">Add anything you're grateful for. Take any of them out, anytime.</p>
+                <textarea class="journal-textarea" id="jar-input" placeholder="I'm grateful for..."></textarea>
+                <button class="start-timer-btn" id="jar-add-btn" onclick="addJarItem()">Add to Jar</button>
+                <div id="jar-list" class="jar-list"></div>
+            </div>
+        </div>
+
+        <!-- Calm Timeline (freeform, no prompts) -->
+        <div class="session-overlay" id="session-timeline">
+            <div class="session-card">
+                <button class="session-close" onclick="closeSession('timeline')" aria-label="Close">✕</button>
+                <h3>Calm Timeline</h3>
+                <p class="pillo-note">"Not every thought needs a big reflection. Sometimes I just need to get it out of my head quickly, and this is where I put those." <span class="pillo-signature">— Pillo</span></p>
+                <p class="exercise-quote">"Fill your paper with the breathings of your heart." <span class="quote-author">— William Wordsworth</span></p>
+                <p class="session-hint">Just write whatever's here right now. No prompts — it's added to your running timeline below.</p>
+                <textarea class="journal-textarea" id="timeline-input" placeholder="What's here right now..."></textarea>
+                <button class="start-timer-btn" id="timeline-save-btn" onclick="saveTimelineEntry()">Save Entry</button>
+                <div id="timeline-list" class="timeline-list"></div>
+            </div>
+        </div>
+
+        <!-- Letter to Future Self (time capsule) -->
+        <div class="session-overlay" id="session-capsule">
+            <div class="session-card">
+                <button class="session-close" onclick="closeSession('capsule')" aria-label="Close">✕</button>
+                <h3>Letter to Future Self</h3>
+                <p class="pillo-note">"I write these on my good days, so that on a hard day, future me has something kind waiting — written by someone who really gets it: me." <span class="pillo-signature">— Pillo</span></p>
+                <p class="exercise-quote">"Every day is the best day in the year." <span class="quote-author">— Ralph Waldo Emerson</span></p>
+                <div id="capsule-flow"></div>
+            </div>
+        </div>
+
+        <!-- Bubble Pop (calming mini-game) -->
+        <div class="session-overlay" id="session-bubbles">
+            <div class="session-card bubbles-card">
+                <button class="session-close" onclick="closeSession('bubbles')" aria-label="Close">✕</button>
+                <h3>Bubble Pop</h3>
+                <p class="pillo-note">"Sometimes calming down works better when my hands have something gentle to do." <span class="pillo-signature">— Pillo</span></p>
+                <div class="bubble-arena" id="bubble-arena"></div>
+                <p class="bubble-count" id="bubble-count">Bubbles popped: 0</p>
+            </div>
+        </div>
+
+        <!-- My Calm Plant (grows with your self-care days) -->
+        <div class="session-overlay" id="session-plant">
+            <div class="session-card">
+                <button class="session-close" onclick="closeSession('plant')" aria-label="Close">✕</button>
+                <h3>My Calm Plant</h3>
+                <p class="pillo-note">"This little plant grows one step every day you do any exercise here. Taking care of yourself takes care of it too." <span class="pillo-signature">— Pillo</span></p>
+                <div id="plant-display"></div>
+            </div>
+        </div>
+
+        <!-- 5-4-3-2-1 Grounding (senses exercise) -->
+        <div class="session-overlay" id="session-grounding">
+            <div class="session-card">
+                <button class="session-close" onclick="closeSession('grounding')" aria-label="Close">✕</button>
+                <h3>5-4-3-2-1 Grounding</h3>
+                <p class="pillo-note">"When my thoughts get loud, naming what's actually around me brings me right back to the room I'm in." <span class="pillo-signature">— Pillo</span></p>
+                <p class="exercise-quote">"Wherever you are, be all there." <span class="quote-author">— Jim Elliot</span></p>
+                <div id="grounding-flow"></div>
+            </div>
+        </div>
+
+        <!-- Balloon School (featured game, fullscreen, own game+music in an iframe) -->
+        <div class="session-overlay balloon-screen" id="session-balloon">
+            <button class="balloon-exit" onclick="closeSession('balloon')">← Back to my Calming Pill</button>
+            <iframe class="balloon-frame" id="balloon-frame" title="Balloon School game" allow="autoplay"></iframe>
+        </div>
+    </section>
+
+    <!-- ===== CONTACT SECTION ===== -->
+    <section id="contact" class="contact">
+        <div class="wave-divider" aria-hidden="true">
+            <svg viewBox="0 0 1440 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0,26 C220,4 460,52 720,30 C980,8 1220,50 1440,26 L1440,0 L0,0 Z" style="fill: var(--bg-2);"/>
+            </svg>
+        </div>
+        <svg class="corner-sprig sprig-tr" viewBox="0 0 60 60" aria-hidden="true">
+            <path d="M30 55 C30 40 30 25 30 10" stroke="#4d8a72" stroke-width="1.5" fill="none"/>
+            <path d="M30 40 C20 35 12 28 10 18 C18 20 26 26 30 35" fill="#8FD3BC"/>
+            <path d="M30 30 C40 25 48 18 50 8 C42 10 34 16 30 25" fill="#A8E6CF"/>
+            <path d="M30 20 C22 16 16 10 15 3 C22 5 28 10 30 16" fill="#7AC9B0"/>
+        </svg>
+        <svg class="corner-sprig sprig-bl" viewBox="0 0 60 60" aria-hidden="true">
+            <path d="M30 55 C30 40 30 25 30 10" stroke="#4d8a72" stroke-width="1.5" fill="none"/>
+            <path d="M30 40 C20 35 12 28 10 18 C18 20 26 26 30 35" fill="#8FD3BC"/>
+            <path d="M30 30 C40 25 48 18 50 8 C42 10 34 16 30 25" fill="#A8E6CF"/>
+            <path d="M30 20 C22 16 16 10 15 3 C22 5 28 10 30 16" fill="#7AC9B0"/>
+        </svg>
+        <div class="contact-container">
+            <h2 class="section-title">Safe Contact</h2>
+            <p class="section-subtitle">Feel free to reach out to Pillo</p>
+            <div class="contact-content">
+                <p>Have questions, feedback, or just want to say hello? You can reach me directly by email.</p>
+                <div class="contact-links">
+                    <a href="mailto:belindajunx@gmail.com" class="contact-link">📧 belindajunx@gmail.com</a>
+                </div>
+                <p class="contact-thanks">Thank you so much for visiting Pillo's Calming Pill — I hope it gave you a moment of peace. 💚</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="footer">
+        <div class="wave-divider" aria-hidden="true">
+            <svg viewBox="0 0 1440 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0,32 C260,6 500,54 760,28 C1020,2 1220,48 1440,24 L1440,0 L0,0 Z" fill="#DCEFE7"/>
+            </svg>
+        </div>
+        <p>🌿 &copy; 2024 Pillo's Calming Pill. Made with 💚 for wellness.</p>
+    </footer>
+
+    <!-- Ambient background music control -->
+    <div class="ambient-audio-widget">
+        <button class="audio-toggle-btn pulse-hint" id="audio-toggle-btn" onclick="toggleAmbientAudio()" aria-label="Toggle calming background music">
+            <span id="audio-icon">🔊</span>
+        </button>
+        <input type="range" class="audio-volume-slider" id="audio-volume-slider" min="0" max="100" value="65" oninput="setAmbientVolume(this.value)" aria-label="Background music volume">
+    </div>
+
+    <script>
+// ===== SCROLL TO EXERCISES =====
+function scrollToExercises() {
+    const exercisesSection = document.getElementById('exercises');
+    if (exercisesSection) {
+        exercisesSection.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+// ===== SESSION MANAGEMENT =====
+// Every exercise opens as its own full-screen session. You can close it
+// at any time via the X button, clicking outside the card, or Escape —
+// nothing ever traps clicks the way the old countdown modal did.
+let activeSession = null;
+const STEP_SESSIONS = ['stretching', 'pmr', 'meditation'];
+
+function openSession(name) {
+    if (activeSession) {
+        closeSession(activeSession);
+    }
+
+    const overlay = document.getElementById(`session-${name}`);
+    if (!overlay) return;
+
+    overlay.style.display = 'flex';
+    void overlay.offsetWidth; // force reflow so the fade-in transition plays
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    activeSession = name;
+
+    if (name === 'breathing') startBreathing();
+    else if (STEP_SESSIONS.includes(name)) startSteps(name);
+    else if (name === 'gratitude' || name === 'journal') initReflection(name);
+    else if (name === 'timeline') renderTimelineList();
+    else if (name === 'capsule') initCapsule();
+    else if (name === 'jar') renderJarItems();
+    else if (name === 'bubbles') startBubbles();
+    else if (name === 'plant') renderPlant();
+    else if (name === 'grounding') startGrounding();
+    else if (name === 'balloon') startBalloonGame();
+
+    // Every real exercise counts as taking care of yourself today, which is
+    // what makes the Calm Plant grow (the plant view itself doesn't count).
+    if (name !== 'plant') recordActiveDay();
+}
+
+function closeSession(name) {
+    const overlay = document.getElementById(`session-${name}`);
+    if (!overlay) return;
+
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
+
+    setTimeout(() => {
+        overlay.style.display = 'none';
+    }, 300);
+
+    if (name === 'breathing') stopBreathing();
+    else if (STEP_SESSIONS.includes(name)) stopStepTimer(name);
+    else if (name === 'bubbles') stopBubbles();
+    else if (name === 'balloon') stopBalloonGame();
+
+    if (activeSession === name) {
+        activeSession = null;
+    }
+}
+
+// Close by clicking the dark backdrop
+document.querySelectorAll('.session-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            closeSession(overlay.id.replace('session-', ''));
+        }
+    });
+});
+
+// Close with Escape, from anywhere
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && activeSession) {
+        closeSession(activeSession);
+    }
+});
+
+// ===== DEEP BREATHING (4-7-8 technique) =====
+// Single requestAnimationFrame loop drives the whole exercise so there's
+// never more than one timer running (and it's fully cancelled on close).
+const BREATH_PHASES = [
+    { name: 'Breathe In', duration: 4000, grow: true },
+    { name: 'Hold', duration: 7000, grow: true },
+    { name: 'Breathe Out', duration: 8000, grow: false }
+];
+
+let breathingRAF = null;
+let breathingPhaseIndex = 0;
+let breathingPhaseStart = 0;
+let breathingPaused = false;
+let breathingPauseStart = 0;
+
+function startBreathing() {
+    breathingPhaseIndex = 0;
+    breathingPaused = false;
+
+    const circle = document.getElementById('breathing-circle');
+    circle.classList.remove('grow');
+
+    const toggleBtn = document.getElementById('breathing-toggle');
+    if (toggleBtn) toggleBtn.textContent = 'Pause';
+
+    breathingPhaseStart = performance.now();
+    cancelAnimationFrame(breathingRAF);
+    breathingRAF = requestAnimationFrame(breathingLoop);
+}
+
+function breathingLoop(now) {
+    if (!breathingPaused) {
+        const phase = BREATH_PHASES[breathingPhaseIndex];
+        const elapsed = now - breathingPhaseStart;
+        const remaining = Math.max(0, phase.duration - elapsed);
+        const countText = Math.ceil(remaining / 1000);
+
+        const phaseEl = document.getElementById('breathing-phase');
+        const countEl = document.getElementById('breathing-count');
+        const circle = document.getElementById('breathing-circle');
+
+        if (phaseEl) phaseEl.textContent = phase.name;
+        if (countEl) countEl.textContent = countText > 0 ? countText : '';
+        if (circle) {
+            circle.style.transitionDuration = (phase.duration / 1000) + 's';
+            circle.classList.toggle('grow', phase.grow);
+        }
+
+        if (elapsed >= phase.duration) {
+            breathingPhaseIndex = (breathingPhaseIndex + 1) % BREATH_PHASES.length;
+            breathingPhaseStart = now;
+        }
+    }
+
+    breathingRAF = requestAnimationFrame(breathingLoop);
+}
+
+function toggleBreathing() {
+    breathingPaused = !breathingPaused;
+    const btn = document.getElementById('breathing-toggle');
+
+    if (breathingPaused) {
+        breathingPauseStart = performance.now();
+        if (btn) btn.textContent = 'Resume';
+    } else {
+        const pausedFor = performance.now() - breathingPauseStart;
+        breathingPhaseStart += pausedFor; // shift so the phase doesn't jump ahead
+        if (btn) btn.textContent = 'Pause';
+    }
+}
+
+function stopBreathing() {
+    cancelAnimationFrame(breathingRAF);
+    breathingRAF = null;
+}
+
+// ===== STEP-BASED ROUTINES =====
+// Shared engine for Stretching, Progressive Muscle Relaxation, Meditation,
+// and Affirmations — each is just a longer or shorter list of steps.
+
+const STRETCH_STEPS = [
+    { name: 'Neck Rolls', duration: 30, instruction: 'Slowly roll your neck in a full circle, then reverse direction.' },
+    { name: 'Shoulder Shrugs', duration: 30, instruction: 'Lift your shoulders toward your ears, hold, then release.' },
+    { name: 'Shoulder Rolls', duration: 30, instruction: 'Roll both shoulders backward in slow circles, then forward.' },
+    { name: 'Cross-Body Arm Stretch', duration: 40, instruction: 'Pull one arm across your chest, hold 20 seconds, then switch arms.' },
+    { name: 'Overhead Side Stretch', duration: 45, instruction: 'Reach both arms up and lean gently to one side, then the other.' },
+    { name: 'Forward Fold', duration: 60, instruction: 'Hinge at your hips and let your upper body hang, knees soft.' },
+    { name: 'Spinal Twist', duration: 60, instruction: 'Twist gently to each side, about 30 seconds per side.' },
+    { name: 'Cat-Cow Stretch', duration: 60, instruction: 'On hands and knees, arch and round your spine slowly.' },
+    { name: "Child's Pose", duration: 60, instruction: 'Sit back on your heels and stretch your arms forward, resting your forehead down.' },
+    { name: 'Hip Circles', duration: 45, instruction: 'Hands on hips, slowly circle your hips in one direction, then the other.' },
+    { name: 'Standing Quad Stretch', duration: 45, instruction: 'Hold one ankle behind you, then switch legs halfway through.' },
+    { name: 'Calf Stretch', duration: 30, instruction: 'Step one foot back and press the heel down, then switch legs.' },
+    { name: 'Gentle Close', duration: 30, instruction: 'Roll your shoulders once more and take a slow breath before you go.' }
+];
+
+const PMR_STEPS = [
+    { name: 'Feet & Toes', duration: 20, instruction: 'Curl your toes tightly, hold for a few seconds, then let them go completely.' },
+    { name: 'Calves', duration: 20, instruction: 'Point your toes up toward you, tighten your calves, then release.' },
+    { name: 'Thighs', duration: 20, instruction: 'Squeeze your thigh muscles tight, hold, then let them soften.' },
+    { name: 'Glutes', duration: 15, instruction: 'Gently clench, hold for a moment, then release.' },
+    { name: 'Abdomen', duration: 20, instruction: 'Draw your belly in tight, hold, then let it soften fully.' },
+    { name: 'Hands & Forearms', duration: 20, instruction: 'Make tight fists, hold, then open your hands and release.' },
+    { name: 'Upper Arms', duration: 20, instruction: 'Bend your elbows and tense your biceps, then let your arms go loose.' },
+    { name: 'Shoulders', duration: 20, instruction: 'Lift your shoulders up to your ears, hold, then drop them down.' },
+    { name: 'Face', duration: 15, instruction: 'Scrunch your whole face tight — eyes, jaw, forehead — then let it go soft.' },
+    { name: 'Whole Body', duration: 20, instruction: 'Tense everything at once for a moment, then release completely and notice the calm.' }
+];
+
+const MEDITATION_STEPS = [
+    { name: 'Get Comfortable', duration: 15, instruction: 'Find a comfortable seated or lying position.' },
+    { name: 'Deep Breaths', duration: 20, instruction: 'Close your eyes and take three slow, deep breaths.' },
+    { name: 'Notice Tension', duration: 30, instruction: 'Scan your body from head to toe, noticing any tension.' },
+    { name: 'Release', duration: 30, instruction: 'Consciously relax each area you just noticed.' },
+    { name: 'Focus on the Breath', duration: 45, instruction: 'Let your attention rest on the feeling of each breath, in and out.' },
+    { name: 'Body Scan: Feet to Legs', duration: 40, instruction: 'Bring your awareness slowly from your feet up through your legs.' },
+    { name: 'Body Scan: Torso & Arms', duration: 40, instruction: 'Notice your stomach, chest, and arms, softening as you go.' },
+    { name: 'Body Scan: Shoulders, Neck & Face', duration: 40, instruction: 'Let your shoulders drop, and soften your jaw and forehead.' },
+    { name: 'A Kind Wish', duration: 30, instruction: 'Silently offer yourself a kind wish: "May I be calm. May I be at ease."' },
+    { name: 'Sit in Silence', duration: null, instruction: "Stay here as long as you like. Close whenever you're ready." }
+];
+
+const stepState = {
+    stretching: { steps: STRETCH_STEPS, index: 0, remaining: 0, interval: null, paused: false },
+    pmr: { steps: PMR_STEPS, index: 0, remaining: 0, interval: null, paused: false },
+    meditation: { steps: MEDITATION_STEPS, index: 0, remaining: 0, interval: null, paused: false }
+};
+
+function startSteps(name) {
+    const state = stepState[name];
+    state.index = 0;
+    loadStep(name);
+}
+
+function loadStep(name) {
+    const state = stepState[name];
+    clearInterval(state.interval);
+
+    const step = state.steps[state.index];
+    state.remaining = step.duration || 0;
+    state.paused = false;
+
+    document.getElementById(`${name}-name`).textContent = step.name;
+    document.getElementById(`${name}-instruction`).textContent = step.instruction;
+
+    const pauseBtn = document.getElementById(`${name}-pause`);
+    if (pauseBtn) {
+        pauseBtn.textContent = 'Pause';
+        pauseBtn.style.display = step.duration ? '' : 'none';
+    }
+
+    renderStepProgress(name);
+    renderStepTimer(name);
+
+    if (step.duration) {
+        state.interval = setInterval(() => {
+            if (!state.paused) {
+                state.remaining--;
+                renderStepTimer(name);
+                if (state.remaining <= 0) {
+                    nextStep(name);
+                }
+            }
+        }, 1000);
+    }
+}
+
+function renderStepTimer(name) {
+    const state = stepState[name];
+    const step = state.steps[state.index];
+    const el = document.getElementById(`${name}-timer`);
+    if (!el) return;
+
+    if (!step.duration) {
+        el.textContent = 'Take your time';
+    } else {
+        const m = Math.floor(state.remaining / 60);
+        const s = state.remaining % 60;
+        el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+    }
+}
+
+function renderStepProgress(name) {
+    const state = stepState[name];
+    const el = document.getElementById(`${name}-progress`);
+    if (el) el.textContent = `Step ${state.index + 1} of ${state.steps.length}`;
+}
+
+function nextStep(name) {
+    const state = stepState[name];
+    if (state.index < state.steps.length - 1) {
+        state.index++;
+        loadStep(name);
+    } else {
+        clearInterval(state.interval);
+        document.getElementById(`${name}-name`).textContent = 'All done 🌿';
+        document.getElementById(`${name}-instruction`).textContent = 'Great work taking this time for yourself.';
+        document.getElementById(`${name}-timer`).textContent = '';
+        const pauseBtn = document.getElementById(`${name}-pause`);
+        if (pauseBtn) pauseBtn.style.display = 'none';
+    }
+}
+
+function prevStep(name) {
+    const state = stepState[name];
+    if (state.index > 0) {
+        state.index--;
+        loadStep(name);
+    }
+}
+
+function pauseStepTimer(name) {
+    const state = stepState[name];
+    state.paused = !state.paused;
+    const btn = document.getElementById(`${name}-pause`);
+    if (btn) btn.textContent = state.paused ? 'Resume' : 'Pause';
+}
+
+function stopStepTimer(name) {
+    clearInterval(stepState[name].interval);
+}
+
+// ===== GRATITUDE / JOURNAL — MULTI-STEP REFLECTION FLOWS =====
+const gratitudePrompts = [
+    "What's one thing that made you smile today?",
+    "Who is someone you're grateful to have in your life?",
+    "What's a simple pleasure you enjoyed recently?",
+    "What skill or talent are you grateful to have?",
+    "What's a challenge that taught you something valuable?",
+    "What's a beautiful thing in nature you saw today?",
+    "Who did a kind thing for you, and how did it make you feel?",
+    "What's something about yourself that you appreciate?"
+];
+
+function extractSubject(input) {
+    const trimmed = input.trim();
+    if (!trimmed) return 'that';
+    return trimmed.split(/\s+/).slice(0, 6).join(' ').toLowerCase().replace(/[.!?]+$/, '');
+}
+
+const REFLECTION_CONFIG = {
+    gratitude: {
+        stages: [
+            {
+                question: () => gratitudePrompts[Math.floor(Math.random() * gratitudePrompts.length)],
+                placeholder: 'Type your answer...',
+                buttonLabel: 'Reflect'
+            },
+            {
+                question: (answers) => `Why are you grateful for ${extractSubject(answers[0])}?`,
+                placeholder: 'Take a moment to reflect...',
+                buttonLabel: 'Go deeper'
+            },
+            {
+                question: () => 'How might you carry this feeling with you for the rest of today?',
+                placeholder: 'One small way...',
+                buttonLabel: 'Save Reflection'
+            }
+        ],
+        doneMessage: 'Thank you for taking a moment to reflect. 🌿',
+        restartLabel: 'New Prompt',
+        showHistory: false
+    },
+    journal: {
+        stages: [
+            {
+                question: () => "What's on your mind right now?",
+                placeholder: 'Start writing...',
+                buttonLabel: 'Reflect'
+            },
+            {
+                question: (answers) => `What about "${extractSubject(answers[0])}" feels most important right now?`,
+                placeholder: 'Keep going...',
+                buttonLabel: 'Go deeper'
+            },
+            {
+                question: () => "What's one small, kind thing you could do for yourself right now?",
+                placeholder: 'Take a moment...',
+                buttonLabel: 'Save Entry'
+            }
+        ],
+        doneMessage: 'Your thoughts have been saved. 💭',
+        restartLabel: 'New Entry',
+        showHistory: true
+    }
+};
+
+function saveEntry(name, answers) {
+    const key = `pillo-${name}-entries`;
+    const entries = JSON.parse(localStorage.getItem(key) || '[]');
+    entries.unshift({ answers, date: new Date().toISOString() });
+    localStorage.setItem(key, JSON.stringify(entries.slice(0, 50)));
+}
+
+function initReflection(name) {
+    const config = REFLECTION_CONFIG[name];
+    const container = document.getElementById(`${name}-flow`);
+    container.innerHTML = '';
+    const state = { answers: [] };
+    renderReflectionStage(name, 0, state);
+
+    if (config.showHistory) renderJournalHistory();
+}
+
+function renderReflectionStage(name, stageIndex, state) {
+    const config = REFLECTION_CONFIG[name];
+    const stage = config.stages[stageIndex];
+    const container = document.getElementById(`${name}-flow`);
+
+    const block = document.createElement('div');
+    block.className = 'reflection-block';
+    block.innerHTML = `
+        <p class="reflection-question">${stage.question(state.answers)}</p>
+        <textarea class="journal-textarea reflection-input" placeholder="${stage.placeholder}"></textarea>
+        <button class="start-timer-btn reflection-submit">${stage.buttonLabel}</button>
+    `;
+    container.appendChild(block);
+
+    const textarea = block.querySelector('.reflection-input');
+    const button = block.querySelector('.reflection-submit');
+    textarea.focus();
+
+    const submit = () => {
+        const value = textarea.value.trim();
+        if (!value) {
+            textarea.focus();
+            return;
+        }
+
+        textarea.disabled = true;
+        button.disabled = true;
+        button.textContent = '✓';
+
+        state.answers.push(value);
+
+        if (stageIndex < config.stages.length - 1) {
+            renderReflectionStage(name, stageIndex + 1, state);
+        } else {
+            saveEntry(name, state.answers);
+            if (config.showHistory) renderJournalHistory();
+
+            const done = document.createElement('p');
+            done.className = 'reflection-done';
+            done.textContent = config.doneMessage;
+            container.appendChild(done);
+
+            const restart = document.createElement('button');
+            restart.className = 'start-timer-btn';
+            restart.textContent = config.restartLabel;
+            restart.onclick = () => initReflection(name);
+            container.appendChild(restart);
+        }
+
+        container.scrollTop = container.scrollHeight;
+    };
+
+    button.addEventListener('click', submit);
+    textarea.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            submit();
+        }
+    });
+
+    container.scrollTop = container.scrollHeight;
+}
+
+function escapeHTML(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// Journal entries are saved to this browser's local storage and shown
+// here so past reflections aren't lost when you close the session.
+function renderJournalHistory() {
+    const entries = JSON.parse(localStorage.getItem('pillo-journal-entries') || '[]');
+    const flow = document.getElementById('journal-flow');
+    let historyEl = document.getElementById('journal-history');
+
+    if (!historyEl) {
+        historyEl = document.createElement('div');
+        historyEl.id = 'journal-history';
+        historyEl.className = 'journal-history';
+        flow.parentNode.appendChild(historyEl);
+    }
+
+    if (entries.length === 0) {
+        historyEl.innerHTML = '';
+        return;
+    }
+
+    const items = entries.slice(0, 8).map(e => {
+        const date = new Date(e.date);
+        const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        const firstAnswer = e.answers[0] || '';
+        const preview = escapeHTML(firstAnswer.slice(0, 90)) + (firstAnswer.length > 90 ? '…' : '');
+        return `<div class="journal-entry"><span class="journal-entry-date">${dateStr}</span><p>${preview}</p></div>`;
+    }).join('');
+
+    historyEl.innerHTML = `
+        <p class="journal-history-title">Past entries</p>
+        ${items}
+        <button class="journal-clear" id="journal-clear-btn" type="button">Clear saved entries</button>
+    `;
+
+    document.getElementById('journal-clear-btn').addEventListener('click', () => {
+        localStorage.removeItem('pillo-journal-entries');
+        renderJournalHistory();
+    });
+}
+
+// ===== MOOD HISTORY CALENDAR (hanging wall calendar) =====
+const MOOD_OPTIONS = [
+    { emoji: '😊', label: 'Happy' },
+    { emoji: '😌', label: 'Calm' },
+    { emoji: '🥳', label: 'Energetic' },
+    { emoji: '😐', label: 'Neutral' },
+    { emoji: '😔', label: 'Sad' },
+    { emoji: '😰', label: 'Anxious' },
+    { emoji: '😠', label: 'Frustrated' },
+    { emoji: '😴', label: 'Tired' }
+];
+
+let calendarViewDate = new Date();
+calendarViewDate.setDate(1);
+let selectedMoodDateKey = null;
+
+function toDateKey(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+function getMoodHistory() {
+    return JSON.parse(localStorage.getItem('pillo-mood-history') || '{}');
+}
+
+function saveMoodHistory(data) {
+    localStorage.setItem('pillo-mood-history', JSON.stringify(data));
+}
+
+function renderCalendar() {
+    const year = calendarViewDate.getFullYear();
+    const month = calendarViewDate.getMonth();
+    document.getElementById('cal-month-label').textContent =
+        calendarViewDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const moodHistory = getMoodHistory();
+    const daysEl = document.getElementById('cal-days');
+    daysEl.innerHTML = '';
+
+    const firstDayWeekday = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const todayKey = toDateKey(today);
+
+    for (let i = 0; i < firstDayWeekday; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'cal-day empty';
+        daysEl.appendChild(empty);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const cellDate = new Date(year, month, day);
+        const dateKey = toDateKey(cellDate);
+        const isFuture = cellDate > today;
+        const isToday = dateKey === todayKey;
+        const mood = moodHistory[dateKey];
+
+        const cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = 'cal-day'
+            + (mood ? ' has-mood' : '')
+            + (isToday ? ' today' : '')
+            + (isFuture ? ' future' : '')
+            + (!isFuture && !isToday ? ' past-readonly' : '');
+        cell.textContent = mood ? mood.emoji : String(day);
+        if (mood) cell.title = mood.label;
+
+        // Only today can be marked — a calendar is a record, not something
+        // you go back and rewrite. Past days still show what you picked,
+        // they just aren't editable anymore.
+        if (isToday) {
+            cell.addEventListener('click', () => openMoodPicker(dateKey, cellDate));
+        } else if (!isFuture && !mood) {
+            cell.title = 'Only today can be marked';
+        }
+
+        daysEl.appendChild(cell);
+    }
+}
+
+function calendarShiftMonth(delta) {
+    const next = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + delta, 1);
+    const today = new Date();
+    const beyondCurrentMonth = next.getFullYear() > today.getFullYear()
+        || (next.getFullYear() === today.getFullYear() && next.getMonth() > today.getMonth());
+    if (beyondCurrentMonth) return;
+
+    calendarViewDate = next;
+    closeMoodPicker();
+    renderCalendar();
+
+    const calendarEl = document.getElementById('wall-calendar');
+    if (calendarEl) {
+        calendarEl.classList.remove('flipping');
+        void calendarEl.offsetWidth; // restart the animation if it's mid-flip already
+        calendarEl.classList.add('flipping');
+    }
+}
+
+// Flip pages by swiping/scrolling up or down over the calendar, like turning
+// the page of a real wall calendar — no buttons needed.
+let calendarFlipCooldown = false;
+let calendarTouchStartY = null;
+
+function handleCalendarWheel(e) {
+    e.preventDefault();
+    if (calendarFlipCooldown) return;
+    if (Math.abs(e.deltaY) < 8) return;
+
+    calendarFlipCooldown = true;
+    setTimeout(() => { calendarFlipCooldown = false; }, 450);
+
+    // swipe/scroll up = flip forward to next month, down = go back
+    if (e.deltaY < 0) {
+        calendarShiftMonth(1);
+    } else {
+        calendarShiftMonth(-1);
+    }
+}
+
+function handleCalendarTouchStart(e) {
+    calendarTouchStartY = e.touches[0].clientY;
+}
+
+function handleCalendarTouchEnd(e) {
+    if (calendarTouchStartY === null) return;
+    const endY = e.changedTouches[0].clientY;
+    const delta = calendarTouchStartY - endY; // positive = swiped upward
+    calendarTouchStartY = null;
+
+    if (Math.abs(delta) < 30) return; // require a deliberate swipe
+
+    if (delta > 0) {
+        calendarShiftMonth(1);
+    } else {
+        calendarShiftMonth(-1);
+    }
+}
+
+function openMoodPicker(dateKey, dateObj) {
+    selectedMoodDateKey = dateKey;
+    const picker = document.getElementById('cal-picker');
+    const moodHistory = getMoodHistory();
+    const current = moodHistory[dateKey];
+
+    document.getElementById('cal-picker-date').textContent =
+        dateObj.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+
+    const emojiRow = document.getElementById('cal-picker-emojis');
+    emojiRow.innerHTML = '';
+    MOOD_OPTIONS.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = opt.emoji;
+        btn.title = opt.label;
+        if (current && current.emoji === opt.emoji) btn.classList.add('selected');
+        btn.addEventListener('click', () => selectMood(opt));
+        emojiRow.appendChild(btn);
+    });
+
+    picker.style.display = 'block';
+}
+
+function selectMood(opt) {
+    if (!selectedMoodDateKey) return;
+    const moodHistory = getMoodHistory();
+    moodHistory[selectedMoodDateKey] = { emoji: opt.emoji, label: opt.label };
+    saveMoodHistory(moodHistory);
+    const key = selectedMoodDateKey;
+    renderCalendar();
+    openMoodPicker(key, new Date(key + 'T00:00:00')); // keep picker open so they can change their mind
+}
+
+function clearMood() {
+    if (!selectedMoodDateKey) return;
+    const moodHistory = getMoodHistory();
+    delete moodHistory[selectedMoodDateKey];
+    saveMoodHistory(moodHistory);
+    const key = selectedMoodDateKey;
+    renderCalendar();
+    openMoodPicker(key, new Date(key + 'T00:00:00'));
+}
+
+function closeMoodPicker() {
+    const picker = document.getElementById('cal-picker');
+    if (picker) picker.style.display = 'none';
+    selectedMoodDateKey = null;
+}
+
+// ===== CALM TIMELINE (freeform, no prompts — just a running log) =====
+function saveTimelineEntry() {
+    const input = document.getElementById('timeline-input');
+    const text = input.value.trim();
+    if (!text) {
+        input.focus();
+        return;
+    }
+
+    const key = 'pillo-timeline-entries';
+    const entries = JSON.parse(localStorage.getItem(key) || '[]');
+    entries.unshift({ text, date: new Date().toISOString() });
+    localStorage.setItem(key, JSON.stringify(entries.slice(0, 200)));
+
+    input.value = '';
+    renderTimelineList();
+}
+
+function renderTimelineList() {
+    const key = 'pillo-timeline-entries';
+    const entries = JSON.parse(localStorage.getItem(key) || '[]');
+    const listEl = document.getElementById('timeline-list');
+    if (!listEl) return;
+
+    if (entries.length === 0) {
+        listEl.innerHTML = '<p class="timeline-empty">Nothing here yet — your saved thoughts will build into a timeline.</p>';
+        return;
+    }
+
+    listEl.innerHTML = entries.map(e => {
+        const date = new Date(e.date);
+        const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+            + ' · ' + date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+        return `<div class="timeline-entry"><span class="timeline-entry-date">${dateStr}</span><p>${escapeHTML(e.text)}</p></div>`;
+    }).join('');
+}
+
+// ===== GRATITUDE JAR (freely add or remove, anytime) =====
+function addJarItem() {
+    const input = document.getElementById('jar-input');
+    const text = input.value.trim();
+    if (!text) {
+        input.focus();
+        return;
+    }
+
+    const key = 'pillo-jar-items';
+    const items = JSON.parse(localStorage.getItem(key) || '[]');
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    items.unshift({ id, text, date: new Date().toISOString() });
+    localStorage.setItem(key, JSON.stringify(items.slice(0, 300)));
+
+    input.value = '';
+    renderJarItems();
+}
+
+function removeJarItem(id) {
+    const key = 'pillo-jar-items';
+    const items = JSON.parse(localStorage.getItem(key) || '[]');
+    localStorage.setItem(key, JSON.stringify(items.filter(item => item.id !== id)));
+    renderJarItems();
+}
+
+function renderJarItems() {
+    const key = 'pillo-jar-items';
+    const items = JSON.parse(localStorage.getItem(key) || '[]');
+    const listEl = document.getElementById('jar-list');
+    if (!listEl) return;
+
+    if (items.length === 0) {
+        listEl.innerHTML = '<p class="timeline-empty">Your jar is empty — add your first thing above.</p>';
+        return;
+    }
+
+    listEl.innerHTML = items.map(item => `
+        <div class="jar-item">
+            <span class="jar-item-text">${escapeHTML(item.text)}</span>
+            <button class="jar-item-remove" onclick="removeJarItem('${item.id}')" aria-label="Remove from jar">✕</button>
+        </div>
+    `).join('');
+}
+
+// ===== LETTER TO MY FUTURE SELF (time capsule) =====
+function initCapsule() {
+    const container = document.getElementById('capsule-flow');
+    container.innerHTML = `
+        <div class="capsule-form">
+            <label for="capsule-text">Write to your future self</label>
+            <textarea class="journal-textarea" id="capsule-text" placeholder="Dear future me..."></textarea>
+            <label for="capsule-date">Unlock on</label>
+            <input type="date" class="capsule-date-input" id="capsule-date">
+            <p class="capsule-hint">Earliest unlock date is tomorrow — this is meant to wait for you.</p>
+            <button class="start-timer-btn" id="capsule-save-btn" onclick="saveCapsuleLetter()">Seal Letter 💌</button>
+        </div>
+        <div id="capsule-list"></div>
+    `;
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const minDateStr = toDateKey(tomorrow);
+    const dateInput = document.getElementById('capsule-date');
+    dateInput.min = minDateStr;
+    dateInput.value = minDateStr;
+
+    renderCapsuleList();
+}
+
+function saveCapsuleLetter() {
+    const textEl = document.getElementById('capsule-text');
+    const dateInput = document.getElementById('capsule-date');
+    const text = textEl.value.trim();
+    const unlockDate = dateInput.value;
+    const todayKey = toDateKey(new Date());
+
+    if (!text) {
+        textEl.focus();
+        return;
+    }
+    if (!unlockDate || unlockDate <= todayKey) {
+        dateInput.focus();
+        return;
+    }
+
+    const key = 'pillo-capsule-letters';
+    const letters = JSON.parse(localStorage.getItem(key) || '[]');
+    letters.unshift({ text, unlockDate, createdDate: new Date().toISOString() });
+    localStorage.setItem(key, JSON.stringify(letters.slice(0, 50)));
+
+    textEl.value = '';
+    renderCapsuleList();
+}
+
+function renderCapsuleList() {
+    const key = 'pillo-capsule-letters';
+    const letters = JSON.parse(localStorage.getItem(key) || '[]');
+    const listEl = document.getElementById('capsule-list');
+    if (!listEl) return;
+
+    if (letters.length === 0) {
+        listEl.innerHTML = '<p class="timeline-empty">No letters yet — write one above and it will wait for you here.</p>';
+        return;
+    }
+
+    const todayKey = toDateKey(new Date());
+    listEl.innerHTML = letters.map(letter => {
+        const isUnlocked = todayKey >= letter.unlockDate;
+        const unlockDateDisplay = new Date(letter.unlockDate + 'T00:00:00')
+            .toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+
+        if (isUnlocked) {
+            return `
+                <div class="capsule-list-item">
+                    <span class="capsule-item-status unlocked-status">Unlocked</span>
+                    <p class="capsule-item-date">Written for ${unlockDateDisplay}</p>
+                    <div class="capsule-letter-text">${escapeHTML(letter.text)}</div>
+                </div>
+            `;
+        }
+        return `
+            <div class="capsule-list-item">
+                <span class="capsule-item-status locked-status">🔒 Locked</span>
+                <p class="capsule-item-date">Opens ${unlockDateDisplay}</p>
+            </div>
+        `;
+    }).join('');
+}
+
+// ===== AMBIENT BACKGROUND MUSIC (synthesized, quiet by design) =====
+// A soft, airy pad that slowly drifts between a few related open-fifth
+// chords (never a hard cut — voices glide between notes), a filtered-noise
+// water layer for a flowing-stream texture, and occasional gentle pentatonic
+// chimes through a light echo. Nothing here is louder than a whisper —
+// AMBIENT_MAX_GAIN caps it even at full slider position.
+let audioCtx = null;
+let masterGain = null;
+let ambientPlaying = false;
+let ambientVolumeLevel = 0.65; // 0–1, driven by the slider
+const AMBIENT_MAX_GAIN = 0.22;
+
+function ensureAudioContext() {
+    if (audioCtx) return;
+
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0;
+    masterGain.connect(audioCtx.destination);
+
+    buildAmbientPad();
+    buildWaterTexture();
+    scheduleNextChime();
+}
+
+// Three voices form a fixed, unmoving foundation (C3, G3, D4 — open fifths,
+// never a minor third, so it reads as calm rather than sad). Only ONE voice
+// ever drifts, and only to notes that stay consonant against that steady
+// base — the earlier version transposed the whole chord together, which
+// meant the entire pad slid up or down at once like a siren. Never again:
+// now at most one note ever moves, slowly, while everything else holds.
+const PAD_BASE_NOTES = [130.81, 196.00, 293.66]; // C3, G3, D4 — fixed forever
+const WANDER_NOTES = [440.00, 587.33, 392.00, 659.25]; // A4, D5, G4, E5 — all consonant against the base
+let wanderIndex = 0;
+let padVoices = [];
+
+function buildAmbientPad() {
+    padVoices = [];
+    const allNotes = [...PAD_BASE_NOTES, WANDER_NOTES[0]];
+
+    allNotes.forEach((freq, i) => {
+        const voiceGain = audioCtx.createGain();
+        voiceGain.gain.value = 0.5 / allNotes.length;
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 1100;
+        filter.Q.value = 0.3;
+
+        const panner = audioCtx.createStereoPanner
+            ? audioCtx.createStereoPanner()
+            : null;
+        if (panner) panner.pan.value = ((i % 2 === 0) ? -1 : 1) * 0.25;
+
+        // two slightly detuned oscillators per voice for a soft chorus shimmer
+        const osc1 = audioCtx.createOscillator();
+        osc1.type = 'sine';
+        osc1.frequency.value = freq;
+
+        const osc2 = audioCtx.createOscillator();
+        osc2.type = 'sine';
+        osc2.frequency.value = freq * 1.004;
+
+        osc1.connect(filter);
+        osc2.connect(filter);
+        filter.connect(voiceGain);
+        if (panner) {
+            voiceGain.connect(panner);
+            panner.connect(masterGain);
+        } else {
+            voiceGain.connect(masterGain);
+        }
+
+        // slow, gentle "breathing" amplitude LFO — kept subtle so it never
+        // reads as a swell, just a soft living quality
+        const ampLFO = audioCtx.createOscillator();
+        ampLFO.type = 'sine';
+        ampLFO.frequency.value = 0.04 + i * 0.008;
+        const ampLFOGain = audioCtx.createGain();
+        ampLFOGain.gain.value = voiceGain.gain.value * 0.2;
+        ampLFO.connect(ampLFOGain);
+        ampLFOGain.connect(voiceGain.gain);
+
+        // very slow, shallow filter sweep for a gentle airy movement
+        const filterLFO = audioCtx.createOscillator();
+        filterLFO.type = 'sine';
+        filterLFO.frequency.value = 0.02 + i * 0.004;
+        const filterLFOGain = audioCtx.createGain();
+        filterLFOGain.gain.value = 120;
+        filterLFO.connect(filterLFOGain);
+        filterLFOGain.connect(filter.frequency);
+
+        osc1.start();
+        osc2.start();
+        ampLFO.start();
+        filterLFO.start();
+
+        padVoices.push({ osc1, osc2 });
+    });
+
+    scheduleWanderDrift();
+}
+
+function scheduleWanderDrift() {
+    const nextInMs = 55000 + Math.random() * 25000; // every ~55–80 seconds
+    setTimeout(() => {
+        wanderIndex = (wanderIndex + 1) % WANDER_NOTES.length;
+        const target = WANDER_NOTES[wanderIndex];
+        const now = audioCtx.currentTime;
+        const glideSeconds = 11; // slow, singular, and gentle — never the whole pad at once
+
+        // only the last (wandering) voice ever moves
+        const voice = padVoices[padVoices.length - 1];
+        [voice.osc1, voice.osc2].forEach((osc, oscIdx) => {
+            const detune = oscIdx === 1 ? 1.004 : 1;
+            osc.frequency.cancelScheduledValues(now);
+            osc.frequency.setValueAtTime(osc.frequency.value, now);
+            osc.frequency.linearRampToValueAtTime(target * detune, now + glideSeconds);
+        });
+
+        scheduleWanderDrift();
+    }, nextInMs);
+}
+
+// Flowing water, built from two layers of filtered noise: a low "body" layer
+// with a slow filter sweep for the wave-like rush, and a higher, faster-
+// modulated layer for a soft bubbling sparkle on top.
+function createNoiseBuffer(seconds) {
+    const bufferSize = audioCtx.sampleRate * seconds;
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+    }
+    return buffer;
+}
+
+function buildWaterTexture() {
+    const noiseBuffer = createNoiseBuffer(4);
+
+    // Layer 1 — the low, steady rush of the stream's body
+    const body = audioCtx.createBufferSource();
+    body.buffer = noiseBuffer;
+    body.loop = true;
+
+    const bodyFilter = audioCtx.createBiquadFilter();
+    bodyFilter.type = 'lowpass';
+    bodyFilter.frequency.value = 650;
+    bodyFilter.Q.value = 0.6;
+
+    const bodyGain = audioCtx.createGain();
+    bodyGain.gain.value = 0.055;
+
+    const bodySweep = audioCtx.createOscillator();
+    bodySweep.type = 'sine';
+    bodySweep.frequency.value = 0.06;
+    const bodySweepGain = audioCtx.createGain();
+    bodySweepGain.gain.value = 200;
+    bodySweep.connect(bodySweepGain);
+    bodySweepGain.connect(bodyFilter.frequency);
+
+    body.connect(bodyFilter);
+    bodyFilter.connect(bodyGain);
+    bodyGain.connect(masterGain);
+
+    // Layer 2 — a higher, faster-shimmering sparkle, like light bubbling
+    const sparkle = audioCtx.createBufferSource();
+    sparkle.buffer = noiseBuffer;
+    sparkle.loop = true;
+    sparkle.playbackRate.value = 1.3;
+
+    const sparkleFilter = audioCtx.createBiquadFilter();
+    sparkleFilter.type = 'bandpass';
+    sparkleFilter.frequency.value = 2100;
+    sparkleFilter.Q.value = 0.8;
+
+    const sparkleGain = audioCtx.createGain();
+    sparkleGain.gain.value = 0.022;
+
+    const sparkleLFO = audioCtx.createOscillator();
+    sparkleLFO.type = 'sine';
+    sparkleLFO.frequency.value = 0.14;
+    const sparkleLFOGain = audioCtx.createGain();
+    sparkleLFOGain.gain.value = 650;
+    sparkleLFO.connect(sparkleLFOGain);
+    sparkleLFOGain.connect(sparkleFilter.frequency);
+
+    sparkle.connect(sparkleFilter);
+    sparkleFilter.connect(sparkleGain);
+    sparkleGain.connect(masterGain);
+
+    body.start();
+    sparkle.start();
+    bodySweep.start();
+    sparkleLFO.start();
+}
+
+function playChime() {
+    if (!ambientPlaying || !audioCtx) return;
+
+    // major pentatonic, high register — the same "wind chime" quality
+    // as a music box, sparse and never insistent
+    const scale = [523.25, 587.33, 659.25, 783.99, 880.00];
+    const freq = scale[Math.floor(Math.random() * scale.length)];
+    const now = audioCtx.currentTime;
+
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+
+    const chimeGain = audioCtx.createGain();
+    chimeGain.gain.setValueAtTime(0, now);
+    chimeGain.gain.linearRampToValueAtTime(0.075, now + 0.6);
+    chimeGain.gain.exponentialRampToValueAtTime(0.0001, now + 4.5);
+
+    const delay = audioCtx.createDelay();
+    delay.delayTime.value = 0.45;
+    const feedback = audioCtx.createGain();
+    feedback.gain.value = 0.28;
+    delay.connect(feedback);
+    feedback.connect(delay);
+
+    osc.connect(chimeGain);
+    chimeGain.connect(masterGain);
+    chimeGain.connect(delay);
+    delay.connect(masterGain);
+
+    osc.start(now);
+    osc.stop(now + 5);
+}
+
+function scheduleNextChime() {
+    const nextInMs = 8000 + Math.random() * 10000; // every 8–18 seconds
+    setTimeout(() => {
+        playChime();
+        scheduleNextChime();
+    }, nextInMs);
+}
+
+function toggleAmbientAudio() {
+    if (ambientPlaying && audioUnlocked) {
+        stopAmbientPlayback();
+    } else {
+        startAmbientPlayback();
+    }
+}
+
+function setAmbientVolume(sliderValue) {
+    ambientVolumeLevel = sliderValue / 100;
+
+    if (!audioUnlocked) {
+        // Moving the slider before anything has played is a clear signal
+        // they want sound — treat it the same as pressing play.
+        startAmbientPlayback();
+        return;
+    }
+
+    if (audioCtx && masterGain && ambientPlaying) {
+        const now = audioCtx.currentTime;
+        masterGain.gain.cancelScheduledValues(now);
+        masterGain.gain.setValueAtTime(masterGain.gain.value, now);
+        masterGain.gain.linearRampToValueAtTime(ambientVolumeLevel * AMBIENT_MAX_GAIN, now + 0.2);
+    }
+}
+
+function startAmbientPlayback() {
+    ensureAudioContext();
+
+    const beginRamp = () => {
+        audioUnlocked = true;
+        ambientPlaying = true;
+
+        const now = audioCtx.currentTime;
+        masterGain.gain.cancelScheduledValues(now);
+        masterGain.gain.setValueAtTime(masterGain.gain.value, now);
+        masterGain.gain.linearRampToValueAtTime(ambientVolumeLevel * AMBIENT_MAX_GAIN, now + 1.5);
+
+        const icon = document.getElementById('audio-icon');
+        if (icon) icon.textContent = '🔊';
+        const btn = document.getElementById('audio-toggle-btn');
+        if (btn) btn.classList.remove('pulse-hint');
+    };
+
+    if (audioCtx.state === 'suspended') {
+        // resume() must be *called* synchronously within the gesture handler
+        // (it is, right here) — we can still wait for it to actually finish
+        // before animating the volume so the UI never claims "playing" when
+        // the browser hasn't actually unlocked audio yet.
+        audioCtx.resume().then(beginRamp).catch(() => {
+            // Some browsers need a second, more direct gesture (e.g. tapping
+            // the button itself rather than a link) — leave the pulse hint
+            // active so it's clear another tap is needed.
+        });
+    } else {
+        beginRamp();
+    }
+}
+
+function stopAmbientPlayback() {
+    ambientPlaying = false;
+    if (!audioCtx) return;
+
+    const now = audioCtx.currentTime;
+    masterGain.gain.cancelScheduledValues(now);
+    masterGain.gain.setValueAtTime(masterGain.gain.value, now);
+    masterGain.gain.linearRampToValueAtTime(0, now + 1.2);
+
+    const icon = document.getElementById('audio-icon');
+    if (icon) icon.textContent = '🔈';
+}
+
+// Browsers block sound from playing before a real user gesture, no matter
+// what a page's own code tries to do — that's not something any site can
+// override, and trying to create/resume the AudioContext before a gesture
+// (e.g. on the page's load event) can actually make some browsers, notably
+// Safari, refuse to ever unlock it properly. So this only ever runs inside
+// a real, direct interaction — the first click, tap, or key press anywhere
+// on the page, not just the widget itself.
+let audioUnlocked = false;
+let wantsAmbientAudio = true; // intent: play as soon as it's allowed to
+
+function attemptAutoStart(e) {
+    if (audioUnlocked || !wantsAmbientAudio) return;
+    // Skip interactions on the widget itself — its own button/slider handlers
+    // already start playback, and letting both fire races a start against
+    // an immediate stop (the button's click arrives right after pointerdown).
+    if (e.target && e.target.closest && e.target.closest('.ambient-audio-widget')) return;
+    startAmbientPlayback();
+}
+
+['pointerdown', 'keydown', 'touchstart'].forEach(evt => {
+    document.addEventListener(evt, attemptAutoStart, { once: true, capture: true });
+});
+
+// Pause the audio context when the tab isn't visible, resume if it was playing
+document.addEventListener('visibilitychange', () => {
+    if (!audioCtx) return;
+    if (document.hidden) {
+        audioCtx.suspend();
+    } else if (ambientPlaying) {
+        audioCtx.resume();
+    }
+});
+
+// ===== SMOOTH SCROLL NAVIGATION =====
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth' });
+        }
+    });
+});
+
+// ===== BUBBLE POP (calming mini-game) =====
+let bubbleSpawnInterval = null;
+let bubblesPopped = 0;
+
+function startBubbles() {
+    bubblesPopped = 0;
+    updateBubbleCount();
+    const arena = document.getElementById('bubble-arena');
+    arena.innerHTML = '';
+
+    stopBubbles(); // safety: never double-spawn
+    bubbleSpawnInterval = setInterval(spawnBubble, 900);
+    spawnBubble();
+    spawnBubble();
+}
+
+function stopBubbles() {
+    if (bubbleSpawnInterval) {
+        clearInterval(bubbleSpawnInterval);
+        bubbleSpawnInterval = null;
+    }
+}
+
+function spawnBubble() {
+    const arena = document.getElementById('bubble-arena');
+    if (!arena) return;
+    // don't overcrowd — calm, not chaotic
+    if (arena.querySelectorAll('.bubble').length >= 8) return;
+
+    const bubble = document.createElement('button');
+    bubble.type = 'button';
+    bubble.className = 'bubble';
+    const size = 28 + Math.random() * 34;
+    bubble.style.width = size + 'px';
+    bubble.style.height = size + 'px';
+    bubble.style.left = (5 + Math.random() * 85) + '%';
+    const riseSeconds = 7 + Math.random() * 5;
+    bubble.style.animationDuration = riseSeconds + 's';
+    bubble.setAttribute('aria-label', 'Pop bubble');
+
+    bubble.addEventListener('click', () => popBubble(bubble));
+    // remove quietly when it floats off the top unpopped
+    setTimeout(() => { if (bubble.parentNode) bubble.remove(); }, riseSeconds * 1000);
+
+    arena.appendChild(bubble);
+}
+
+function popBubble(bubble) {
+    if (bubble.classList.contains('popping')) return;
+    bubble.classList.add('popping');
+    playPopSound();
+    bubblesPopped++;
+    updateBubbleCount();
+    setTimeout(() => bubble.remove(), 200);
+}
+
+function updateBubbleCount() {
+    const el = document.getElementById('bubble-count');
+    if (el) el.textContent = 'Bubbles popped: ' + bubblesPopped;
+}
+
+function playPopSound() {
+    // gentle water-drop pop, reusing the site's audio context if it exists
+    try {
+        ensureAudioContext();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600 + Math.random() * 250, now);
+        osc.frequency.exponentialRampToValueAtTime(180, now + 0.12);
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.18);
+    } catch (e) { /* sound is a bonus, never an error */ }
+}
+
+// ===== MY CALM PLANT (grows with your self-care days) =====
+function recordActiveDay() {
+    const key = 'pillo-active-days';
+    const days = JSON.parse(localStorage.getItem(key) || '[]');
+    const today = toDateKey(new Date());
+    if (!days.includes(today)) {
+        days.push(today);
+        localStorage.setItem(key, JSON.stringify(days));
+    }
+}
+
+const PLANT_STAGES = [
+    { emoji: '🌰', name: 'Seed', message: 'Every calm journey starts somewhere. Do any exercise to plant your seed!' },
+    { emoji: '🌱', name: 'Sprout', message: 'It sprouted! One day of taking care of yourself, done.' },
+    { emoji: '🌿', name: 'Seedling', message: 'Two days of self-care. Little leaves are showing.' },
+    { emoji: '☘️', name: 'Young plant', message: 'Three days! Your plant is finding its shape.' },
+    { emoji: '🌷', name: 'Budding', message: 'Five days of showing up for yourself. A flower bud is forming.' },
+    { emoji: '🌳', name: 'Flourishing', message: 'Ten days! Your calm has grown into something strong.' },
+    { emoji: '🌸', name: 'In bloom', message: 'Twenty days of self-care. It bloomed — and honestly, so did you.' }
+];
+const PLANT_THRESHOLDS = [0, 1, 2, 3, 5, 10, 20];
+
+function renderPlant() {
+    const container = document.getElementById('plant-display');
+    if (!container) return;
+
+    const days = JSON.parse(localStorage.getItem('pillo-active-days') || '[]');
+    const count = days.length;
+
+    let stageIndex = 0;
+    for (let i = PLANT_THRESHOLDS.length - 1; i >= 0; i--) {
+        if (count >= PLANT_THRESHOLDS[i]) { stageIndex = i; break; }
+    }
+    const stage = PLANT_STAGES[stageIndex];
+    const nextThreshold = PLANT_THRESHOLDS[stageIndex + 1];
+    const isMaxed = stageIndex === PLANT_STAGES.length - 1;
+
+    const progressHTML = isMaxed
+        ? '<p class="plant-progress">Fully grown — keep coming back to keep it happy 🌞</p>'
+        : `<p class="plant-progress">${nextThreshold - count} more day${nextThreshold - count === 1 ? '' : 's'} of self-care until it grows again</p>`;
+
+    container.innerHTML = `
+        <div class="plant-stage-emoji">${stage.emoji}</div>
+        <p class="plant-stage-name">${stage.name}</p>
+        <p class="plant-message">${stage.message}</p>
+        <p class="plant-days">Days you've taken care of yourself: <strong>${count}</strong></p>
+        ${progressHTML}
+    `;
+}
+
+// ===== 5-4-3-2-1 GROUNDING (senses exercise) =====
+const GROUNDING_STEPS = [
+    { count: 5, sense: 'SEE', emoji: '👀', prompt: 'Look around slowly. Name five things you can see — anything at all, big or small.' },
+    { count: 4, sense: 'TOUCH', emoji: '✋', prompt: 'Notice four things you can feel — your feet on the floor, the chair, your sleeves, the air.' },
+    { count: 3, sense: 'HEAR', emoji: '👂', prompt: 'Listen for three sounds — near or far, loud or almost silent.' },
+    { count: 2, sense: 'SMELL', emoji: '👃', prompt: 'Find two things you can smell — or two smells you like remembering.' },
+    { count: 1, sense: 'TASTE', emoji: '👅', prompt: 'Notice one thing you can taste right now — even just the inside of your mouth.' }
+];
+let groundingIndex = 0;
+
+function startGrounding() {
+    groundingIndex = 0;
+    renderGroundingStep();
+}
+
+function renderGroundingStep() {
+    const container = document.getElementById('grounding-flow');
+    if (!container) return;
+
+    if (groundingIndex >= GROUNDING_STEPS.length) {
+        container.innerHTML = `
+            <div class="grounding-step">
+                <div class="grounding-emoji">🌿</div>
+                <p class="grounding-sense">You're here.</p>
+                <p class="grounding-prompt">All five senses, back in the room. Take one more slow breath before you go.</p>
+                <button class="start-timer-btn" onclick="startGrounding()">Start Over</button>
+            </div>
+        `;
+        return;
+    }
+
+    const step = GROUNDING_STEPS[groundingIndex];
+    container.innerHTML = `
+        <div class="grounding-step">
+            <div class="grounding-emoji">${step.emoji}</div>
+            <p class="grounding-sense"><span class="grounding-count">${step.count}</span> thing${step.count === 1 ? '' : 's'} you can ${step.sense}</p>
+            <p class="grounding-prompt">${step.prompt}</p>
+            <button class="start-timer-btn" onclick="groundingIndex++; renderGroundingStep()">${groundingIndex === GROUNDING_STEPS.length - 1 ? 'Finish' : 'Next Sense'}</button>
+        </div>
+    `;
+}
+
+// ===== BALLOON SCHOOL (full 50-level game, embedded in its own iframe so its
+// canvas/controls/state never collide with this page's, and its own music
+// plays instead of — not alongside — Pillo's ambient pad.) =====
+let balloonWasAmbientPlaying = false;
+let balloonFrameLoaded = false;
+
+function startBalloonGame() {
+    const frame = document.getElementById('balloon-frame');
+    if (!frame) return;
+
+    balloonWasAmbientPlaying = ambientPlaying;
+    if (ambientPlaying) stopAmbientPlayback();
+
+    // Lazy-load once; leaving it in the DOM after that means progress within
+    // a visit (current level, score) survives closing and reopening the session.
+    if (!balloonFrameLoaded) {
+        frame.src = 'balloon_school_20_embed.html';
+        balloonFrameLoaded = true;
+    }
+}
+
+function stopBalloonGame() {
+    const frame = document.getElementById('balloon-frame');
+    // Ask the game to pause itself (rather than reloading it) so nothing keeps
+    // running in the background and the player lands back on a Pause screen,
+    // not mid-hazard, the next time they open it.
+    if (frame && frame.contentWindow) {
+        frame.contentWindow.postMessage({ type: 'balloonPauseRequest' }, '*');
+    }
+    if (balloonWasAmbientPlaying) startAmbientPlayback();
+}
+
+// The embedded game's own "Exit to Pillo" buttons (menu + pause screen) can't
+// reach this page's Escape/backdrop-click handlers from inside the iframe,
+// so they ask to leave via postMessage instead.
+window.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'balloonExit' && activeSession === 'balloon') {
+        closeSession('balloon');
+    }
+});
+
+// ===== TIME-OF-DAY AMBIENT LIGHTING =====
+// The page's background gradient shifts gently based on the visitor's own
+// local clock — soft sunrise tones in the morning, warm dusk in the
+// evening, deeper calm blues at night — like sunlight moving across a room.
+function applyTimeOfDayTheme() {
+    const hour = new Date().getHours();
+    document.body.classList.remove('time-morning', 'time-evening', 'time-night');
+
+    if (hour >= 5 && hour < 11) {
+        document.body.classList.add('time-morning');
+    } else if (hour >= 17 && hour < 21) {
+        document.body.classList.add('time-evening');
+    } else if (hour >= 21 || hour < 5) {
+        document.body.classList.add('time-night');
+    }
+    // 11am-5pm (midday) uses the default palette — no class needed
+}
+
+// ===== MOOD-AWARE HERO GREETING =====
+// If today's mood has already been logged on the wall calendar, the hero
+// quietly reflects it back. If not, it gently invites a check-in instead.
+function renderMoodAwareGreeting() {
+    const heroContent = document.querySelector('.hero-content');
+    const ctaButton = document.querySelector('.cta-button');
+    if (!heroContent || !ctaButton) return;
+
+    const moodHistory = getMoodHistory();
+    const todayMood = moodHistory[toDateKey(new Date())];
+
+    const messages = {
+        Happy: "Looks like today's already a good one. 😊",
+        Calm: "Glad you're feeling calm today — let's keep that going.",
+        Energetic: 'Love that energy today — maybe channel some of it into a stretch.',
+        Neutral: "However today's going, there's room here for you.",
+        Sad: "Sounds like today's been a lot. I'm glad you're here.",
+        Anxious: 'If today has felt like a lot, the breathing exercise below might help.',
+        Frustrated: "Rough day? Let's see if we can soften it, even a little.",
+        Tired: 'Sounds like you could use some rest — you\u2019re in the right place.'
+    };
+
+    const greeting = document.createElement('p');
+    greeting.className = 'hero-mood-greeting fade-in-block';
+    greeting.style.animationDelay = '1.2s';
+    greeting.textContent = todayMood
+        ? (messages[todayMood.label] || 'Thanks for checking in today.')
+        : "Haven't checked in today? Scroll down and let the calendar know how you're doing.";
+
+    heroContent.insertBefore(greeting, ctaButton);
+}
+
+// ===== LOGO EASTER EGG =====
+// Click Pillo's logo anywhere it appears and the meditator takes a little breath.
+function initLogoEasterEgg() {
+    document.querySelectorAll('.logo-svg, .large-logo').forEach(svg => {
+        svg.style.cursor = 'pointer';
+        svg.addEventListener('click', () => {
+            svg.classList.remove('logo-breathe');
+            void svg.offsetWidth;
+            svg.classList.add('logo-breathe');
+        });
+        // When the breath finishes, remove the class — otherwise it blocks
+        // future clicks from re-triggering AND (on the large logo) leaves the
+        // idle float animation permanently overridden.
+        svg.addEventListener('animationend', (e) => {
+            if (e.animationName === 'logoBreathe') {
+                svg.classList.remove('logo-breathe');
+            }
+        });
+    });
+}
+
+// ===== PAGE LOAD =====
+window.addEventListener('load', () => {
+    console.log("Pillo's Calming Pill is ready! 🌿");
+});
+
+applyTimeOfDayTheme();
+renderMoodAwareGreeting();
+initLogoEasterEgg();
+renderCalendar();
+
+const wallCalendarEl = document.getElementById('wall-calendar');
+if (wallCalendarEl) {
+    wallCalendarEl.addEventListener('wheel', handleCalendarWheel, { passive: false });
+    wallCalendarEl.addEventListener('touchstart', handleCalendarTouchStart, { passive: true });
+    wallCalendarEl.addEventListener('touchend', handleCalendarTouchEnd, { passive: true });
+}
+
+</script>
+</body>
+</html>
