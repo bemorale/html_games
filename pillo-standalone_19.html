@@ -1477,8 +1477,19 @@ body.time-night .hero-mood-greeting {
     padding: 9px 18px 9px 12px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
     z-index: 3000;
-    cursor: default;
+    cursor: pointer;
     user-select: none;
+    border: none;
+    font-family: inherit;
+}
+
+.coin-bank.bonus-ready {
+    animation: coinBonusPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes coinBonusPulse {
+    0%, 100% { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15), 0 0 0 0 rgba(255, 200, 80, 0.55); }
+    50% { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15), 0 0 0 10px rgba(255, 200, 80, 0); }
 }
 
 .coin-bank-icon {
@@ -1559,6 +1570,118 @@ body.time-night .hero-mood-greeting {
 
 .coin-intro-close:hover {
     background: #e2e2e2;
+}
+
+/* ===== DAILY STREAK BADGE (hero) ===== */
+.streak-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.55);
+    padding: 8px 20px;
+    border-radius: 24px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1f6954;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.07);
+}
+
+/* ===== TODAY'S PICK (rotating spotlight) ===== */
+.todays-pick {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: linear-gradient(120deg, #FFF6E0 0%, #EAF7F2 100%);
+    border: 2px dashed #F0C869;
+    border-radius: 18px;
+    padding: 20px 26px;
+    margin-bottom: 34px;
+    cursor: pointer;
+    text-align: left;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.todays-pick:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.1);
+}
+
+.todays-pick-icon {
+    font-size: 2.6rem;
+    flex-shrink: 0;
+}
+
+.todays-pick-tag {
+    display: inline-block;
+    background: #F0C869;
+    color: #5a4212;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+}
+
+.todays-pick-body h3 {
+    font-size: 1.25rem;
+    color: #1a1a1a;
+    margin-bottom: 4px;
+}
+
+.todays-pick-body p {
+    color: #555;
+    font-size: 0.92rem;
+}
+
+/* ===== MINDFUL MINUTES WEEKLY TRACKER ===== */
+.mindful-minutes-widget {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    background: white;
+    border-radius: 16px;
+    padding: 18px 24px;
+    margin-top: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.mindful-minutes-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.mindful-minutes-body {
+    flex: 1;
+    text-align: left;
+}
+
+.mindful-minutes-label {
+    font-weight: 600;
+    color: #1f6954;
+    font-size: 0.92rem;
+    margin-bottom: 8px;
+}
+
+.mindful-minutes-track {
+    background: #eef2f0;
+    border-radius: 8px;
+    height: 10px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+.mindful-minutes-fill {
+    background: linear-gradient(90deg, #2d8a78, #1f6954);
+    height: 100%;
+    border-radius: 8px;
+    transition: width 0.4s ease;
+}
+
+.mindful-minutes-text {
+    font-size: 0.82rem;
+    color: #888;
 }
 
 .coin-toast {
@@ -2441,81 +2564,94 @@ body.time-night .hero-mood-greeting {
             <h2 class="section-title">My Projects</h2>
             <p class="section-subtitle">This wellness website is my main project — here's the full collection of exercises I built for it. Choose one to start your calming journey. Tip: breathing with my logo and finishing exercises earns 😌 Calm Face Coins — spend them in the Coin Shop below.</p>
 
+            <!-- Today's Pick — rotates daily so the page never looks frozen between visits -->
+            <div class="todays-pick" id="todays-pick" style="display:none;"></div>
+
             <!-- Exercise Cards -->
             <div class="exercise-grid">
-                <div class="exercise-card" onclick="openSession('stretching')">
+                <div class="exercise-card" data-exercise-id="stretching" onclick="openSession('stretching')">
                     <div class="exercise-icon">🧘</div>
                     <h3>Stretching Routine</h3>
                     <p>A full, unhurried head-to-toe stretch sequence</p>
                 </div>
 
-                <div class="exercise-card" onclick="openSession('pmr')">
+                <div class="exercise-card" data-exercise-id="pmr" onclick="openSession('pmr')">
                     <div class="exercise-icon">💆</div>
                     <h3>Muscle Relaxation</h3>
                     <p>Tense and release each muscle group to let go of tension</p>
                 </div>
 
-                <div class="exercise-card" onclick="openSession('meditation')">
+                <div class="exercise-card" data-exercise-id="meditation" onclick="openSession('meditation')">
                     <div class="exercise-icon">🧘‍♀️</div>
                     <h3>Meditation</h3>
                     <p>A longer guided body scan into quiet reflection</p>
                 </div>
 
-                <div class="exercise-card" onclick="openSession('gratitude')">
+                <div class="exercise-card" data-exercise-id="gratitude" onclick="openSession('gratitude')">
                     <div class="exercise-icon">🙏</div>
                     <h3>Gratitude Prompts</h3>
                     <p>Reflect and appreciate the good things</p>
                 </div>
 
-                <div class="exercise-card" onclick="openSession('jar')">
+                <div class="exercise-card" data-exercise-id="jar" onclick="openSession('jar')">
                     <div class="exercise-icon">🎁</div>
                     <h3>Gratitude Jar</h3>
                     <p>Keep a running collection — add or remove anytime</p>
                 </div>
 
-                <div class="exercise-card" onclick="openSession('journal')">
+                <div class="exercise-card" data-exercise-id="journal" onclick="openSession('journal')">
                     <div class="exercise-icon">📝</div>
                     <h3>Journaling</h3>
                     <p>Express your feelings and thoughts — saved for later</p>
                 </div>
 
-                <div class="exercise-card" onclick="openSession('capsule')">
+                <div class="exercise-card" data-exercise-id="capsule" onclick="openSession('capsule')">
                     <div class="exercise-icon">💌</div>
                     <h3>Letter to Future Self</h3>
                     <p>Write yourself something kind to open on a later day</p>
                 </div>
 
-                <div class="exercise-card" onclick="openSession('bubbles')">
+                <div class="exercise-card" data-exercise-id="bubbles" onclick="openSession('bubbles')">
                     <div class="exercise-icon">💦</div>
                     <h3>Bubble Pop</h3>
                     <p>Pop gentle bubbles as they drift by — calm, but playable</p>
                 </div>
 
-                <div class="exercise-card" onclick="openSession('plant')">
+                <div class="exercise-card" data-exercise-id="plant" onclick="openSession('plant')">
                     <div class="exercise-icon">🌱</div>
                     <h3>My Calm Plant</h3>
                     <p>It grows a little every day you take care of yourself</p>
                 </div>
 
                 <!-- Unlockable exercises — hidden until earned in the Coin Shop -->
-                <div class="exercise-card locked-exercise" data-unlock-id="boxbreathing" onclick="openSession('boxbreathing')">
+                <div class="exercise-card locked-exercise" data-unlock-id="boxbreathing" data-exercise-id="boxbreathing" onclick="openSession('boxbreathing')">
                     <div class="exercise-icon">🔲</div>
                     <h3>Box Breathing</h3>
                     <p>Trace a calming box with four equal breathing phases</p>
                 </div>
 
-                <div class="exercise-card locked-exercise" data-unlock-id="visualization" onclick="openSession('visualization')">
+                <div class="exercise-card locked-exercise" data-unlock-id="visualization" data-exercise-id="visualization" onclick="openSession('visualization')">
                     <div class="exercise-icon">🏝️</div>
                     <h3>Guided Visualization</h3>
                     <p>Picture a peaceful place with all five senses</p>
                 </div>
 
-                <div class="exercise-card locked-exercise" data-unlock-id="walking" onclick="openSession('walking')">
+                <div class="exercise-card locked-exercise" data-unlock-id="walking" data-exercise-id="walking" onclick="openSession('walking')">
                     <div class="exercise-icon">🚶‍♀️</div>
                     <h3>Mindful Walking</h3>
                     <p>Slow down and notice each step, breath, and surrounding</p>
                 </div>
 
+            </div>
+
+            <!-- Mindful Minutes weekly tracker — only shown once Mindful Walking is unlocked -->
+            <div class="mindful-minutes-widget" id="mindful-minutes-widget" style="display:none;">
+                <div class="mindful-minutes-icon">🚶</div>
+                <div class="mindful-minutes-body">
+                    <div class="mindful-minutes-label">Mindful Minutes this week</div>
+                    <div class="mindful-minutes-track"><div class="mindful-minutes-fill" id="mindful-minutes-fill"></div></div>
+                    <div class="mindful-minutes-text" id="mindful-minutes-text">0 / 30 min</div>
+                </div>
             </div>
 
             <!-- Fun Games subsection — part of My Projects, but its own thing -->
@@ -2927,10 +3063,10 @@ body.time-night .hero-mood-greeting {
     </div>
 
     <!-- Calm Face Coin bank — earned by breathing with the logo or finishing exercises -->
-    <div class="coin-bank" id="coin-bank" title="Calm Face Coins — tap Pillo's logo and breathe with it, or finish an exercise, to earn more">
+    <button class="coin-bank" id="coin-bank" onclick="claimDailyBonus()" title="Calm Face Coins — tap Pillo's logo and breathe with it, or finish an exercise, to earn more. Click here once a day for a bonus!">
         <span class="coin-bank-icon">😌</span>
         <span class="coin-bank-count" id="coin-bank-count">0</span>
-    </div>
+    </button>
 
     <!-- First-visit explainer — dismissed forever once closed or once the first coin is earned -->
     <div class="coin-intro-bubble" id="coin-intro-bubble">
@@ -3012,6 +3148,14 @@ function closeSession(name) {
             addCoins(EXERCISE_COIN_REWARD);
         }
     }
+
+    // Every second actually spent in Mindful Walking counts toward the
+    // weekly goal, independent of the coin threshold above.
+    if (name === 'walking') {
+        recordMindfulSeconds(Math.round((Date.now() - sessionOpenedAt) / 1000));
+    }
+
+    renderStreakBadge();
 
     if (STEP_SESSIONS.includes(name)) stopStepTimer(name);
     else if (name === 'bubbles') stopBubbles();
@@ -4702,6 +4846,8 @@ function purchaseUnlock(type) {
     }
 
     renderShop();
+    renderTodaysPick();
+    renderMindfulMinutes();
 }
 
 // ===== CALM FACE COINS (economy) =====
@@ -4763,6 +4909,158 @@ function showCoinToast(amount) {
     setTimeout(() => toast.remove(), 1450);
 }
 
+// ===== DAILY STREAK (built from the same active-days log the Calm Plant uses) =====
+function getCurrentStreak() {
+    const days = new Set(JSON.parse(localStorage.getItem('pillo-active-days') || '[]'));
+    const cursor = new Date();
+    cursor.setHours(0, 0, 0, 0);
+
+    // Nothing logged yet today doesn't mean the streak is broken — it's
+    // still "alive" through yesterday until the day actually runs out.
+    if (!days.has(toDateKey(cursor))) {
+        cursor.setDate(cursor.getDate() - 1);
+        if (!days.has(toDateKey(cursor))) return 0;
+    }
+
+    let streak = 0;
+    while (days.has(toDateKey(cursor))) {
+        streak++;
+        cursor.setDate(cursor.getDate() - 1);
+    }
+    return streak;
+}
+
+function renderStreakBadge() {
+    const heroContent = document.querySelector('.hero-content');
+    const ctaButton = document.querySelector('.cta-button');
+    if (!heroContent || !ctaButton) return;
+
+    const existing = document.getElementById('streak-badge');
+    if (existing) existing.remove();
+
+    const streak = getCurrentStreak();
+    if (streak < 1) return;
+
+    const badge = document.createElement('p');
+    badge.id = 'streak-badge';
+    badge.className = 'streak-badge fade-in-block';
+    badge.style.animationDelay = '1.5s';
+    badge.textContent = `🔥 ${streak}-day streak — keep it going!`;
+    heroContent.insertBefore(badge, ctaButton);
+}
+
+// ===== DAILY COIN BONUS (click the coin bank once a day) =====
+const DAILY_BONUS_KEY = 'pillo-last-daily-bonus';
+const DAILY_BONUS_AMOUNT = 5;
+
+function isDailyBonusAvailable() {
+    return localStorage.getItem(DAILY_BONUS_KEY) !== toDateKey(new Date());
+}
+
+function claimDailyBonus() {
+    if (!isDailyBonusAvailable()) return;
+    localStorage.setItem(DAILY_BONUS_KEY, toDateKey(new Date()));
+    addCoins(DAILY_BONUS_AMOUNT);
+    updateDailyBonusHint();
+}
+
+function updateDailyBonusHint() {
+    const badge = document.getElementById('coin-bank');
+    if (badge) badge.classList.toggle('bonus-ready', isDailyBonusAvailable());
+}
+
+// ===== TODAY'S PICK (rotates daily so the homepage isn't static) =====
+const SPOTLIGHT_BASE_POOL = ['stretching', 'pmr', 'meditation', 'gratitude', 'jar', 'journal', 'capsule', 'bubbles'];
+
+function getSpotlightPool() {
+    return SPOTLIGHT_BASE_POOL.concat(getUnlockedIds(UNLOCKED_EXERCISES_KEY));
+}
+
+function renderTodaysPick() {
+    const container = document.getElementById('todays-pick');
+    if (!container) return;
+
+    const pool = getSpotlightPool();
+    const daysSinceEpoch = Math.floor(Date.now() / 86400000);
+    const pickId = pool.length ? pool[daysSinceEpoch % pool.length] : null;
+    const card = pickId && document.querySelector(`.exercise-card[data-exercise-id="${pickId}"]`);
+    if (!card) {
+        container.style.display = 'none';
+        return;
+    }
+
+    const icon = card.querySelector('.exercise-icon')?.textContent || '✨';
+    const title = card.querySelector('h3')?.textContent || '';
+    const desc = card.querySelector('p')?.textContent || '';
+
+    container.innerHTML = `
+        <div class="todays-pick-icon">${icon}</div>
+        <div class="todays-pick-body">
+            <span class="todays-pick-tag">Today's Pick</span>
+            <h3>${title}</h3>
+            <p>${desc}</p>
+        </div>`;
+    container.style.display = 'flex';
+    container.onclick = () => openSession(pickId);
+}
+
+// ===== MINDFUL MINUTES (weekly tracker — only shown once Mindful Walking is unlocked) =====
+const MINDFUL_MINUTES_KEY = 'pillo-mindful-minutes';
+const MINDFUL_MINUTES_GOAL_SEC = 30 * 60;
+
+function getWeekKey(date) {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    const day = (d.getDay() + 6) % 7; // Monday = start of week
+    d.setDate(d.getDate() - day);
+    return toDateKey(d);
+}
+
+function recordMindfulSeconds(seconds) {
+    if (seconds <= 0) return;
+    const weekKey = getWeekKey(new Date());
+    let store = { weekKey, seconds: 0 };
+    try {
+        const saved = JSON.parse(localStorage.getItem(MINDFUL_MINUTES_KEY) || 'null');
+        if (saved && saved.weekKey === weekKey) store = saved;
+    } catch (e) { /* start fresh if storage was ever corrupted */ }
+    store.seconds += seconds;
+    localStorage.setItem(MINDFUL_MINUTES_KEY, JSON.stringify(store));
+    renderMindfulMinutes();
+}
+
+function getMindfulSecondsThisWeek() {
+    const weekKey = getWeekKey(new Date());
+    try {
+        const saved = JSON.parse(localStorage.getItem(MINDFUL_MINUTES_KEY) || 'null');
+        return (saved && saved.weekKey === weekKey) ? saved.seconds : 0;
+    } catch (e) {
+        return 0;
+    }
+}
+
+function renderMindfulMinutes() {
+    const widget = document.getElementById('mindful-minutes-widget');
+    if (!widget) return;
+
+    if (!getUnlockedIds(UNLOCKED_EXERCISES_KEY).includes('walking')) {
+        widget.style.display = 'none';
+        return;
+    }
+
+    const seconds = getMindfulSecondsThisWeek();
+    const minutes = Math.floor(seconds / 60);
+    const goalMinutes = Math.floor(MINDFUL_MINUTES_GOAL_SEC / 60);
+    const pct = Math.min(100, Math.round((seconds / MINDFUL_MINUTES_GOAL_SEC) * 100));
+
+    const fill = document.getElementById('mindful-minutes-fill');
+    const text = document.getElementById('mindful-minutes-text');
+    if (fill) fill.style.width = pct + '%';
+    if (text) text.textContent = `${minutes} / ${goalMinutes} min${minutes >= goalMinutes ? ' — goal reached! 🎉' : ''}`;
+
+    widget.style.display = 'flex';
+}
+
 // ===== LOGO EASTER EGG =====
 // Click Pillo's logo anywhere it appears and the meditator takes a slow,
 // ~5.5s breath — long enough to actually breathe along with it. One Calm
@@ -4814,11 +5112,15 @@ window.addEventListener('load', () => {
 
 applyTimeOfDayTheme();
 renderMoodAwareGreeting();
+renderStreakBadge();
 initLogoEasterEgg();
 renderCalendar();
 updateCoinDisplay();
+updateDailyBonusHint();
 applyUnlocks();
 renderShop();
+renderTodaysPick();
+renderMindfulMinutes();
 setTimeout(maybeShowCoinIntro, 2200);
 
 const wallCalendarEl = document.getElementById('wall-calendar');
