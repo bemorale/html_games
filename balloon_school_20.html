@@ -19,13 +19,14 @@ canvas{display:block;width:100%;height:100%;}
 #cdFill{height:100%;background:#6bcb77;border-radius:4px;}
 
 /* ── OVERLAY SCREENS ── */
-#scr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(21,58,50,0.78);backdrop-filter:blur(8px);color:#fff;gap:10px;padding:20px;z-index:20;overflow-y:auto;}
+#scr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;background:rgba(40,92,78,0.72);backdrop-filter:blur(8px);color:#fff;gap:10px;padding:20px;z-index:20;overflow-y:auto;}
+#scr::before,#scr::after{content:'';flex:1 0 0;min-height:0;}
 #scr h1{font-size:26px;font-weight:700;text-align:center;}
 #scr h2{font-size:18px;font-weight:700;text-align:center;margin-bottom:2px;}
 #scr p{font-size:12px;text-align:center;color:#ddd;max-width:460px;line-height:1.55;}
 .sbtn{background:#ffd93d;color:#333;border:none;padding:9px 26px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px;transition:background 0.15s;}
 .sbtn:hover{background:#ffca28;}
-.sbtn.gray{background:#5a6b63;color:#eee;}.sbtn.gray:hover{background:#6b7d74;}
+.sbtn.gray{background:#7c8f87;color:#fff;}.sbtn.gray:hover{background:#8fa39b;}
 .sbtn.red{background:#e53935;color:#fff;}.sbtn.red:hover{background:#c62828;}
 .sbtn.teal{background:#5FB89E;color:#fff;}.sbtn.teal:hover{background:#4fa78d;}
 .topt{background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.25);color:#fff;padding:5px 12px;border-radius:14px;font-size:12px;cursor:pointer;transition:all 0.15s;}
@@ -34,7 +35,7 @@ canvas{display:block;width:100%;height:100%;}
 
 /* ── BRIEFING CARD ── */
 #briefing{display:flex;flex-direction:column;gap:6px;width:100%;max-width:480px;}
-.brief-row{display:flex;align-items:flex-start;gap:8px;background:rgba(255,255,255,0.07);border-radius:8px;padding:7px 10px;font-size:12px;line-height:1.4;}
+.brief-row{display:flex;align-items:flex-start;gap:8px;background:rgba(255,255,255,0.14);border-radius:8px;padding:7px 10px;font-size:12px;line-height:1.4;}
 .brief-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
 .brief-safe{border-left:3px solid #6bcb77;}
 .brief-warn{border-left:3px solid #ffd93d;}
@@ -59,7 +60,7 @@ canvas{display:block;width:100%;height:100%;}
       <div id="cdBar"><div id="cdFill"></div></div>
       <div class="hi">📄<span id="collCount">0/0</span></div>
       <div class="hi">⭐<span id="scoreDisp">0</span></div>
-      <div class="hi" style="background:rgba(31,105,84,0.12);padding:2px 7px;border-radius:8px;"><span id="lvlBadge">1/15</span></div>
+      <div class="hi" style="background:rgba(31,105,84,0.12);padding:2px 7px;border-radius:8px;"><span id="lvlBadge">1/50</span></div>
       <div class="hi">🏆<span id="hsDisp">0</span></div>
       <div class="hi" id="pauseBtn" onclick="togglePause()" title="Pause (P)">⏸️</div>
     </div>
@@ -702,7 +703,7 @@ function showMenu(){
   const svHTML=sv?`
     <div style="background:rgba(100,200,100,0.12);border:1.5px solid #6bcb77;border-radius:10px;padding:10px 16px;max-width:460px;width:100%;text-align:left;">
       <div style="font-size:13px;font-weight:700;color:#6bcb77;margin-bottom:4px;">📂 Previous Game Found</div>
-      <div style="font-size:12px;color:#ccc;">${sv.note} &middot; Score: ${sv.score} &#11088;<br><span style="color:#888;font-size:11px">Saved ${fmtDate(sv.ts)}</span></div>
+      <div style="font-size:12px;color:#ccc;">${sv.note} &middot; Score: ${sv.score} &#11088;<br><span style="color:#bcd;font-size:11px">Saved ${fmtDate(sv.ts)}</span></div>
       <div style="display:flex;gap:8px;margin-top:8px;">
         <button class="sbtn" id="resumeBtn" style="padding:7px 18px;font-size:13px;">&#9654; Resume Level ${sv.level+1}</button>
         <button class="sbtn gray" id="discardBtn" style="padding:7px 14px;font-size:12px;">&#10005; Discard</button>
@@ -724,16 +725,16 @@ function showMenu(){
     <p style="font-size:12px;">Collect all &#128196; sheets &middot; Reach the &#128682; exit &middot; WASD or Arrow Keys<br>
     <span style="color:#aaa;font-size:11px">Balloon drifts up slowly &middot; Press &#8595; to descend &middot; &#128308; tips pop &middot; &#128310; hazards leak</span></p>
     <div style="background:rgba(255,211,61,0.12);border:1.5px solid #ffd93d;border-radius:8px;padding:8px 16px;max-width:460px;font-size:12px;color:#ffd93d;text-align:center;">
-      &#127891; <strong>Levels 1&#8211;4 are Easy &middot; 5&#8211;8 Medium &middot; 9&#8211;12 Hard &middot; 13&#8211;15 Brutal</strong><br>
-      <span style="color:#ccc;font-size:11px">The game gets harder as you go &mdash; master the controls early and you\'ll be ready!</span>
+      &#127891; <strong>50 levels across the whole school day</strong><br>
+      <span style="color:#ccc;font-size:11px">Difficulty is color-coded per level (green &#8594; red) and generally climbs as the day goes on, with a few easier breathers along the way.</span>
     </div>
     ${svHTML}
     <div style="width:100%;max-width:470px;">
-      <div style="font-size:11px;color:#888;margin-bottom:5px;text-align:center;">&#8212; Choose any level to start &#8212;</div>
+      <div style="font-size:11px;color:#cde;margin-bottom:5px;text-align:center;">&#8212; Choose any level to start &#8212;</div>
       <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:4px;" id="lvlGrid">${levelGrid}</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;margin-top:4px;">
-      <span style="font-size:11px;color:#777;">Time limit:</span>
+      <span style="font-size:11px;color:#cde;">Time limit:</span>
       <div id="timePicker" style="display:flex;gap:6px;flex-wrap:wrap;">
         <div class="topt" data-t="30">30s</div>
         <div class="topt" data-t="45">45s</div>
@@ -781,11 +782,11 @@ function showBriefing(lv){
   SCR.innerHTML=`
     <h2>${cfg.icon} ${cfg.name}</h2>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;">
-      <span style="font-size:12px;color:#aaa">Level ${lv+1} of 15</span>
+      <span style="font-size:12px;color:#aaa">Level ${lv+1} of ${LEVELS.length}</span>
       <span class="diff-pill ${di.cls}">${di.label}</span>
     </div>
     <div id="briefing">${rows}</div>
-    <p style="font-size:11px;color:#666;margin-top:2px;">🟢 Green = safe to touch · 🟡 Yellow = slow leak · 🔴 Red = instant pop</p>
+    <p style="font-size:11px;color:#d8e8e2;margin-top:2px;">🟢 Green = safe to touch · 🟡 Yellow = slow leak · 🔴 Red = instant pop</p>
     <div style="display:flex;gap:8px;margin-top:6px;">
       <button class="sbtn" id="goBtn">▶ Let's Go!</button>
       ${lv>0?'<button class="sbtn gray" id="menuBtn">↩ Menu</button>':''}
