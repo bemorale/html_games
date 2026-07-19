@@ -996,53 +996,6 @@ body.time-night .hero-mood-greeting {
     color: #1f6954;
 }
 
-/* ===== BREATHING VISUAL ===== */
-.breathing-visual {
-    position: relative;
-    width: 220px;
-    height: 220px;
-    margin: 20px auto 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.breathing-circle {
-    width: 110px;
-    height: 110px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 32% 30%, #7AC9B0, #1f6954);
-    box-shadow: 0 0 45px rgba(45, 138, 120, 0.45);
-    transform: scale(1);
-    transition: transform 4s ease-in-out;
-}
-
-.breathing-circle.grow {
-    transform: scale(1.7);
-}
-
-.breathing-text {
-    position: absolute;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    color: white;
-    z-index: 2;
-    pointer-events: none;
-}
-
-.breathing-phase {
-    font-size: 1.15rem;
-    font-weight: 700;
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
-}
-
-.breathing-count {
-    font-size: 1.6rem;
-    font-weight: 700;
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
-}
-
 /* ===== STEP-BASED SESSIONS (Stretching / Meditation) ===== */
 .step-progress {
     color: #1f6954;
@@ -1161,16 +1114,6 @@ body.time-night .hero-mood-greeting {
     color: #555;
 }
 
-/* ===== CALM TIMELINE (freeform, running list) ===== */
-.timeline-list {
-    margin-top: 20px;
-    padding-top: 16px;
-    border-top: 1px solid #eee;
-    text-align: left;
-    max-height: 260px;
-    overflow-y: auto;
-}
-
 .timeline-empty {
     color: #999;
     font-style: italic;
@@ -1220,43 +1163,6 @@ body.time-night .hero-mood-greeting {
 
 .jar-item-remove:hover {
     background: rgba(176, 87, 74, 0.12);
-}
-
-.timeline-entry {
-    position: relative;
-    padding-left: 20px;
-    padding-bottom: 18px;
-    border-left: 2px solid #cdeee2;
-}
-
-.timeline-entry:last-child {
-    border-left-color: transparent;
-    padding-bottom: 0;
-}
-
-.timeline-entry::before {
-    content: '';
-    position: absolute;
-    left: -6px;
-    top: 4px;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #2d8a78;
-}
-
-.timeline-entry-date {
-    display: block;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #2d8a78;
-    margin-bottom: 4px;
-}
-
-.timeline-entry p {
-    color: #333;
-    font-size: 0.92rem;
-    white-space: pre-wrap;
 }
 
 /* ===== LETTER TO FUTURE SELF ===== */
@@ -1525,16 +1431,6 @@ body.time-night .hero-mood-greeting {
         padding: 35px 24px;
     }
 
-    .breathing-visual {
-        width: 180px;
-        height: 180px;
-    }
-
-    .breathing-circle {
-        width: 90px;
-        height: 90px;
-    }
-
     .session-controls {
         flex-direction: column;
     }
@@ -1617,9 +1513,7 @@ body.time-night .hero-mood-greeting {
 /* ===== REDUCED MOTION SUPPORT ===== */
 /* Some people find heavy animation the opposite of calming, and their
    browser/OS lets them ask pages not to animate. We honor that here by
-   disabling all decorative animation. The breathing circle's guide is
-   intentionally kept, since it IS the exercise — but its motion is slowed
-   and softened elsewhere in the cascade if needed. */
+   disabling all decorative animation. */
 @media (prefers-reduced-motion: reduce) {
 
     html {
@@ -1775,44 +1669,6 @@ body.time-night .hero-mood-greeting {
     .bubble {
         animation-duration: 14s !important;
     }
-}
-
-/* ===== 5-4-3-2-1 GROUNDING ===== */
-.grounding-step {
-    padding: 10px 0 4px;
-}
-
-.grounding-emoji {
-    font-size: 3.4rem;
-    margin-bottom: 10px;
-}
-
-.grounding-sense {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #1f6954;
-    margin-bottom: 10px;
-    letter-spacing: 0.4px;
-}
-
-.grounding-count {
-    display: inline-block;
-    background: linear-gradient(135deg, #2d8a78 0%, #1f6954 100%);
-    color: white;
-    width: 40px;
-    height: 40px;
-    line-height: 40px;
-    border-radius: 50%;
-    font-size: 1.3rem;
-    margin-right: 6px;
-}
-
-.grounding-prompt {
-    color: #444;
-    font-size: 1rem;
-    line-height: 1.7;
-    max-width: 360px;
-    margin: 0 auto 20px;
 }
 
 /* Interests rows stack on small screens */
@@ -2261,12 +2117,6 @@ body.time-night .hero-mood-greeting {
 
             <!-- Exercise Cards -->
             <div class="exercise-grid">
-                <div class="exercise-card" onclick="openSession('breathing')">
-                    <div class="exercise-icon">🌬️</div>
-                    <h3>Deep Breathing</h3>
-                    <p>Calm your mind with a guided 4-7-8 breathing cycle</p>
-                </div>
-
                 <div class="exercise-card" onclick="openSession('stretching')">
                     <div class="exercise-icon">🧘</div>
                     <h3>Stretching Routine</h3>
@@ -2303,12 +2153,6 @@ body.time-night .hero-mood-greeting {
                     <p>Express your feelings and thoughts — saved for later</p>
                 </div>
 
-                <div class="exercise-card" onclick="openSession('timeline')">
-                    <div class="exercise-icon">🕰️</div>
-                    <h3>Calm Timeline</h3>
-                    <p>A quick, freeform place to jot a thought — no prompts</p>
-                </div>
-
                 <div class="exercise-card" onclick="openSession('capsule')">
                     <div class="exercise-icon">💌</div>
                     <h3>Letter to Future Self</h3>
@@ -2327,11 +2171,6 @@ body.time-night .hero-mood-greeting {
                     <p>It grows a little every day you take care of yourself</p>
                 </div>
 
-                <div class="exercise-card" onclick="openSession('grounding')">
-                    <div class="exercise-icon">🖐️</div>
-                    <h3>5-4-3-2-1 Grounding</h3>
-                    <p>Use your five senses to gently land back in the present</p>
-                </div>
             </div>
 
             <!-- Fun Games subsection — part of My Projects, but its own thing -->
@@ -2449,27 +2288,6 @@ body.time-night .hero-mood-greeting {
         <!-- ===== SESSION OVERLAYS ===== -->
         <!-- Each one is its own full-screen page you can open and close at any time. -->
 
-        <!-- Deep Breathing -->
-        <div class="session-overlay" id="session-breathing">
-            <div class="session-card">
-                <button class="session-close" onclick="closeSession('breathing')" aria-label="Close">✕</button>
-                <h3>Deep Breathing</h3>
-                <p class="pillo-note">"After I exercise, I need a moment to calm down and get the ring of my heartbeat out of my ears. Deep breathing allows me to do that." <span class="pillo-signature">— Pillo</span></p>
-                <p class="exercise-quote">"Breathing in, I calm body and mind. Breathing out, I smile." <span class="quote-author">— Thich Nhat Hanh</span></p>
-                <div class="breathing-visual">
-                    <div class="breathing-circle" id="breathing-circle"></div>
-                    <div class="breathing-text">
-                        <div class="breathing-phase" id="breathing-phase">Breathe In</div>
-                        <div class="breathing-count" id="breathing-count">4</div>
-                    </div>
-                </div>
-                <p class="session-hint">The classic 4-7-8 technique: in for 4, hold for 7, out for 8. Pause or leave whenever you want.</p>
-                <div class="session-controls">
-                    <button class="session-btn" id="breathing-toggle" onclick="toggleBreathing()">Pause</button>
-                </div>
-            </div>
-        </div>
-
         <!-- Stretching -->
         <div class="session-overlay" id="session-stretching">
             <div class="session-card">
@@ -2569,20 +2387,6 @@ body.time-night .hero-mood-greeting {
             </div>
         </div>
 
-        <!-- Calm Timeline (freeform, no prompts) -->
-        <div class="session-overlay" id="session-timeline">
-            <div class="session-card">
-                <button class="session-close" onclick="closeSession('timeline')" aria-label="Close">✕</button>
-                <h3>Calm Timeline</h3>
-                <p class="pillo-note">"Not every thought needs a big reflection. Sometimes I just need to get it out of my head quickly, and this is where I put those." <span class="pillo-signature">— Pillo</span></p>
-                <p class="exercise-quote">"Fill your paper with the breathings of your heart." <span class="quote-author">— William Wordsworth</span></p>
-                <p class="session-hint">Just write whatever's here right now. No prompts — it's added to your running timeline below.</p>
-                <textarea class="journal-textarea" id="timeline-input" placeholder="What's here right now..."></textarea>
-                <button class="start-timer-btn" id="timeline-save-btn" onclick="saveTimelineEntry()">Save Entry</button>
-                <div id="timeline-list" class="timeline-list"></div>
-            </div>
-        </div>
-
         <!-- Letter to Future Self (time capsule) -->
         <div class="session-overlay" id="session-capsule">
             <div class="session-card">
@@ -2612,17 +2416,6 @@ body.time-night .hero-mood-greeting {
                 <h3>My Calm Plant</h3>
                 <p class="pillo-note">"This little plant grows one step every day you do any exercise here. Taking care of yourself takes care of it too." <span class="pillo-signature">— Pillo</span></p>
                 <div id="plant-display"></div>
-            </div>
-        </div>
-
-        <!-- 5-4-3-2-1 Grounding (senses exercise) -->
-        <div class="session-overlay" id="session-grounding">
-            <div class="session-card">
-                <button class="session-close" onclick="closeSession('grounding')" aria-label="Close">✕</button>
-                <h3>5-4-3-2-1 Grounding</h3>
-                <p class="pillo-note">"When my thoughts get loud, naming what's actually around me brings me right back to the room I'm in." <span class="pillo-signature">— Pillo</span></p>
-                <p class="exercise-quote">"Wherever you are, be all there." <span class="quote-author">— Jim Elliot</span></p>
-                <div id="grounding-flow"></div>
             </div>
         </div>
 
@@ -2715,15 +2508,12 @@ function openSession(name) {
     document.body.style.overflow = 'hidden';
     activeSession = name;
 
-    if (name === 'breathing') startBreathing();
-    else if (STEP_SESSIONS.includes(name)) startSteps(name);
+    if (STEP_SESSIONS.includes(name)) startSteps(name);
     else if (name === 'gratitude' || name === 'journal') initReflection(name);
-    else if (name === 'timeline') renderTimelineList();
     else if (name === 'capsule') initCapsule();
     else if (name === 'jar') renderJarItems();
     else if (name === 'bubbles') startBubbles();
     else if (name === 'plant') renderPlant();
-    else if (name === 'grounding') startGrounding();
     else if (name === 'balloon') startBalloonGame();
 
     // Every real exercise counts as taking care of yourself today, which is
@@ -2742,8 +2532,7 @@ function closeSession(name) {
         overlay.style.display = 'none';
     }, 300);
 
-    if (name === 'breathing') stopBreathing();
-    else if (STEP_SESSIONS.includes(name)) stopStepTimer(name);
+    if (STEP_SESSIONS.includes(name)) stopStepTimer(name);
     else if (name === 'bubbles') stopBubbles();
     else if (name === 'balloon') stopBalloonGame();
 
@@ -2767,82 +2556,6 @@ document.addEventListener('keydown', (e) => {
         closeSession(activeSession);
     }
 });
-
-// ===== DEEP BREATHING (4-7-8 technique) =====
-// Single requestAnimationFrame loop drives the whole exercise so there's
-// never more than one timer running (and it's fully cancelled on close).
-const BREATH_PHASES = [
-    { name: 'Breathe In', duration: 4000, grow: true },
-    { name: 'Hold', duration: 7000, grow: true },
-    { name: 'Breathe Out', duration: 8000, grow: false }
-];
-
-let breathingRAF = null;
-let breathingPhaseIndex = 0;
-let breathingPhaseStart = 0;
-let breathingPaused = false;
-let breathingPauseStart = 0;
-
-function startBreathing() {
-    breathingPhaseIndex = 0;
-    breathingPaused = false;
-
-    const circle = document.getElementById('breathing-circle');
-    circle.classList.remove('grow');
-
-    const toggleBtn = document.getElementById('breathing-toggle');
-    if (toggleBtn) toggleBtn.textContent = 'Pause';
-
-    breathingPhaseStart = performance.now();
-    cancelAnimationFrame(breathingRAF);
-    breathingRAF = requestAnimationFrame(breathingLoop);
-}
-
-function breathingLoop(now) {
-    if (!breathingPaused) {
-        const phase = BREATH_PHASES[breathingPhaseIndex];
-        const elapsed = now - breathingPhaseStart;
-        const remaining = Math.max(0, phase.duration - elapsed);
-        const countText = Math.ceil(remaining / 1000);
-
-        const phaseEl = document.getElementById('breathing-phase');
-        const countEl = document.getElementById('breathing-count');
-        const circle = document.getElementById('breathing-circle');
-
-        if (phaseEl) phaseEl.textContent = phase.name;
-        if (countEl) countEl.textContent = countText > 0 ? countText : '';
-        if (circle) {
-            circle.style.transitionDuration = (phase.duration / 1000) + 's';
-            circle.classList.toggle('grow', phase.grow);
-        }
-
-        if (elapsed >= phase.duration) {
-            breathingPhaseIndex = (breathingPhaseIndex + 1) % BREATH_PHASES.length;
-            breathingPhaseStart = now;
-        }
-    }
-
-    breathingRAF = requestAnimationFrame(breathingLoop);
-}
-
-function toggleBreathing() {
-    breathingPaused = !breathingPaused;
-    const btn = document.getElementById('breathing-toggle');
-
-    if (breathingPaused) {
-        breathingPauseStart = performance.now();
-        if (btn) btn.textContent = 'Resume';
-    } else {
-        const pausedFor = performance.now() - breathingPauseStart;
-        breathingPhaseStart += pausedFor; // shift so the phase doesn't jump ahead
-        if (btn) btn.textContent = 'Pause';
-    }
-}
-
-function stopBreathing() {
-    cancelAnimationFrame(breathingRAF);
-    breathingRAF = null;
-}
 
 // ===== STEP-BASED ROUTINES =====
 // Shared engine for Stretching, Progressive Muscle Relaxation, Meditation,
@@ -3371,43 +3084,6 @@ function closeMoodPicker() {
     const picker = document.getElementById('cal-picker');
     if (picker) picker.style.display = 'none';
     selectedMoodDateKey = null;
-}
-
-// ===== CALM TIMELINE (freeform, no prompts — just a running log) =====
-function saveTimelineEntry() {
-    const input = document.getElementById('timeline-input');
-    const text = input.value.trim();
-    if (!text) {
-        input.focus();
-        return;
-    }
-
-    const key = 'pillo-timeline-entries';
-    const entries = JSON.parse(localStorage.getItem(key) || '[]');
-    entries.unshift({ text, date: new Date().toISOString() });
-    localStorage.setItem(key, JSON.stringify(entries.slice(0, 200)));
-
-    input.value = '';
-    renderTimelineList();
-}
-
-function renderTimelineList() {
-    const key = 'pillo-timeline-entries';
-    const entries = JSON.parse(localStorage.getItem(key) || '[]');
-    const listEl = document.getElementById('timeline-list');
-    if (!listEl) return;
-
-    if (entries.length === 0) {
-        listEl.innerHTML = '<p class="timeline-empty">Nothing here yet — your saved thoughts will build into a timeline.</p>';
-        return;
-    }
-
-    listEl.innerHTML = entries.map(e => {
-        const date = new Date(e.date);
-        const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-            + ' · ' + date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-        return `<div class="timeline-entry"><span class="timeline-entry-date">${dateStr}</span><p>${escapeHTML(e.text)}</p></div>`;
-    }).join('');
 }
 
 // ===== GRATITUDE JAR (freely add or remove, anytime) =====
@@ -4026,48 +3702,6 @@ function renderPlant() {
     `;
 }
 
-// ===== 5-4-3-2-1 GROUNDING (senses exercise) =====
-const GROUNDING_STEPS = [
-    { count: 5, sense: 'SEE', emoji: '👀', prompt: 'Look around slowly. Name five things you can see — anything at all, big or small.' },
-    { count: 4, sense: 'TOUCH', emoji: '✋', prompt: 'Notice four things you can feel — your feet on the floor, the chair, your sleeves, the air.' },
-    { count: 3, sense: 'HEAR', emoji: '👂', prompt: 'Listen for three sounds — near or far, loud or almost silent.' },
-    { count: 2, sense: 'SMELL', emoji: '👃', prompt: 'Find two things you can smell — or two smells you like remembering.' },
-    { count: 1, sense: 'TASTE', emoji: '👅', prompt: 'Notice one thing you can taste right now — even just the inside of your mouth.' }
-];
-let groundingIndex = 0;
-
-function startGrounding() {
-    groundingIndex = 0;
-    renderGroundingStep();
-}
-
-function renderGroundingStep() {
-    const container = document.getElementById('grounding-flow');
-    if (!container) return;
-
-    if (groundingIndex >= GROUNDING_STEPS.length) {
-        container.innerHTML = `
-            <div class="grounding-step">
-                <div class="grounding-emoji">🌿</div>
-                <p class="grounding-sense">You're here.</p>
-                <p class="grounding-prompt">All five senses, back in the room. Take one more slow breath before you go.</p>
-                <button class="start-timer-btn" onclick="startGrounding()">Start Over</button>
-            </div>
-        `;
-        return;
-    }
-
-    const step = GROUNDING_STEPS[groundingIndex];
-    container.innerHTML = `
-        <div class="grounding-step">
-            <div class="grounding-emoji">${step.emoji}</div>
-            <p class="grounding-sense"><span class="grounding-count">${step.count}</span> thing${step.count === 1 ? '' : 's'} you can ${step.sense}</p>
-            <p class="grounding-prompt">${step.prompt}</p>
-            <button class="start-timer-btn" onclick="groundingIndex++; renderGroundingStep()">${groundingIndex === GROUNDING_STEPS.length - 1 ? 'Finish' : 'Next Sense'}</button>
-        </div>
-    `;
-}
-
 // ===== BALLOON SCHOOL (full 50-level game, embedded in its own iframe so its
 // canvas/controls/state never collide with this page's, and its own music
 // plays instead of — not alongside — Pillo's ambient pad.) =====
@@ -4144,7 +3778,7 @@ function renderMoodAwareGreeting() {
         Energetic: 'Love that energy today — maybe channel some of it into a stretch.',
         Neutral: "However today's going, there's room here for you.",
         Sad: "Sounds like today's been a lot. I'm glad you're here.",
-        Anxious: 'If today has felt like a lot, the breathing exercise below might help.',
+        Anxious: 'If today has felt like a lot, the muscle relaxation exercise below might help.',
         Frustrated: "Rough day? Let's see if we can soften it, even a little.",
         Tired: 'Sounds like you could use some rest — you\u2019re in the right place.'
     };
