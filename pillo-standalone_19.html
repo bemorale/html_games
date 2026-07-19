@@ -485,6 +485,86 @@ body.time-night .hero-mood-greeting {
     letter-spacing: 0.3px;
 }
 
+/* ===== DAILY MOVEMENT / STEP TRACKER ===== */
+.move-section {
+    background: linear-gradient(180deg, #EDF7F0 0%, #FFF3E0 55%, rgba(168, 230, 207, 0.3) 100%);
+    padding: 80px 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.move-container {
+    max-width: 640px;
+    margin: 0 auto;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+}
+
+.step-tracker-card {
+    background: white;
+    border-radius: 24px;
+    padding: 40px 32px;
+    margin-top: 40px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.step-ring {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    background: conic-gradient(#2d8a78 calc(var(--step-pct, 0) * 1%), #eef2f0 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: background 0.4s ease;
+}
+
+.step-ring::before {
+    content: '';
+    position: absolute;
+    inset: 12px;
+    border-radius: 50%;
+    background: white;
+}
+
+.step-ring-inner {
+    position: relative;
+    z-index: 1;
+}
+
+.step-count-display {
+    font-size: 2.1rem;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.step-goal-label {
+    font-size: 0.85rem;
+    color: #888;
+    margin-top: 2px;
+}
+
+.step-status {
+    color: #555;
+    font-size: 0.95rem;
+    margin-bottom: 18px;
+    min-height: 1.4em;
+}
+
+.step-tracker-btn {
+    animation: none;
+}
+
+.step-hint {
+    color: #999;
+    font-size: 0.8rem;
+    margin-top: 16px;
+    line-height: 1.5;
+}
+
 /* ===== EXERCISES SECTION ===== */
 .exercises {
     padding: 0 0 280px;
@@ -1635,55 +1715,6 @@ body.time-night .hero-mood-greeting {
     font-size: 0.92rem;
 }
 
-/* ===== MINDFUL MINUTES WEEKLY TRACKER ===== */
-.mindful-minutes-widget {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    background: white;
-    border-radius: 16px;
-    padding: 18px 24px;
-    margin-top: 30px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-}
-
-.mindful-minutes-icon {
-    font-size: 2rem;
-    flex-shrink: 0;
-}
-
-.mindful-minutes-body {
-    flex: 1;
-    text-align: left;
-}
-
-.mindful-minutes-label {
-    font-weight: 600;
-    color: #1f6954;
-    font-size: 0.92rem;
-    margin-bottom: 8px;
-}
-
-.mindful-minutes-track {
-    background: #eef2f0;
-    border-radius: 8px;
-    height: 10px;
-    overflow: hidden;
-    margin-bottom: 6px;
-}
-
-.mindful-minutes-fill {
-    background: linear-gradient(90deg, #2d8a78, #1f6954);
-    height: 100%;
-    border-radius: 8px;
-    transition: width 0.4s ease;
-}
-
-.mindful-minutes-text {
-    font-size: 0.82rem;
-    color: #888;
-}
-
 .coin-toast {
     position: fixed;
     bottom: 68px;
@@ -2327,6 +2358,7 @@ body.time-night .hero-mood-greeting {
                 <li><a href="#home" class="nav-link">Home</a></li>
                 <li><a href="#about" class="nav-link">About</a></li>
                 <li><a href="#interests" class="nav-link">Interests</a></li>
+                <li><a href="#move" class="nav-link">Move</a></li>
                 <li><a href="#exercises" class="nav-link">Projects</a></li>
                 <li><a href="#contact" class="nav-link">Contact</a></li>
             </ul>
@@ -2504,6 +2536,31 @@ body.time-night .hero-mood-greeting {
         </div>
     </section>
 
+    <!-- ===== DAILY MOVEMENT / STEP TRACKER (its own thing, separate from Projects) ===== -->
+    <section id="move" class="move-section">
+        <div class="wave-divider" aria-hidden="true">
+            <svg viewBox="0 0 1440 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0,26 C220,4 460,52 720,30 C980,8 1220,50 1440,26 L1440,0 L0,0 Z" fill="#FFF3E0"/>
+            </svg>
+        </div>
+        <div class="move-container">
+            <h2 class="section-title">Daily Movement</h2>
+            <p class="section-subtitle">Calm isn't only about slowing down — my Pillo is also about actually moving. This counts your real steps using your phone's motion sensor while this page is open, adding up across every time you check in today.</p>
+
+            <div class="step-tracker-card">
+                <div class="step-ring" id="step-ring" style="--step-pct: 0;">
+                    <div class="step-ring-inner">
+                        <div class="step-count-display" id="step-count-display">0</div>
+                        <div class="step-goal-label">of <span id="step-goal-label">3,000</span> steps</div>
+                    </div>
+                </div>
+                <p class="step-status" id="step-status">Tap below to start counting your steps for today.</p>
+                <button class="cta-button step-tracker-btn" id="step-tracker-btn" onclick="toggleStepTracking()">▶ Start Step Tracking</button>
+                <p class="step-hint">Works best on a phone, carried with you while this tab stays open — it can't count steps in the background or when the page is closed.</p>
+            </div>
+        </div>
+    </section>
+
     <!-- ===== EXERCISES SECTION (styled like a cozy room) ===== -->
     <section id="exercises" class="exercises">
         <div class="wave-divider" aria-hidden="true">
@@ -2642,16 +2699,6 @@ body.time-night .hero-mood-greeting {
                     <p>Slow down and notice each step, breath, and surrounding</p>
                 </div>
 
-            </div>
-
-            <!-- Mindful Minutes weekly tracker — only shown once Mindful Walking is unlocked -->
-            <div class="mindful-minutes-widget" id="mindful-minutes-widget" style="display:none;">
-                <div class="mindful-minutes-icon">🚶</div>
-                <div class="mindful-minutes-body">
-                    <div class="mindful-minutes-label">Mindful Minutes this week</div>
-                    <div class="mindful-minutes-track"><div class="mindful-minutes-fill" id="mindful-minutes-fill"></div></div>
-                    <div class="mindful-minutes-text" id="mindful-minutes-text">0 / 30 min</div>
-                </div>
             </div>
 
             <!-- Fun Games subsection — part of My Projects, but its own thing -->
@@ -3147,12 +3194,6 @@ function closeSession(name) {
             sessionCoinAwarded = true;
             addCoins(EXERCISE_COIN_REWARD);
         }
-    }
-
-    // Every second actually spent in Mindful Walking counts toward the
-    // weekly goal, independent of the coin threshold above.
-    if (name === 'walking') {
-        recordMindfulSeconds(Math.round((Date.now() - sessionOpenedAt) / 1000));
     }
 
     renderStreakBadge();
@@ -4847,7 +4888,6 @@ function purchaseUnlock(type) {
 
     renderShop();
     renderTodaysPick();
-    renderMindfulMinutes();
 }
 
 // ===== CALM FACE COINS (economy) =====
@@ -4908,6 +4948,146 @@ function showCoinToast(amount) {
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 1450);
 }
+
+// ===== DAILY MOVEMENT / STEP TRACKER =====
+// A real pedometer, not a proxy: while tracking is on, each detected
+// footstep (a peak in the phone's motion-sensor data) adds one step. Totals
+// persist and accumulate across every visit today, resetting at midnight.
+// Reaching the goal pays out a one-time coin bonus for the day.
+const STEP_GOAL = 3000;
+const STEP_GOAL_BONUS = 15;
+const STEP_GOAL_BONUS_KEY = 'pillo-step-goal-bonus-date';
+const STEP_THRESHOLD = 1.2;
+const STEP_MIN_INTERVAL_MS = 300;
+
+let stepTrackingActive = false;
+let stepBaseline = 9.8;
+let lastStepTime = 0;
+let stepPeakDetected = false;
+let stepNoMotionTimer = null;
+let currentSteps = 0;
+
+function loadDailySteps() {
+    try {
+        const saved = JSON.parse(localStorage.getItem('pillo-daily-steps') || 'null');
+        if (saved && saved.date === toDateKey(new Date())) return saved.count;
+    } catch (e) { /* start fresh if storage was ever corrupted */ }
+    return 0;
+}
+
+function saveDailySteps(count) {
+    localStorage.setItem('pillo-daily-steps', JSON.stringify({ date: toDateKey(new Date()), count }));
+}
+
+function renderStepTracker() {
+    currentSteps = loadDailySteps();
+    updateStepUI();
+    const goalLabel = document.getElementById('step-goal-label');
+    if (goalLabel) goalLabel.textContent = STEP_GOAL.toLocaleString();
+}
+
+function updateStepUI() {
+    const pct = Math.min(100, Math.round((currentSteps / STEP_GOAL) * 100));
+    const ring = document.getElementById('step-ring');
+    const countEl = document.getElementById('step-count-display');
+    if (ring) ring.style.setProperty('--step-pct', pct);
+    if (countEl) countEl.textContent = currentSteps.toLocaleString();
+}
+
+function setStepStatus(text) {
+    const el = document.getElementById('step-status');
+    if (el) el.textContent = text;
+}
+
+function registerStep() {
+    currentSteps++;
+    saveDailySteps(currentSteps);
+    updateStepUI();
+
+    if (currentSteps >= STEP_GOAL && localStorage.getItem(STEP_GOAL_BONUS_KEY) !== toDateKey(new Date())) {
+        localStorage.setItem(STEP_GOAL_BONUS_KEY, toDateKey(new Date()));
+        addCoins(STEP_GOAL_BONUS);
+        setStepStatus(`🎉 ${STEP_GOAL.toLocaleString()} steps — today's goal reached!`);
+    }
+}
+
+function toggleStepTracking() {
+    if (stepTrackingActive) stopStepTracking();
+    else startStepTracking();
+}
+
+function startStepTracking() {
+    if (typeof DeviceMotionEvent === 'undefined') {
+        setStepStatus('Step tracking needs a phone with motion sensors — try opening this page on your phone!');
+        return;
+    }
+    if (typeof DeviceMotionEvent.requestPermission === 'function') {
+        DeviceMotionEvent.requestPermission().then(response => {
+            if (response === 'granted') beginStepListening();
+            else setStepStatus("Motion access was declined — you can allow it in your phone's browser settings if you change your mind.");
+        }).catch(() => setStepStatus("Couldn't get permission to use motion sensors on this device."));
+    } else {
+        beginStepListening();
+    }
+}
+
+function beginStepListening() {
+    stepTrackingActive = true;
+    stepBaseline = 9.8;
+    lastStepTime = 0;
+    stepPeakDetected = false;
+
+    window.addEventListener('devicemotion', handleStepMotion);
+    clearTimeout(stepNoMotionTimer);
+    stepNoMotionTimer = setTimeout(() => {
+        if (stepTrackingActive) setStepStatus("Not seeing any motion yet — make sure you're carrying your phone as you walk.");
+    }, 4000);
+
+    const btn = document.getElementById('step-tracker-btn');
+    if (btn) btn.textContent = '⏸ Stop Step Tracking';
+    setStepStatus('Tracking! Walk around with your phone to count steps.');
+}
+
+function stopStepTracking() {
+    stepTrackingActive = false;
+    window.removeEventListener('devicemotion', handleStepMotion);
+    clearTimeout(stepNoMotionTimer);
+
+    const btn = document.getElementById('step-tracker-btn');
+    if (btn) btn.textContent = '▶ Start Step Tracking';
+    setStepStatus(`Paused — ${currentSteps.toLocaleString()} steps so far today.`);
+}
+
+// Simple peak-detection pedometer: a slow-moving baseline tracks roughly
+// where "at rest" is (adapting to phone orientation/gravity), and a step is
+// counted whenever the acceleration spikes clearly above that baseline,
+// with a minimum gap so one footfall isn't counted twice.
+function handleStepMotion(e) {
+    const a = e.accelerationIncludingGravity;
+    if (!a || a.x === null || a.x === undefined) return;
+
+    clearTimeout(stepNoMotionTimer);
+    const magnitude = Math.sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
+    stepBaseline = stepBaseline * 0.9 + magnitude * 0.1;
+    const delta = magnitude - stepBaseline;
+    const now = Date.now();
+
+    if (delta > STEP_THRESHOLD && !stepPeakDetected && (now - lastStepTime) > STEP_MIN_INTERVAL_MS) {
+        stepPeakDetected = true;
+        lastStepTime = now;
+        registerStep();
+    } else if (delta < STEP_THRESHOLD * 0.4) {
+        stepPeakDetected = false;
+    }
+}
+
+// Don't keep sampling motion (or draining the battery) while the tab isn't
+// actually visible — pick back up automatically once it is again.
+document.addEventListener('visibilitychange', () => {
+    if (!stepTrackingActive) return;
+    if (document.hidden) window.removeEventListener('devicemotion', handleStepMotion);
+    else window.addEventListener('devicemotion', handleStepMotion);
+});
 
 // ===== DAILY STREAK (built from the same active-days log the Calm Plant uses) =====
 function getCurrentStreak() {
@@ -5004,62 +5184,6 @@ function renderTodaysPick() {
     container.onclick = () => openSession(pickId);
 }
 
-// ===== MINDFUL MINUTES (weekly tracker — only shown once Mindful Walking is unlocked) =====
-const MINDFUL_MINUTES_KEY = 'pillo-mindful-minutes';
-const MINDFUL_MINUTES_GOAL_SEC = 30 * 60;
-
-function getWeekKey(date) {
-    const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    const day = (d.getDay() + 6) % 7; // Monday = start of week
-    d.setDate(d.getDate() - day);
-    return toDateKey(d);
-}
-
-function recordMindfulSeconds(seconds) {
-    if (seconds <= 0) return;
-    const weekKey = getWeekKey(new Date());
-    let store = { weekKey, seconds: 0 };
-    try {
-        const saved = JSON.parse(localStorage.getItem(MINDFUL_MINUTES_KEY) || 'null');
-        if (saved && saved.weekKey === weekKey) store = saved;
-    } catch (e) { /* start fresh if storage was ever corrupted */ }
-    store.seconds += seconds;
-    localStorage.setItem(MINDFUL_MINUTES_KEY, JSON.stringify(store));
-    renderMindfulMinutes();
-}
-
-function getMindfulSecondsThisWeek() {
-    const weekKey = getWeekKey(new Date());
-    try {
-        const saved = JSON.parse(localStorage.getItem(MINDFUL_MINUTES_KEY) || 'null');
-        return (saved && saved.weekKey === weekKey) ? saved.seconds : 0;
-    } catch (e) {
-        return 0;
-    }
-}
-
-function renderMindfulMinutes() {
-    const widget = document.getElementById('mindful-minutes-widget');
-    if (!widget) return;
-
-    if (!getUnlockedIds(UNLOCKED_EXERCISES_KEY).includes('walking')) {
-        widget.style.display = 'none';
-        return;
-    }
-
-    const seconds = getMindfulSecondsThisWeek();
-    const minutes = Math.floor(seconds / 60);
-    const goalMinutes = Math.floor(MINDFUL_MINUTES_GOAL_SEC / 60);
-    const pct = Math.min(100, Math.round((seconds / MINDFUL_MINUTES_GOAL_SEC) * 100));
-
-    const fill = document.getElementById('mindful-minutes-fill');
-    const text = document.getElementById('mindful-minutes-text');
-    if (fill) fill.style.width = pct + '%';
-    if (text) text.textContent = `${minutes} / ${goalMinutes} min${minutes >= goalMinutes ? ' — goal reached! 🎉' : ''}`;
-
-    widget.style.display = 'flex';
-}
 
 // ===== LOGO EASTER EGG =====
 // Click Pillo's logo anywhere it appears and the meditator takes a slow,
@@ -5113,6 +5237,7 @@ window.addEventListener('load', () => {
 applyTimeOfDayTheme();
 renderMoodAwareGreeting();
 renderStreakBadge();
+renderStepTracker();
 initLogoEasterEgg();
 renderCalendar();
 updateCoinDisplay();
@@ -5120,7 +5245,6 @@ updateDailyBonusHint();
 applyUnlocks();
 renderShop();
 renderTodaysPick();
-renderMindfulMinutes();
 setTimeout(maybeShowCoinIntro, 2200);
 
 const wallCalendarEl = document.getElementById('wall-calendar');
