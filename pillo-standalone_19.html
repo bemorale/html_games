@@ -175,7 +175,7 @@ body.time-night .hero-mood-greeting {
 
 .logo-svg.logo-breathe,
 .large-logo.logo-breathe {
-    animation: logoBreathe 2.2s ease-in-out;
+    animation: logoBreathe 5.5s ease-in-out;
 }
 
 @keyframes logoBreathe {
@@ -791,6 +791,23 @@ body.time-night .hero-mood-greeting {
     border-color: #98D8C8;
 }
 
+/* Unlockable content stays hidden from the grid until earned in the Coin Shop */
+.locked-exercise,
+.locked-game {
+    display: none;
+}
+
+.exercise-card.just-unlocked,
+.featured-project.just-unlocked {
+    animation: unlockPop 0.6s ease;
+}
+
+@keyframes unlockPop {
+    0% { transform: scale(0.85); box-shadow: 0 0 0 rgba(255, 217, 61, 0); }
+    40% { transform: scale(1.05); box-shadow: 0 0 30px rgba(255, 217, 61, 0.6); }
+    100% { transform: scale(1); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
+}
+
 .exercise-icon {
     font-size: 3rem;
     margin-bottom: 15px;
@@ -994,6 +1011,55 @@ body.time-night .hero-mood-greeting {
 .session-btn.secondary {
     background: #eef7f4;
     color: #1f6954;
+}
+
+/* ===== BOX BREATHING VISUAL ===== */
+.box-breath-visual {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    margin: 20px auto 10px;
+}
+
+.box-breath-square {
+    position: absolute;
+    inset: 24px;
+    border: 3px solid rgba(45, 138, 120, 0.3);
+    border-radius: 14px;
+}
+
+.box-breath-dot {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 32% 30%, #7AC9B0, #1f6954);
+    box-shadow: 0 0 16px rgba(45, 138, 120, 0.6);
+    transform: translate(-50%, -50%);
+    left: 24px;
+    top: 24px;
+}
+
+.box-breath-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.box-breath-phase {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1f6954;
+}
+
+.box-breath-count {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #1a1a1a;
 }
 
 /* ===== STEP-BASED SESSIONS (Stretching / Meditation) ===== */
@@ -1395,6 +1461,67 @@ body.time-night .hero-mood-greeting {
     cursor: pointer;
 }
 
+/* ===== CALM FACE COIN BANK ===== */
+.coin-bank {
+    position: fixed;
+    bottom: 22px;
+    left: 22px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    border-radius: 30px;
+    padding: 9px 18px 9px 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    z-index: 3000;
+    cursor: default;
+    user-select: none;
+}
+
+.coin-bank-icon {
+    font-size: 1.3rem;
+    line-height: 1;
+}
+
+.coin-bank-count {
+    font-weight: 700;
+    color: #1f6954;
+    font-size: 1.05rem;
+}
+
+.coin-bank.coin-bump {
+    animation: coinBump 0.4s ease;
+}
+
+@keyframes coinBump {
+    0%, 100% { transform: scale(1); }
+    35% { transform: scale(1.12); }
+}
+
+.coin-toast {
+    position: fixed;
+    bottom: 68px;
+    left: 34px;
+    color: #1f6954;
+    font-weight: 700;
+    font-size: 1rem;
+    background: rgba(255, 255, 255, 0.92);
+    padding: 5px 14px;
+    border-radius: 16px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    z-index: 3001;
+    pointer-events: none;
+    animation: coinToastFloat 1.4s ease-out forwards;
+}
+
+@keyframes coinToastFloat {
+    0% { opacity: 0; transform: translateY(6px); }
+    15% { opacity: 1; transform: translateY(0); }
+    75% { opacity: 1; transform: translateY(-14px); }
+    100% { opacity: 0; transform: translateY(-24px); }
+}
+
 /* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 768px) {
     .hero-title {
@@ -1733,6 +1860,29 @@ body.time-night .hero-mood-greeting {
 .featured-cloud.c1 { top: 0; right: 0; }
 .featured-cloud.c2 { bottom: 4px; left: 0; font-size: 1.1rem; }
 
+.featured-zen-art {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    flex-shrink: 0;
+}
+
+.featured-zen-rock {
+    font-size: 3.4rem;
+    position: absolute;
+    left: 24px;
+    top: 24px;
+    animation: float 4s ease-in-out infinite;
+}
+
+.featured-zen-swirl {
+    position: absolute;
+    font-size: 1.4rem;
+    opacity: 0.65;
+    bottom: 6px;
+    right: 2px;
+}
+
 .featured-text {
     text-align: left;
 }
@@ -1796,6 +1946,94 @@ body.time-night .hero-mood-greeting {
     margin-bottom: 24px;
 }
 
+/* ===== COIN SHOP (inside My Projects) ===== */
+.coin-shop-section {
+    margin-top: 54px;
+    padding-top: 40px;
+    border-top: 1px dashed rgba(31, 105, 84, 0.2);
+}
+
+.shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    margin-top: 10px;
+}
+
+.shop-card {
+    background: white;
+    border-radius: 18px;
+    padding: 26px 26px 24px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    text-align: center;
+}
+
+.shop-card-icon {
+    font-size: 2.6rem;
+    margin-bottom: 8px;
+}
+
+.shop-card h4 {
+    font-size: 1.2rem;
+    color: #1a1a1a;
+    margin-bottom: 4px;
+}
+
+.shop-card-desc {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+    min-height: 2.7em;
+}
+
+.shop-progress-track {
+    background: #eef2f0;
+    border-radius: 8px;
+    height: 10px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.shop-progress-fill {
+    background: linear-gradient(90deg, #2d8a78, #1f6954);
+    height: 100%;
+    border-radius: 8px;
+    transition: width 0.3s ease;
+}
+
+.shop-progress-label {
+    font-size: 0.8rem;
+    color: #888;
+    margin-bottom: 16px;
+}
+
+.shop-buy-btn {
+    background: linear-gradient(135deg, #2d8a78 0%, #1f6954 100%);
+    color: white;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.92rem;
+    transition: all 0.3s ease;
+}
+
+.shop-buy-btn:hover:not(:disabled) {
+    transform: scale(1.05);
+}
+
+.shop-buy-btn:disabled {
+    background: #cfd9d5;
+    color: #7c8f87;
+    cursor: default;
+}
+
+.shop-done {
+    color: #1f6954;
+    font-weight: 600;
+}
+
 /* ===== BALLOON SCHOOL GAME SCREEN (contained modal, own iframe) ===== */
 .balloon-card {
     background: #EAF7F2;
@@ -1813,6 +2051,23 @@ body.time-night .hero-mood-greeting {
     border: none;
     border-radius: 12px;
     display: block;
+}
+
+/* ===== ZEN SAND GARDEN (unlockable game) ===== */
+.zengarden-card {
+    max-width: 720px;
+    padding: 28px 24px;
+}
+
+#zengarden-canvas {
+    width: 100%;
+    aspect-ratio: 640 / 420;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    cursor: crosshair;
+    touch-action: none;
+    display: block;
+    margin-top: 14px;
 }
 
 </style>
@@ -2171,6 +2426,25 @@ body.time-night .hero-mood-greeting {
                     <p>It grows a little every day you take care of yourself</p>
                 </div>
 
+                <!-- Unlockable exercises — hidden until earned in the Coin Shop -->
+                <div class="exercise-card locked-exercise" data-unlock-id="boxbreathing" onclick="openSession('boxbreathing')">
+                    <div class="exercise-icon">🔲</div>
+                    <h3>Box Breathing</h3>
+                    <p>Trace a calming box with four equal breathing phases</p>
+                </div>
+
+                <div class="exercise-card locked-exercise" data-unlock-id="visualization" onclick="openSession('visualization')">
+                    <div class="exercise-icon">🏝️</div>
+                    <h3>Guided Visualization</h3>
+                    <p>Picture a peaceful place with all five senses</p>
+                </div>
+
+                <div class="exercise-card locked-exercise" data-unlock-id="walking" onclick="openSession('walking')">
+                    <div class="exercise-icon">🚶‍♀️</div>
+                    <h3>Mindful Walking</h3>
+                    <p>Slow down and notice each step, breath, and surrounding</p>
+                </div>
+
             </div>
 
             <!-- Fun Games subsection — part of My Projects, but its own thing -->
@@ -2190,6 +2464,30 @@ body.time-night .hero-mood-greeting {
                         <p>Float a balloon through 50 school-day levels and dodge the hazards. Pause or exit anytime — come back to my Calming Pill whenever you want.</p>
                         <span class="featured-play">▶ Play</span>
                     </div>
+                </div>
+
+                <!-- Unlockable game — hidden until earned in the Coin Shop -->
+                <div class="featured-project locked-game" data-unlock-id="zengarden" onclick="openSession('zengarden')">
+                    <div class="featured-zen-art" aria-hidden="true">
+                        <span class="featured-zen-rock">🪨</span>
+                        <span class="featured-zen-swirl">〰️</span>
+                    </div>
+                    <div class="featured-text">
+                        <span class="featured-tag">Bonus Game</span>
+                        <h3>Zen Sand Garden</h3>
+                        <p>Drag through the sand to rake calm, curving lines around the rocks. No score, no timer — smooth it clean and start again anytime.</p>
+                        <span class="featured-play">▶ Play</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coin Shop subsection — part of My Projects -->
+            <div class="coin-shop-section">
+                <h3 class="fun-games-title">🪙 Coin Shop</h3>
+                <p class="fun-games-subtitle">Breathe with Pillo's logo or finish an exercise to earn Calm Face Coins. Trade them in below for new content.</p>
+                <div class="shop-grid">
+                    <div class="shop-card" id="shop-exercise-card"></div>
+                    <div class="shop-card" id="shop-game-card"></div>
                 </div>
             </div>
         </div>
@@ -2419,11 +2717,88 @@ body.time-night .hero-mood-greeting {
             </div>
         </div>
 
+        <!-- Box Breathing (unlockable) -->
+        <div class="session-overlay" id="session-boxbreathing">
+            <div class="session-card">
+                <button class="session-close" onclick="closeSession('boxbreathing')" aria-label="Close">✕</button>
+                <h3>Box Breathing</h3>
+                <p class="pillo-note">"When I need to reset fast, I trace a box with my breath — four equal sides, four equal counts. Simple enough to do anywhere." <span class="pillo-signature">— Pillo</span></p>
+                <p class="exercise-quote">"Feelings come and go like clouds in a windy sky. Conscious breathing is my anchor." <span class="quote-author">— Thich Nhat Hanh</span></p>
+                <div class="box-breath-visual">
+                    <div class="box-breath-square"></div>
+                    <div class="box-breath-dot" id="boxbreathing-dot"></div>
+                    <div class="box-breath-text">
+                        <div class="box-breath-phase" id="boxbreathing-phase">Breathe In</div>
+                        <div class="box-breath-count" id="boxbreathing-count">4</div>
+                    </div>
+                </div>
+                <p class="session-hint">In for 4, hold for 4, out for 4, hold for 4 — on repeat. Pause or leave whenever you want.</p>
+                <div class="session-controls">
+                    <button class="session-btn" id="boxbreathing-toggle" onclick="toggleBoxBreathing()">Pause</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Guided Visualization (unlockable) -->
+        <div class="session-overlay" id="session-visualization">
+            <div class="session-card">
+                <button class="session-close" onclick="closeSession('visualization')" aria-label="Close">✕</button>
+                <h3>Guided Visualization</h3>
+                <p class="pillo-note">"When I can't actually get away, I go somewhere peaceful in my head instead — sights, sounds, and all." <span class="pillo-signature">— Pillo</span></p>
+                <p class="exercise-quote">"Almost anything will work again if you unplug it for a few minutes, including you." <span class="quote-author">— Anne Lamott</span></p>
+                <div class="step-progress" id="visualization-progress"></div>
+                <div class="step-display">
+                    <div class="step-name" id="visualization-name"></div>
+                    <div class="step-instruction" id="visualization-instruction"></div>
+                    <div class="step-timer" id="visualization-timer"></div>
+                </div>
+                <div class="session-controls">
+                    <button class="session-btn secondary" onclick="prevStep('visualization')">◀ Back</button>
+                    <button class="session-btn" id="visualization-pause" onclick="pauseStepTimer('visualization')">Pause</button>
+                    <button class="session-btn secondary" onclick="nextStep('visualization')">Next ▶</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mindful Walking (unlockable) -->
+        <div class="session-overlay" id="session-walking">
+            <div class="session-card">
+                <button class="session-close" onclick="closeSession('walking')" aria-label="Close">✕</button>
+                <h3>Mindful Walking</h3>
+                <p class="pillo-note">"Some of my best thinking — and my best not-thinking — happens on a slow walk with nowhere to be." <span class="pillo-signature">— Pillo</span></p>
+                <p class="exercise-quote">"Wherever you are, be all there." <span class="quote-author">— Jim Elliot</span></p>
+                <div class="step-progress" id="walking-progress"></div>
+                <div class="step-display">
+                    <div class="step-name" id="walking-name"></div>
+                    <div class="step-instruction" id="walking-instruction"></div>
+                    <div class="step-timer" id="walking-timer"></div>
+                </div>
+                <div class="session-controls">
+                    <button class="session-btn secondary" onclick="prevStep('walking')">◀ Back</button>
+                    <button class="session-btn" id="walking-pause" onclick="pauseStepTimer('walking')">Pause</button>
+                    <button class="session-btn secondary" onclick="nextStep('walking')">Next ▶</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Balloon School (featured game, contained modal, own game+music in an iframe) -->
         <div class="session-overlay" id="session-balloon">
             <div class="balloon-card">
                 <button class="session-close" onclick="closeSession('balloon')" aria-label="Close">✕</button>
                 <iframe class="balloon-frame" id="balloon-frame" title="Balloon School game" allow="autoplay"></iframe>
+            </div>
+        </div>
+
+        <!-- Zen Sand Garden (unlockable game) -->
+        <div class="session-overlay" id="session-zengarden">
+            <div class="session-card zengarden-card">
+                <button class="session-close" onclick="closeSession('zengarden')" aria-label="Close">✕</button>
+                <h3>Zen Sand Garden</h3>
+                <p class="pillo-note">"No score, no timer — just drag through the sand and watch the lines curve." <span class="pillo-signature">— Pillo</span></p>
+                <canvas id="zengarden-canvas" width="640" height="420"></canvas>
+                <div class="session-controls">
+                    <button class="session-btn secondary" onclick="clearZenGarden()">🧹 Smooth the Sand</button>
+                </div>
             </div>
         </div>
     </section>
@@ -2478,6 +2853,12 @@ body.time-night .hero-mood-greeting {
         <input type="range" class="audio-volume-slider" id="audio-volume-slider" min="0" max="100" value="65" oninput="setAmbientVolume(this.value)" aria-label="Background music volume">
     </div>
 
+    <!-- Calm Face Coin bank — earned by breathing with the logo or finishing exercises -->
+    <div class="coin-bank" id="coin-bank" title="Calm Face Coins — tap Pillo's logo and breathe with it, or finish an exercise, to earn more">
+        <span class="coin-bank-icon">🪙</span>
+        <span class="coin-bank-count" id="coin-bank-count">0</span>
+    </div>
+
     <script>
 // ===== SCROLL TO EXERCISES =====
 function scrollToExercises() {
@@ -2492,7 +2873,14 @@ function scrollToExercises() {
 // at any time via the X button, clicking outside the card, or Escape —
 // nothing ever traps clicks the way the old countdown modal did.
 let activeSession = null;
-const STEP_SESSIONS = ['stretching', 'pmr', 'meditation'];
+const STEP_SESSIONS = ['stretching', 'pmr', 'meditation', 'visualization', 'walking'];
+
+// Fun Games entries don't count as "an exercise" for coin purposes.
+const GAME_SESSION_IDS = ['balloon', 'zengarden'];
+const EXERCISE_COIN_THRESHOLD_MS = 7000;
+const EXERCISE_COIN_REWARD = 10;
+let sessionOpenedAt = 0;
+let sessionCoinAwarded = false;
 
 function openSession(name) {
     if (activeSession) {
@@ -2507,6 +2895,8 @@ function openSession(name) {
     overlay.classList.add('active');
     document.body.style.overflow = 'hidden';
     activeSession = name;
+    sessionOpenedAt = Date.now();
+    sessionCoinAwarded = false;
 
     if (STEP_SESSIONS.includes(name)) startSteps(name);
     else if (name === 'gratitude' || name === 'journal') initReflection(name);
@@ -2515,6 +2905,8 @@ function openSession(name) {
     else if (name === 'bubbles') startBubbles();
     else if (name === 'plant') renderPlant();
     else if (name === 'balloon') startBalloonGame();
+    else if (name === 'zengarden') startZenGarden();
+    else if (name === 'boxbreathing') startBoxBreathing();
 
     // Every real exercise counts as taking care of yourself today, which is
     // what makes the Calm Plant grow (the plant view itself doesn't count).
@@ -2532,9 +2924,20 @@ function closeSession(name) {
         overlay.style.display = 'none';
     }, 300);
 
+    // Finishing at least 7 seconds of a real exercise (not a Fun Games
+    // entry, not just glancing at the plant) earns Calm Face Coins.
+    if (!GAME_SESSION_IDS.includes(name) && name !== 'plant' && !sessionCoinAwarded) {
+        if (Date.now() - sessionOpenedAt >= EXERCISE_COIN_THRESHOLD_MS) {
+            sessionCoinAwarded = true;
+            addCoins(EXERCISE_COIN_REWARD);
+        }
+    }
+
     if (STEP_SESSIONS.includes(name)) stopStepTimer(name);
     else if (name === 'bubbles') stopBubbles();
     else if (name === 'balloon') stopBalloonGame();
+    else if (name === 'zengarden') stopZenGarden();
+    else if (name === 'boxbreathing') stopBoxBreathing();
 
     if (activeSession === name) {
         activeSession = null;
@@ -2603,8 +3006,30 @@ const MEDITATION_STEPS = [
     { name: 'Sit in Silence', duration: null, instruction: "Stay here as long as you like. Close whenever you're ready." }
 ];
 
+const VISUALIZATION_STEPS = [
+    { name: 'Get Settled', duration: 15, instruction: 'Close your eyes or soften your gaze. Let your shoulders drop.' },
+    { name: 'Choose Your Place', duration: 20, instruction: 'Picture somewhere peaceful — a beach, a forest, a quiet room. Anywhere that feels safe.' },
+    { name: 'See It', duration: 30, instruction: 'Notice the colors and light around you. Is it bright, dim, golden, blue?' },
+    { name: 'Hear It', duration: 30, instruction: 'Listen for the sounds of this place — waves, wind, birds, or maybe quiet.' },
+    { name: 'Feel It', duration: 30, instruction: 'Notice temperature and texture — sun on your skin, sand underfoot, a breeze.' },
+    { name: 'Smell It', duration: 25, instruction: 'Is there a scent here — salt air, pine, rain, flowers?' },
+    { name: 'Stay a While', duration: null, instruction: "Let yourself rest here as long as you like. Close whenever you're ready." }
+];
+
+const WALKING_STEPS = [
+    { name: 'Before You Start', duration: 15, instruction: 'Stand still a moment. Feel your feet on the ground before you move.' },
+    { name: 'First Steps', duration: 30, instruction: 'Begin walking slower than usual. Feel your heel touch, then your toes.' },
+    { name: 'Notice Your Breath', duration: 30, instruction: 'Let your breathing find its own rhythm with your steps — no need to control it.' },
+    { name: 'Notice Your Surroundings', duration: 40, instruction: 'Look around without judging — colors, shapes, light, movement.' },
+    { name: 'Notice Sounds', duration: 30, instruction: 'Let sounds come and go without chasing any of them.' },
+    { name: 'Notice the Air', duration: 30, instruction: 'Feel the temperature and movement of air on your skin.' },
+    { name: 'Return Gently', duration: null, instruction: "Whenever you're ready, let your pace ease back to normal." }
+];
+
 const stepState = {
     stretching: { steps: STRETCH_STEPS, index: 0, remaining: 0, interval: null, paused: false },
+    visualization: { steps: VISUALIZATION_STEPS, index: 0, remaining: 0, interval: null, paused: false },
+    walking: { steps: WALKING_STEPS, index: 0, remaining: 0, interval: null, paused: false },
     pmr: { steps: PMR_STEPS, index: 0, remaining: 0, interval: null, paused: false },
     meditation: { steps: MEDITATION_STEPS, index: 0, remaining: 0, interval: null, paused: false }
 };
@@ -3793,19 +4218,381 @@ function renderMoodAwareGreeting() {
     heroContent.insertBefore(greeting, ctaButton);
 }
 
+// ===== BOX BREATHING (unlockable) =====
+// A glowing dot traces one side of a square per phase — four equal phases,
+// four equal counts, looping. Single rAF loop, fully cancelled on close.
+const BOX_BREATH_PHASES = [
+    { name: 'Breathe In', duration: 4000, from: [24, 24], to: [196, 24] },
+    { name: 'Hold', duration: 4000, from: [196, 24], to: [196, 196] },
+    { name: 'Breathe Out', duration: 4000, from: [196, 196], to: [24, 196] },
+    { name: 'Hold', duration: 4000, from: [24, 196], to: [24, 24] }
+];
+
+let boxBreathRAF = null;
+let boxBreathPhaseIndex = 0;
+let boxBreathPhaseStart = 0;
+let boxBreathPaused = false;
+let boxBreathPauseStart = 0;
+
+function startBoxBreathing() {
+    boxBreathPhaseIndex = 0;
+    boxBreathPaused = false;
+
+    const toggleBtn = document.getElementById('boxbreathing-toggle');
+    if (toggleBtn) toggleBtn.textContent = 'Pause';
+
+    boxBreathPhaseStart = performance.now();
+    cancelAnimationFrame(boxBreathRAF);
+    boxBreathRAF = requestAnimationFrame(boxBreathLoop);
+}
+
+function boxBreathLoop(now) {
+    if (!boxBreathPaused) {
+        const phase = BOX_BREATH_PHASES[boxBreathPhaseIndex];
+        const elapsed = now - boxBreathPhaseStart;
+        const t = Math.min(1, elapsed / phase.duration);
+        const remaining = Math.max(0, phase.duration - elapsed);
+        const countText = Math.ceil(remaining / 1000);
+
+        const dot = document.getElementById('boxbreathing-dot');
+        const phaseEl = document.getElementById('boxbreathing-phase');
+        const countEl = document.getElementById('boxbreathing-count');
+
+        if (phaseEl) phaseEl.textContent = phase.name;
+        if (countEl) countEl.textContent = countText > 0 ? countText : '';
+        if (dot) {
+            dot.style.left = (phase.from[0] + (phase.to[0] - phase.from[0]) * t) + 'px';
+            dot.style.top = (phase.from[1] + (phase.to[1] - phase.from[1]) * t) + 'px';
+        }
+
+        if (elapsed >= phase.duration) {
+            boxBreathPhaseIndex = (boxBreathPhaseIndex + 1) % BOX_BREATH_PHASES.length;
+            boxBreathPhaseStart = now;
+        }
+    }
+
+    boxBreathRAF = requestAnimationFrame(boxBreathLoop);
+}
+
+function toggleBoxBreathing() {
+    boxBreathPaused = !boxBreathPaused;
+    const btn = document.getElementById('boxbreathing-toggle');
+
+    if (boxBreathPaused) {
+        boxBreathPauseStart = performance.now();
+        if (btn) btn.textContent = 'Resume';
+    } else {
+        const pausedFor = performance.now() - boxBreathPauseStart;
+        boxBreathPhaseStart += pausedFor;
+        if (btn) btn.textContent = 'Pause';
+    }
+}
+
+function stopBoxBreathing() {
+    cancelAnimationFrame(boxBreathRAF);
+    boxBreathRAF = null;
+}
+
+// ===== ZEN SAND GARDEN (unlockable, creative — no score, no fail state) =====
+// Drag anywhere on the canvas to rake three parallel lines through the sand;
+// rocks are redrawn on top of every stroke so they always stay "in front."
+let zenCtx = null;
+let zenDrawing = false;
+let zenLastPoint = null;
+let zenInited = false;
+const ZEN_ROCKS = [
+    { x: 120, y: 90, r: 34 },
+    { x: 500, y: 130, r: 26 },
+    { x: 330, y: 320, r: 40 },
+    { x: 92, y: 330, r: 20 }
+];
+
+function startZenGarden() {
+    const canvas = document.getElementById('zengarden-canvas');
+    if (!canvas) return;
+    zenCtx = canvas.getContext('2d');
+
+    if (!zenInited) {
+        zenInited = true;
+        canvas.addEventListener('pointerdown', zenPointerDown);
+        canvas.addEventListener('pointermove', zenPointerMove);
+        window.addEventListener('pointerup', zenPointerUp);
+        drawZenSand();
+    }
+    drawZenRocks();
+}
+
+function stopZenGarden() {
+    zenDrawing = false;
+    zenLastPoint = null;
+}
+
+function drawZenSand() {
+    if (!zenCtx) return;
+    const canvas = zenCtx.canvas;
+    const grad = zenCtx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, '#F3E4C6');
+    grad.addColorStop(1, '#E8D4A8');
+    zenCtx.fillStyle = grad;
+    zenCtx.fillRect(0, 0, canvas.width, canvas.height);
+    drawZenRocks();
+}
+
+function drawZenRocks() {
+    if (!zenCtx) return;
+    ZEN_ROCKS.forEach(rock => {
+        zenCtx.save();
+        zenCtx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        zenCtx.beginPath();
+        zenCtx.ellipse(rock.x, rock.y + rock.r * 0.55, rock.r * 0.9, rock.r * 0.3, 0, 0, Math.PI * 2);
+        zenCtx.fill();
+
+        const rg = zenCtx.createRadialGradient(
+            rock.x - rock.r * 0.3, rock.y - rock.r * 0.3, rock.r * 0.1,
+            rock.x, rock.y, rock.r
+        );
+        rg.addColorStop(0, '#a3a29c');
+        rg.addColorStop(1, '#6b6a66');
+        zenCtx.fillStyle = rg;
+        zenCtx.beginPath();
+        zenCtx.ellipse(rock.x, rock.y, rock.r, rock.r * 0.82, 0, 0, Math.PI * 2);
+        zenCtx.fill();
+        zenCtx.restore();
+    });
+}
+
+function clearZenGarden() {
+    drawZenSand();
+}
+
+function zenCanvasPoint(e) {
+    const canvas = zenCtx.canvas;
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: (e.clientX - rect.left) * (canvas.width / rect.width),
+        y: (e.clientY - rect.top) * (canvas.height / rect.height)
+    };
+}
+
+function zenPointerDown(e) {
+    zenDrawing = true;
+    zenLastPoint = zenCanvasPoint(e);
+}
+
+function zenPointerMove(e) {
+    if (!zenDrawing || !zenCtx) return;
+    const p = zenCanvasPoint(e);
+    zenRakeLine(zenLastPoint, p);
+    zenLastPoint = p;
+}
+
+function zenPointerUp() {
+    zenDrawing = false;
+    zenLastPoint = null;
+}
+
+function zenRakeLine(from, to) {
+    const dx = to.x - from.x, dy = to.y - from.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len, ny = dx / len;
+
+    zenCtx.strokeStyle = 'rgba(120, 96, 56, 0.35)';
+    zenCtx.lineWidth = 2.5;
+    zenCtx.lineCap = 'round';
+    [-7, 0, 7].forEach(off => {
+        zenCtx.beginPath();
+        zenCtx.moveTo(from.x + nx * off, from.y + ny * off);
+        zenCtx.lineTo(to.x + nx * off, to.y + ny * off);
+        zenCtx.stroke();
+    });
+
+    drawZenRocks();
+}
+
+// ===== COIN SHOP (spend Calm Face Coins to unlock new content) =====
+// Each queue unlocks in order, one purchase at a time, so there's always
+// exactly one thing to save up for next. More entries can be appended to
+// either queue later without touching the shop logic itself.
+const EXERCISE_UNLOCK_QUEUE = [
+    { id: 'boxbreathing', icon: '🔲', title: 'Box Breathing', desc: 'Trace a calming box with four equal breathing phases' },
+    { id: 'visualization', icon: '🏝️', title: 'Guided Visualization', desc: 'Picture a peaceful place with all five senses' },
+    { id: 'walking', icon: '🚶‍♀️', title: 'Mindful Walking', desc: 'Slow down and notice each step, breath, and surrounding' }
+];
+const GAME_UNLOCK_QUEUE = [
+    { id: 'zengarden', icon: '🪨', title: 'Zen Sand Garden', desc: 'Rake calming lines through the sand — no score, no timer' }
+];
+const EXERCISE_UNLOCK_COST = 250;
+const GAME_UNLOCK_COST = 400;
+const UNLOCKED_EXERCISES_KEY = 'pillo-unlocked-exercises';
+const UNLOCKED_GAMES_KEY = 'pillo-unlocked-games';
+
+function getUnlockedIds(key) {
+    try {
+        return JSON.parse(localStorage.getItem(key) || '[]');
+    } catch (e) {
+        return [];
+    }
+}
+
+function setUnlockedIds(key, ids) {
+    localStorage.setItem(key, JSON.stringify(ids));
+}
+
+function nextQueueItem(queue, unlockedIds) {
+    return queue.find(item => !unlockedIds.includes(item.id)) || null;
+}
+
+// Reveals anything already unlocked in a previous visit — called once on load.
+function applyUnlocks() {
+    getUnlockedIds(UNLOCKED_EXERCISES_KEY).forEach(id => {
+        const card = document.querySelector(`.exercise-card[data-unlock-id="${id}"]`);
+        if (card) card.classList.remove('locked-exercise');
+    });
+    getUnlockedIds(UNLOCKED_GAMES_KEY).forEach(id => {
+        const card = document.querySelector(`.featured-project[data-unlock-id="${id}"]`);
+        if (card) card.classList.remove('locked-game');
+    });
+}
+
+function renderShop() {
+    const coins = getCoins();
+    renderShopCard('shop-exercise-card', EXERCISE_UNLOCK_QUEUE, UNLOCKED_EXERCISES_KEY, EXERCISE_UNLOCK_COST, coins, 'exercise');
+    renderShopCard('shop-game-card', GAME_UNLOCK_QUEUE, UNLOCKED_GAMES_KEY, GAME_UNLOCK_COST, coins, 'game');
+}
+
+function renderShopCard(elId, queue, storageKey, cost, coins, type) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+
+    const next = nextQueueItem(queue, getUnlockedIds(storageKey));
+    if (!next) {
+        el.innerHTML = `
+            <div class="shop-card-icon">✨</div>
+            <h4>All caught up!</h4>
+            <p class="shop-card-desc">You've unlocked every ${type} I've made so far — more are on the way.</p>
+            <p class="shop-done">🪙 ${coins} banked</p>`;
+        return;
+    }
+
+    const shown = Math.min(coins, cost);
+    const pct = Math.round((shown / cost) * 100);
+    const canBuy = coins >= cost;
+    el.innerHTML = `
+        <div class="shop-card-icon">${next.icon}</div>
+        <h4>${next.title}</h4>
+        <p class="shop-card-desc">${next.desc}</p>
+        <div class="shop-progress-track"><div class="shop-progress-fill" style="width:${pct}%"></div></div>
+        <p class="shop-progress-label">${shown} / ${cost} 🪙</p>
+        <button class="shop-buy-btn" ${canBuy ? '' : 'disabled'} onclick="purchaseUnlock('${type}')">
+            ${canBuy ? `Trade ${cost} 🪙 &rarr; Unlock` : `Need ${cost - coins} more 🪙`}
+        </button>`;
+}
+
+function purchaseUnlock(type) {
+    const isExercise = type === 'exercise';
+    const queue = isExercise ? EXERCISE_UNLOCK_QUEUE : GAME_UNLOCK_QUEUE;
+    const storageKey = isExercise ? UNLOCKED_EXERCISES_KEY : UNLOCKED_GAMES_KEY;
+    const cost = isExercise ? EXERCISE_UNLOCK_COST : GAME_UNLOCK_COST;
+
+    const unlockedIds = getUnlockedIds(storageKey);
+    const next = nextQueueItem(queue, unlockedIds);
+    if (!next || getCoins() < cost) return;
+
+    setCoins(getCoins() - cost);
+    setUnlockedIds(storageKey, [...unlockedIds, next.id]);
+
+    const selector = isExercise
+        ? `.exercise-card[data-unlock-id="${next.id}"]`
+        : `.featured-project[data-unlock-id="${next.id}"]`;
+    const card = document.querySelector(selector);
+    if (card) {
+        card.classList.remove(isExercise ? 'locked-exercise' : 'locked-game');
+        card.classList.add('just-unlocked');
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => card.classList.remove('just-unlocked'), 700);
+    }
+
+    renderShop();
+}
+
+// ===== CALM FACE COINS (economy) =====
+// Earned by breathing along with the logo (once per breath) or finishing an
+// exercise for at least 7 seconds. Spend them in the Coin Shop to unlock
+// new exercises and games.
+const COIN_KEY = 'pillo-coins';
+
+function getCoins() {
+    return parseInt(localStorage.getItem(COIN_KEY) || '0', 10);
+}
+
+function setCoins(n) {
+    localStorage.setItem(COIN_KEY, String(Math.max(0, n)));
+    updateCoinDisplay();
+}
+
+function addCoins(amount) {
+    setCoins(getCoins() + amount);
+    showCoinToast(amount);
+
+    const badge = document.getElementById('coin-bank');
+    if (badge) {
+        badge.classList.remove('coin-bump');
+        void badge.offsetWidth;
+        badge.classList.add('coin-bump');
+    }
+
+    renderShop();
+}
+
+function updateCoinDisplay() {
+    const el = document.getElementById('coin-bank-count');
+    if (el) el.textContent = getCoins();
+}
+
+function showCoinToast(amount) {
+    const toast = document.createElement('div');
+    toast.className = 'coin-toast';
+    toast.textContent = `+${amount} 🪙`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 1450);
+}
+
 // ===== LOGO EASTER EGG =====
-// Click Pillo's logo anywhere it appears and the meditator takes a little breath.
+// Click Pillo's logo anywhere it appears and the meditator takes a slow,
+// ~5.5s breath — long enough to actually breathe along with it. One Calm
+// Face Coin per completed breath; a shared cooldown (not per-element) means
+// clicking again mid-breath doesn't restart it or pay out early, so earning
+// coins is paced to the breath itself rather than spammable.
+const LOGO_BREATHE_MS = 5500;
+let logoBreathingActive = false;
+
 function initLogoEasterEgg() {
     document.querySelectorAll('.logo-svg, .large-logo').forEach(svg => {
         svg.style.cursor = 'pointer';
         svg.addEventListener('click', () => {
-            svg.classList.remove('logo-breathe');
-            void svg.offsetWidth;
-            svg.classList.add('logo-breathe');
+            if (logoBreathingActive) return;
+            logoBreathingActive = true;
+
+            document.querySelectorAll('.logo-svg, .large-logo').forEach(el => {
+                el.classList.remove('logo-breathe');
+                void el.offsetWidth;
+                el.classList.add('logo-breathe');
+            });
+
+            addCoins(1, { source: svg });
+
+            // Fallback timer clears the cooldown even under reduced-motion
+            // (where the animation — and its animationend event — never fires).
+            setTimeout(() => {
+                logoBreathingActive = false;
+                document.querySelectorAll('.logo-svg, .large-logo').forEach(el => {
+                    el.classList.remove('logo-breathe');
+                });
+            }, LOGO_BREATHE_MS);
         });
-        // When the breath finishes, remove the class — otherwise it blocks
-        // future clicks from re-triggering AND (on the large logo) leaves the
-        // idle float animation permanently overridden.
+        // When the breath finishes, remove the class right away — otherwise
+        // it blocks the idle float animation on the large logo until the
+        // fallback timer above catches up.
         svg.addEventListener('animationend', (e) => {
             if (e.animationName === 'logoBreathe') {
                 svg.classList.remove('logo-breathe');
@@ -3823,6 +4610,9 @@ applyTimeOfDayTheme();
 renderMoodAwareGreeting();
 initLogoEasterEgg();
 renderCalendar();
+updateCoinDisplay();
+applyUnlocks();
+renderShop();
 
 const wallCalendarEl = document.getElementById('wall-calendar');
 if (wallCalendarEl) {
