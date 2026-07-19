@@ -791,9 +791,11 @@ body.time-night .hero-mood-greeting {
     border-color: #98D8C8;
 }
 
-/* Unlockable content stays hidden from the grid until earned in the Coin Shop */
-.locked-exercise,
-.locked-game {
+/* Unlockable content stays hidden from the grid until earned in the Coin Shop.
+   Compound selectors here (not bare .locked-game) so this reliably beats
+   .featured-project's own "display: flex", regardless of source order. */
+.exercise-card.locked-exercise,
+.featured-project.locked-game {
     display: none;
 }
 
@@ -1499,6 +1501,66 @@ body.time-night .hero-mood-greeting {
     35% { transform: scale(1.12); }
 }
 
+.coin-intro-bubble {
+    position: fixed;
+    bottom: 74px;
+    left: 22px;
+    max-width: 260px;
+    background: white;
+    border-radius: 16px;
+    padding: 14px 34px 14px 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    z-index: 3000;
+    font-size: 0.85rem;
+    color: #333;
+    line-height: 1.5;
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.coin-intro-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 26px;
+    width: 16px;
+    height: 16px;
+    background: white;
+    transform: rotate(45deg);
+    border-radius: 3px;
+}
+
+.coin-intro-bubble.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.coin-intro-bubble strong {
+    color: #1f6954;
+}
+
+.coin-intro-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: #f0f0f0;
+    color: #555;
+    cursor: pointer;
+    font-size: 0.8rem;
+    line-height: 1;
+}
+
+.coin-intro-close:hover {
+    background: #e2e2e2;
+}
+
 .coin-toast {
     position: fixed;
     bottom: 68px;
@@ -2070,6 +2132,15 @@ body.time-night .hero-mood-greeting {
     margin-top: 14px;
 }
 
+#zengarden-canvas.erase-tool {
+    cursor: cell;
+}
+
+.zen-tool-btn.active {
+    background: linear-gradient(135deg, #2d8a78 0%, #1f6954 100%);
+    color: white;
+}
+
 </style>
 </head>
 <body>
@@ -2368,7 +2439,7 @@ body.time-night .hero-mood-greeting {
 
         <div class="exercises-container">
             <h2 class="section-title">My Projects</h2>
-            <p class="section-subtitle">This wellness website is my main project — here's the full collection of exercises I built for it. Choose one to start your calming journey.</p>
+            <p class="section-subtitle">This wellness website is my main project — here's the full collection of exercises I built for it. Choose one to start your calming journey. Tip: breathing with my logo and finishing exercises earns 😌 Calm Face Coins — spend them in the Coin Shop below.</p>
 
             <!-- Exercise Cards -->
             <div class="exercise-grid">
@@ -2483,7 +2554,7 @@ body.time-night .hero-mood-greeting {
 
             <!-- Coin Shop subsection — part of My Projects -->
             <div class="coin-shop-section">
-                <h3 class="fun-games-title">🪙 Coin Shop</h3>
+                <h3 class="fun-games-title">😌 Coin Shop</h3>
                 <p class="fun-games-subtitle">Breathe with Pillo's logo or finish an exercise to earn Calm Face Coins. Trade them in below for new content.</p>
                 <div class="shop-grid">
                     <div class="shop-card" id="shop-exercise-card"></div>
@@ -2794,10 +2865,12 @@ body.time-night .hero-mood-greeting {
             <div class="session-card zengarden-card">
                 <button class="session-close" onclick="closeSession('zengarden')" aria-label="Close">✕</button>
                 <h3>Zen Sand Garden</h3>
-                <p class="pillo-note">"No score, no timer — just drag through the sand and watch the lines curve." <span class="pillo-signature">— Pillo</span></p>
+                <p class="pillo-note">"No score, no timer — just drag through the sand and watch the lines curve. Switch tools to smooth any of it back out." <span class="pillo-signature">— Pillo</span></p>
                 <canvas id="zengarden-canvas" width="640" height="420"></canvas>
                 <div class="session-controls">
-                    <button class="session-btn secondary" onclick="clearZenGarden()">🧹 Smooth the Sand</button>
+                    <button class="session-btn zen-tool-btn active" id="zen-tool-rake" onclick="setZenTool('rake')">🪶 Rake</button>
+                    <button class="session-btn secondary zen-tool-btn" id="zen-tool-erase" onclick="setZenTool('erase')">🌬️ Smooth</button>
+                    <button class="session-btn secondary" onclick="clearZenGarden()">🔄 Reset All</button>
                 </div>
             </div>
         </div>
@@ -2855,8 +2928,15 @@ body.time-night .hero-mood-greeting {
 
     <!-- Calm Face Coin bank — earned by breathing with the logo or finishing exercises -->
     <div class="coin-bank" id="coin-bank" title="Calm Face Coins — tap Pillo's logo and breathe with it, or finish an exercise, to earn more">
-        <span class="coin-bank-icon">🪙</span>
+        <span class="coin-bank-icon">😌</span>
         <span class="coin-bank-count" id="coin-bank-count">0</span>
+    </div>
+
+    <!-- First-visit explainer — dismissed forever once closed or once the first coin is earned -->
+    <div class="coin-intro-bubble" id="coin-intro-bubble">
+        <button class="coin-intro-close" onclick="dismissCoinIntro()" aria-label="Got it">✕</button>
+        <strong>😌 Calm Face Coins</strong><br>
+        Tap my logo and breathe with it, or finish any exercise, to earn some. Spend them in the Coin Shop to unlock new exercises and games!
     </div>
 
     <script>
@@ -4294,12 +4374,15 @@ function stopBoxBreathing() {
 }
 
 // ===== ZEN SAND GARDEN (unlockable, creative — no score, no fail state) =====
-// Drag anywhere on the canvas to rake three parallel lines through the sand;
-// rocks are redrawn on top of every stroke so they always stay "in front."
+// Drag to rake three parallel grooved lines through the sand (or switch to
+// the Smooth tool to erase); rocks are redrawn on top of every stroke so
+// they always stay "in front." A soft filtered-noise sound plays while
+// dragging, like real sand underfoot — the ASMR part of the whole thing.
 let zenCtx = null;
 let zenDrawing = false;
 let zenLastPoint = null;
 let zenInited = false;
+let zenTool = 'rake';
 const ZEN_ROCKS = [
     { x: 120, y: 90, r: 34 },
     { x: 500, y: 130, r: 26 },
@@ -4319,6 +4402,7 @@ function startZenGarden() {
         window.addEventListener('pointerup', zenPointerUp);
         drawZenSand();
     }
+    setZenTool('rake');
     drawZenRocks();
 }
 
@@ -4327,13 +4411,36 @@ function stopZenGarden() {
     zenLastPoint = null;
 }
 
+function setZenTool(tool) {
+    zenTool = tool;
+    const rakeBtn = document.getElementById('zen-tool-rake');
+    const eraseBtn = document.getElementById('zen-tool-erase');
+    const canvas = document.getElementById('zengarden-canvas');
+    if (rakeBtn) {
+        rakeBtn.classList.toggle('active', tool === 'rake');
+        rakeBtn.classList.toggle('secondary', tool !== 'rake');
+    }
+    if (eraseBtn) {
+        eraseBtn.classList.toggle('active', tool === 'erase');
+        eraseBtn.classList.toggle('secondary', tool !== 'erase');
+    }
+    if (canvas) canvas.classList.toggle('erase-tool', tool === 'erase');
+}
+
+const ZEN_SAND_GRADIENT_STOPS = ['#F3E4C6', '#E8D4A8'];
+
+function zenSandGradient() {
+    const canvas = zenCtx.canvas;
+    const grad = zenCtx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, ZEN_SAND_GRADIENT_STOPS[0]);
+    grad.addColorStop(1, ZEN_SAND_GRADIENT_STOPS[1]);
+    return grad;
+}
+
 function drawZenSand() {
     if (!zenCtx) return;
     const canvas = zenCtx.canvas;
-    const grad = zenCtx.createLinearGradient(0, 0, 0, canvas.height);
-    grad.addColorStop(0, '#F3E4C6');
-    grad.addColorStop(1, '#E8D4A8');
-    zenCtx.fillStyle = grad;
+    zenCtx.fillStyle = zenSandGradient();
     zenCtx.fillRect(0, 0, canvas.width, canvas.height);
     drawZenRocks();
 }
@@ -4382,7 +4489,8 @@ function zenPointerDown(e) {
 function zenPointerMove(e) {
     if (!zenDrawing || !zenCtx) return;
     const p = zenCanvasPoint(e);
-    zenRakeLine(zenLastPoint, p);
+    if (zenTool === 'erase') zenEraseLine(zenLastPoint, p);
+    else zenRakeLine(zenLastPoint, p);
     zenLastPoint = p;
 }
 
@@ -4391,22 +4499,103 @@ function zenPointerUp() {
     zenLastPoint = null;
 }
 
+// Each tine gets a soft shadow + a soft highlight, offset a hair either
+// side of center, so it reads as an actual carved groove instead of a flat
+// painted line.
 function zenRakeLine(from, to) {
     const dx = to.x - from.x, dy = to.y - from.y;
     const len = Math.hypot(dx, dy) || 1;
     const nx = -dy / len, ny = dx / len;
 
-    zenCtx.strokeStyle = 'rgba(120, 96, 56, 0.35)';
-    zenCtx.lineWidth = 2.5;
     zenCtx.lineCap = 'round';
     [-7, 0, 7].forEach(off => {
+        const fx = from.x + nx * off, fy = from.y + ny * off;
+        const tx = to.x + nx * off, ty = to.y + ny * off;
+
+        zenCtx.strokeStyle = 'rgba(96, 74, 42, 0.4)';
+        zenCtx.lineWidth = 2.6;
         zenCtx.beginPath();
-        zenCtx.moveTo(from.x + nx * off, from.y + ny * off);
-        zenCtx.lineTo(to.x + nx * off, to.y + ny * off);
+        zenCtx.moveTo(fx + 0.8, fy + 0.8);
+        zenCtx.lineTo(tx + 0.8, ty + 0.8);
+        zenCtx.stroke();
+
+        zenCtx.strokeStyle = 'rgba(255, 250, 232, 0.5)';
+        zenCtx.lineWidth = 1.1;
+        zenCtx.beginPath();
+        zenCtx.moveTo(fx - 0.6, fy - 0.6);
+        zenCtx.lineTo(tx - 0.6, ty - 0.6);
         zenCtx.stroke();
     });
 
     drawZenRocks();
+    zenPlayRakeSound(len, false);
+}
+
+// Repaints with the exact same sand gradient (not a flat color), so an
+// erased patch blends back in seamlessly instead of leaving a visible seam.
+function zenEraseLine(from, to) {
+    zenCtx.save();
+    zenCtx.strokeStyle = zenSandGradient();
+    zenCtx.lineWidth = 28;
+    zenCtx.lineCap = 'round';
+    zenCtx.lineJoin = 'round';
+    zenCtx.beginPath();
+    zenCtx.moveTo(from.x, from.y);
+    zenCtx.lineTo(to.x, to.y);
+    zenCtx.stroke();
+    zenCtx.restore();
+
+    drawZenRocks();
+    zenPlayRakeSound(Math.hypot(to.x - from.x, to.y - from.y), true);
+}
+
+// ── Soft ASMR raking sound (filtered noise bursts, throttled) ──
+let zenAC = null;
+let zenLastSoundAt = 0;
+
+function getZenAC() {
+    if (!zenAC) {
+        try {
+            zenAC = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) { /* audio unavailable — the visual still works fine */ }
+    }
+    return zenAC;
+}
+
+function zenPlayRakeSound(strokeLen, isErase) {
+    const now = performance.now();
+    if (now - zenLastSoundAt < 35) return; // keeps rapid pointermoves from flooding the audio graph
+    zenLastSoundAt = now;
+
+    const ac = getZenAC();
+    if (!ac) return;
+    if (ac.state === 'suspended') ac.resume();
+
+    try {
+        const dur = 0.14;
+        const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * dur), ac.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ac.sampleRate * dur * 0.35));
+        }
+
+        const src = ac.createBufferSource();
+        src.buffer = buf;
+
+        const filter = ac.createBiquadFilter();
+        filter.type = isErase ? 'lowpass' : 'bandpass';
+        filter.frequency.value = isErase ? 900 : 2200;
+        filter.Q.value = isErase ? 0.7 : 1.1;
+
+        const gain = ac.createGain();
+        const speed = Math.min(1, strokeLen / 40);
+        gain.gain.value = 0.05 + speed * 0.05; // deliberately quiet and textured, never harsh
+
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(ac.destination);
+        src.start();
+    } catch (e) { /* ignore — sound is a nice-to-have, not required */ }
 }
 
 // ===== COIN SHOP (spend Calm Face Coins to unlock new content) =====
@@ -4470,7 +4659,7 @@ function renderShopCard(elId, queue, storageKey, cost, coins, type) {
             <div class="shop-card-icon">✨</div>
             <h4>All caught up!</h4>
             <p class="shop-card-desc">You've unlocked every ${type} I've made so far — more are on the way.</p>
-            <p class="shop-done">🪙 ${coins} banked</p>`;
+            <p class="shop-done">😌 ${coins} banked</p>`;
         return;
     }
 
@@ -4482,9 +4671,9 @@ function renderShopCard(elId, queue, storageKey, cost, coins, type) {
         <h4>${next.title}</h4>
         <p class="shop-card-desc">${next.desc}</p>
         <div class="shop-progress-track"><div class="shop-progress-fill" style="width:${pct}%"></div></div>
-        <p class="shop-progress-label">${shown} / ${cost} 🪙</p>
+        <p class="shop-progress-label">${shown} / ${cost} 😌</p>
         <button class="shop-buy-btn" ${canBuy ? '' : 'disabled'} onclick="purchaseUnlock('${type}')">
-            ${canBuy ? `Trade ${cost} 🪙 &rarr; Unlock` : `Need ${cost - coins} more 🪙`}
+            ${canBuy ? `Trade ${cost} 😌 &rarr; Unlock` : `Need ${cost - coins} more 😌`}
         </button>`;
 }
 
@@ -4533,6 +4722,7 @@ function setCoins(n) {
 function addCoins(amount) {
     setCoins(getCoins() + amount);
     showCoinToast(amount);
+    dismissCoinIntro(); // earning one is the clearest proof the explainer already worked
 
     const badge = document.getElementById('coin-bank');
     if (badge) {
@@ -4549,10 +4739,26 @@ function updateCoinDisplay() {
     if (el) el.textContent = getCoins();
 }
 
+// Shown once, the first time someone visits with zero coins, so the system
+// is explained up front instead of only being discoverable by accident.
+const COIN_INTRO_SEEN_KEY = 'pillo-coin-intro-seen';
+
+function maybeShowCoinIntro() {
+    if (localStorage.getItem(COIN_INTRO_SEEN_KEY)) return;
+    const bubble = document.getElementById('coin-intro-bubble');
+    if (bubble) bubble.classList.add('visible');
+}
+
+function dismissCoinIntro() {
+    localStorage.setItem(COIN_INTRO_SEEN_KEY, '1');
+    const bubble = document.getElementById('coin-intro-bubble');
+    if (bubble) bubble.classList.remove('visible');
+}
+
 function showCoinToast(amount) {
     const toast = document.createElement('div');
     toast.className = 'coin-toast';
-    toast.textContent = `+${amount} 🪙`;
+    toast.textContent = `+${amount} 😌`;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 1450);
 }
@@ -4613,6 +4819,7 @@ renderCalendar();
 updateCoinDisplay();
 applyUnlocks();
 renderShop();
+setTimeout(maybeShowCoinIntro, 2200);
 
 const wallCalendarEl = document.getElementById('wall-calendar');
 if (wallCalendarEl) {
