@@ -1971,6 +1971,60 @@ body.time-night .hero-mood-greeting {
     font-size: 0.9rem;
 }
 
+.bubble-burst-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    transform: translate(-50%, -50%) scale(0.6);
+    pointer-events: none;
+    z-index: 2;
+    animation: bubbleBurstRing 0.38s ease-out forwards;
+}
+
+@keyframes bubbleBurstRing {
+    to {
+        transform: translate(-50%, -50%) scale(2.2);
+        opacity: 0;
+        border-width: 0.5px;
+    }
+}
+
+.bubble-droplet {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #ffffff, #bfe9dd);
+    pointer-events: none;
+    z-index: 2;
+    transform: translate(-50%, -50%);
+    animation: bubbleDroplet 0.5s ease-out forwards;
+}
+
+@keyframes bubbleDroplet {
+    to {
+        transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.3);
+        opacity: 0;
+    }
+}
+
+.bubble-phrase {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    color: #1f6954;
+    font-weight: 600;
+    font-size: 0.82rem;
+    text-shadow: 0 1px 4px rgba(255, 255, 255, 0.8);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 3;
+    animation: bubblePhraseFloat 1.1s ease-out forwards;
+}
+
+@keyframes bubblePhraseFloat {
+    0% { opacity: 0; transform: translate(-50%, -50%) translateY(0); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, -50%) translateY(-26px); }
+}
+
 /* ===== MY CALM PLANT ===== */
 .plant-stage-emoji {
     font-size: 5rem;
@@ -2955,7 +3009,7 @@ body.time-night .hero-mood-greeting {
             <div class="session-card bubbles-card">
                 <button class="session-close" onclick="closeSession('bubbles')" aria-label="Close">✕</button>
                 <h3>Bubble Pop</h3>
-                <p class="pillo-note">"Sometimes calming down works better when my hands have something gentle to do." <span class="pillo-signature">— Pillo</span></p>
+                <p class="pillo-note">"Sometimes calming down works better when my hands have something gentle to do. I like to imagine each pop lets go of one tiny thing I don't need to hold onto right now." <span class="pillo-signature">— Pillo</span></p>
                 <div class="bubble-arena" id="bubble-arena"></div>
                 <p class="bubble-count" id="bubble-count">Bubbles popped: 0</p>
             </div>
@@ -4308,13 +4362,75 @@ function spawnBubble() {
     arena.appendChild(bubble);
 }
 
+// Each pop is framed as letting go of one small thing — a different short
+// phrase floats up with the burst so popping starts to feel like releasing
+// something, not just clicking a target.
+const BUBBLE_POP_PHRASES = [
+    'Let that one go.',
+    'One less thing to carry.',
+    'A little lighter now.',
+    'Gone — just like that.',
+    'You don’t have to hold that one.',
+    'A little more space, just opened up.',
+    'Pop. Release. Repeat.',
+    'That thought can float off too.',
+    'Small pops, calmer mind.',
+    'Nice. Let it drift away.'
+];
+
 function popBubble(bubble) {
     if (bubble.classList.contains('popping')) return;
     bubble.classList.add('popping');
     playPopSound();
+    spawnPopBurst(bubble);
     bubblesPopped++;
     updateBubbleCount();
     setTimeout(() => bubble.remove(), 200);
+}
+
+function spawnPopBurst(bubble) {
+    const arena = document.getElementById('bubble-arena');
+    if (!arena) return;
+
+    const arenaRect = arena.getBoundingClientRect();
+    const bubbleRect = bubble.getBoundingClientRect();
+    const cx = bubbleRect.left - arenaRect.left + bubbleRect.width / 2;
+    const cy = bubbleRect.top - arenaRect.top + bubbleRect.height / 2;
+    const size = bubbleRect.width;
+
+    const ring = document.createElement('span');
+    ring.className = 'bubble-burst-ring';
+    ring.style.left = cx + 'px';
+    ring.style.top = cy + 'px';
+    ring.style.width = size + 'px';
+    ring.style.height = size + 'px';
+    arena.appendChild(ring);
+    setTimeout(() => ring.remove(), 400);
+
+    const dropletCount = 7;
+    for (let i = 0; i < dropletCount; i++) {
+        const angle = (Math.PI * 2 * i) / dropletCount + (Math.random() - 0.5) * 0.5;
+        const distance = size * (0.6 + Math.random() * 0.5);
+        const droplet = document.createElement('span');
+        droplet.className = 'bubble-droplet';
+        const dsize = 4 + Math.random() * 5;
+        droplet.style.width = dsize + 'px';
+        droplet.style.height = dsize + 'px';
+        droplet.style.left = cx + 'px';
+        droplet.style.top = cy + 'px';
+        droplet.style.setProperty('--dx', (Math.cos(angle) * distance) + 'px');
+        droplet.style.setProperty('--dy', (Math.sin(angle) * distance) + 'px');
+        arena.appendChild(droplet);
+        setTimeout(() => droplet.remove(), 550);
+    }
+
+    const phrase = document.createElement('span');
+    phrase.className = 'bubble-phrase';
+    phrase.textContent = BUBBLE_POP_PHRASES[Math.floor(Math.random() * BUBBLE_POP_PHRASES.length)];
+    phrase.style.left = cx + 'px';
+    phrase.style.top = cy + 'px';
+    arena.appendChild(phrase);
+    setTimeout(() => phrase.remove(), 1150);
 }
 
 function updateBubbleCount() {
