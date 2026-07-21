@@ -2611,6 +2611,7 @@ body.time-night .hero-mood-greeting {
                 <p class="step-status" id="step-status">Tap below to start counting your steps for today.</p>
                 <button class="cta-button step-tracker-btn" id="step-tracker-btn" onclick="toggleStepTracking()">▶ Start Step Tracking</button>
                 <p class="step-hint">Works best on a phone, carried with you while this tab stays open — it can't count steps in the background or when the page is closed.</p>
+                <p class="step-hint" id="step-debug" style="opacity: 0.7;"></p>
             </div>
         </div>
     </section>
@@ -5116,6 +5117,7 @@ let lastStepTime = 0;
 let stepPeakDetected = false;
 let stepNoMotionTimer = null;
 let currentSteps = 0;
+let stepEventCount = 0;
 
 function loadDailySteps() {
     try {
@@ -5186,6 +5188,7 @@ function beginStepListening() {
     stepBaseline = 9.8;
     lastStepTime = 0;
     stepPeakDetected = false;
+    stepEventCount = 0;
 
     window.addEventListener('devicemotion', handleStepMotion);
     clearTimeout(stepNoMotionTimer);
@@ -5196,6 +5199,7 @@ function beginStepListening() {
     const btn = document.getElementById('step-tracker-btn');
     if (btn) btn.textContent = '⏸ Stop Step Tracking';
     setStepStatus('Tracking! Walk around with your phone to count steps.');
+    setStepDebug('Waiting for the first signal from your motion sensor…');
 }
 
 function stopStepTracking() {
@@ -5206,6 +5210,12 @@ function stopStepTracking() {
     const btn = document.getElementById('step-tracker-btn');
     if (btn) btn.textContent = '▶ Start Step Tracking';
     setStepStatus(`Paused — ${currentSteps.toLocaleString()} steps so far today.`);
+    setStepDebug('');
+}
+
+function setStepDebug(text) {
+    const el = document.getElementById('step-debug');
+    if (el) el.textContent = text;
 }
 
 // Simple peak-detection pedometer: a slow-moving baseline tracks roughly
@@ -5213,14 +5223,29 @@ function stopStepTracking() {
 // counted whenever the acceleration spikes clearly above that baseline,
 // with a minimum gap so one footfall isn't counted twice.
 function handleStepMotion(e) {
-    const a = e.accelerationIncludingGravity;
-    if (!a || a.x === null || a.x === undefined) return;
-
+    // Any event at all means the sensor is reachable — clear the "no motion"
+    // warning before checking whether this particular reading is usable,
+    // since some phones/browsers only populate one of the two acceleration
+    // fields (or briefly report null) even while events fire steadily.
     clearTimeout(stepNoMotionTimer);
+    stepNoMotionTimer = setTimeout(() => {
+        if (stepTrackingActive) setStepStatus("Not seeing any motion yet — make sure you're carrying your phone as you walk.");
+    }, 4000);
+    stepEventCount++;
+
+    const a = e.accelerationIncludingGravity && e.accelerationIncludingGravity.x !== null && e.accelerationIncludingGravity.x !== undefined
+        ? e.accelerationIncludingGravity
+        : e.acceleration;
+    if (!a || a.x === null || a.x === undefined) {
+        setStepDebug(`Signal #${stepEventCount} arrived, but it had no usable x/y/z data.`);
+        return;
+    }
+
     const magnitude = Math.sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
     stepBaseline = stepBaseline * 0.9 + magnitude * 0.1;
     const delta = magnitude - stepBaseline;
     const now = Date.now();
+    setStepDebug(`Signal #${stepEventCount} — magnitude ${magnitude.toFixed(2)}, baseline ${stepBaseline.toFixed(2)}, delta ${delta.toFixed(2)} (need > ${STEP_THRESHOLD})`);
 
     if (delta > STEP_THRESHOLD && !stepPeakDetected && (now - lastStepTime) > STEP_MIN_INTERVAL_MS) {
         stepPeakDetected = true;
