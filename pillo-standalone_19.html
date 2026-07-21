@@ -5109,12 +5109,16 @@ const STEP_GOAL = 3000;
 const STEP_GOAL_BONUS = 15;
 const STEP_GOAL_BONUS_KEY = 'pillo-step-goal-bonus-date';
 const STEP_THRESHOLD = 1.2;
-const STEP_MIN_INTERVAL_MS = 300;
+const STEP_MAX_DELTA = 6;
+const STEP_MIN_INTERVAL_MS = 250;
+const STEP_MAX_GAIT_GAP_MS = 900;
+const STEP_CONFIRM_STREAK = 3;
 
 let stepTrackingActive = false;
 let stepBaseline = 9.8;
 let lastStepTime = 0;
 let stepPeakDetected = false;
+let stepRhythmStreak = 0;
 let stepNoMotionTimer = null;
 let currentSteps = 0;
 let stepEventCount = 0;
@@ -5188,6 +5192,7 @@ function beginStepListening() {
     stepBaseline = 9.8;
     lastStepTime = 0;
     stepPeakDetected = false;
+    stepRhythmStreak = 0;
     stepEventCount = 0;
 
     window.addEventListener('devicemotion', handleStepMotion);
@@ -5218,10 +5223,14 @@ function setStepDebug(text) {
     if (el) el.textContent = text;
 }
 
-// Simple peak-detection pedometer: a slow-moving baseline tracks roughly
-// where "at rest" is (adapting to phone orientation/gravity), and a step is
-// counted whenever the acceleration spikes clearly above that baseline,
-// with a minimum gap so one footfall isn't counted twice.
+// Peak-detection pedometer with a gait-rhythm filter: a slow-moving baseline
+// tracks roughly where "at rest" is (adapting to phone orientation/gravity),
+// and each acceleration spike above that baseline is a *candidate* footstep —
+// but candidates only turn into counted steps once several land back-to-back
+// at a walking/running cadence (STEP_MIN_INTERVAL_MS–STEP_MAX_GAIT_GAP_MS
+// apart). A one-off jolt (picking the phone up, tapping the screen) or a
+// spike too sharp to be a real footstep (STEP_MAX_DELTA, e.g. a shake or a
+// drop) never builds that rhythm, so it's ignored instead of counted.
 function handleStepMotion(e) {
     // Any event at all means the sensor is reachable — clear the "no motion"
     // warning before checking whether this particular reading is usable,
@@ -5245,14 +5254,33 @@ function handleStepMotion(e) {
     stepBaseline = stepBaseline * 0.9 + magnitude * 0.1;
     const delta = magnitude - stepBaseline;
     const now = Date.now();
-    setStepDebug(`Signal #${stepEventCount} — magnitude ${magnitude.toFixed(2)}, baseline ${stepBaseline.toFixed(2)}, delta ${delta.toFixed(2)} (need > ${STEP_THRESHOLD})`);
 
     if (delta > STEP_THRESHOLD && !stepPeakDetected && (now - lastStepTime) > STEP_MIN_INTERVAL_MS) {
         stepPeakDetected = true;
+        const gap = lastStepTime ? now - lastStepTime : Infinity;
+
+        if (delta > STEP_MAX_DELTA) {
+            // Too sharp to be a footstep (a shake, tap, or drop) — this breaks
+            // whatever walking rhythm was building rather than counting it.
+            stepRhythmStreak = 0;
+            setStepDebug(`Signal #${stepEventCount} — delta ${delta.toFixed(2)} is too sharp for a footstep (max ${STEP_MAX_DELTA}), ignored.`);
+        } else if (gap <= STEP_MAX_GAIT_GAP_MS) {
+            stepRhythmStreak++;
+            if (stepRhythmStreak >= STEP_CONFIRM_STREAK) {
+                registerStep();
+                setStepDebug(`Signal #${stepEventCount} — step counted (rhythm streak ${stepRhythmStreak}, gap ${gap === Infinity ? '—' : gap}ms).`);
+            } else {
+                setStepDebug(`Signal #${stepEventCount} — candidate footstep, building rhythm (${stepRhythmStreak}/${STEP_CONFIRM_STREAK}).`);
+            }
+        } else {
+            stepRhythmStreak = 1;
+            setStepDebug(`Signal #${stepEventCount} — candidate footstep, but ${gap}ms since the last one broke the rhythm (restarting).`);
+        }
         lastStepTime = now;
-        registerStep();
     } else if (delta < STEP_THRESHOLD * 0.4) {
         stepPeakDetected = false;
+    } else {
+        setStepDebug(`Signal #${stepEventCount} — magnitude ${magnitude.toFixed(2)}, baseline ${stepBaseline.toFixed(2)}, delta ${delta.toFixed(2)} (need > ${STEP_THRESHOLD})`);
     }
 }
 
