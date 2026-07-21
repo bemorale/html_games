@@ -2470,7 +2470,7 @@ body.time-night .hero-mood-greeting {
             <div class="about-content">
                 <div class="about-text">
                     <p class="intro-text">
-                        My name is <strong>Pillo</strong>, and I'm a sixth grader. I built this entire wellness website myself, one exercise at a time, because I wanted to create a calming place where friends and family can relax, reflect, and take care of themselves. 🌿
+                        My name is <strong>Pillo</strong>, and I'm a sixth grader. This is a website I built, one exercise at a time, because I wanted to create a calming place where friends and family can relax, reflect, and take care of themselves. 🌿
                     </p>
                 </div>
                 <div class="about-visual">
@@ -3418,6 +3418,7 @@ function nextStep(name) {
     if (state.index < state.steps.length - 1) {
         state.index++;
         loadStep(name);
+        playStepBell(false); // a light chime so eyes-closed steps (meditation, etc.) know to move on
     } else {
         clearInterval(state.interval);
         document.getElementById(`${name}-name`).textContent = 'All done 🌿';
@@ -3425,7 +3426,40 @@ function nextStep(name) {
         document.getElementById(`${name}-timer`).textContent = '';
         const pauseBtn = document.getElementById(`${name}-pause`);
         if (pauseBtn) pauseBtn.style.display = 'none';
+        playStepBell(true); // a fuller, louder bell marks the whole thing as finished
     }
+}
+
+// A light single chime between steps, or a louder double-strike at the very
+// end — layered sine partials (fundamental + octave + fifth-ish overtone)
+// to read as a bell rather than a plain tone.
+function playStepBell(isFinal) {
+    try {
+        ensureAudioContext();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+        const baseFreq = isFinal ? 660 : 880;
+        const dur = isFinal ? 1.8 : 0.9;
+        const vol = isFinal ? 0.18 : 0.1;
+        const strikes = isFinal ? [0, 0.28] : [0];
+
+        strikes.forEach(delay => {
+            [1, 2.01, 3.0].forEach((mult, i) => {
+                const osc = audioCtx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.value = baseFreq * mult;
+                const gain = audioCtx.createGain();
+                const partialVol = vol / (i + 1.4);
+                gain.gain.setValueAtTime(0, now + delay);
+                gain.gain.linearRampToValueAtTime(partialVol, now + delay + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + dur);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now + delay);
+                osc.stop(now + delay + dur + 0.05);
+            });
+        });
+    } catch (e) { /* sound is a bonus, never an error */ }
 }
 
 function prevStep(name) {
