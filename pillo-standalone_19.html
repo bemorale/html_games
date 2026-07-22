@@ -894,6 +894,15 @@ body.time-night .hero-mood-greeting {
     margin-bottom: 50px;
 }
 
+/* Always its own centered row at the bottom of the grid, regardless of how
+   many exercises come before it or how many columns the viewport fits. */
+.exercise-card-centered {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: 100%;
+    max-width: 340px;
+}
+
 /* Exercise Card */
 .exercise-card {
     background: white;
@@ -2818,9 +2827,10 @@ body.time-night .hero-mood-greeting {
                 <p class="step-status" id="desk-break-status">Time since your last break — works on any device, no sensor needed.</p>
                 <div class="session-controls">
                     <button class="session-btn" onclick="openSession('stretching')">🧘 Stretch Now</button>
+                    <button class="session-btn" onclick="openSession('lookoutside')">🌤️ Look Outside</button>
                     <button class="session-btn secondary" onclick="resetDeskBreakTimer()">✅ I Took a Break</button>
                 </div>
-                <p class="step-hint">Counts real elapsed time this tab has been open and in view — pauses if you switch away, and resets whenever you open a stretch or take a break yourself.</p>
+                <p class="step-hint">Counts real elapsed time this tab has been open and in view — pauses if you switch away, and resets whenever you open a stretch, look outside, or take a break yourself. A soft bell rings once you've been sitting a while.</p>
             </div>
         </div>
     </section>
@@ -2961,6 +2971,12 @@ body.time-night .hero-mood-greeting {
                     <div class="exercise-icon">🚶‍♀️</div>
                     <h3>Mindful Walking</h3>
                     <p>Slow down and notice each step, breath, and surrounding</p>
+                </div>
+
+                <div class="exercise-card exercise-card-centered" data-exercise-id="lookoutside" onclick="openSession('lookoutside')">
+                    <div class="exercise-icon">🌤️</div>
+                    <h3>Look Outside</h3>
+                    <p>Rest your eyes on the sky, a tree, anything far away — the simplest break there is</p>
                 </div>
 
             </div>
@@ -3340,6 +3356,26 @@ body.time-night .hero-mood-greeting {
             </div>
         </div>
 
+        <div class="session-overlay" id="session-lookoutside">
+            <div class="session-card">
+                <button class="session-close" onclick="closeSession('lookoutside')" aria-label="Close">✕</button>
+                <h3>Look Outside</h3>
+                <p class="pillo-note">"Your eyes have been staring at the same flat little glow for a while now. Give them somewhere real to land." <span class="pillo-signature">— Pillo</span></p>
+                <p class="exercise-quote">"Look deep into nature, and then you will understand everything better." <span class="quote-author">— John Muir</span></p>
+                <div class="step-progress" id="lookoutside-progress"></div>
+                <div class="step-display">
+                    <div class="step-name" id="lookoutside-name"></div>
+                    <div class="step-instruction" id="lookoutside-instruction"></div>
+                    <div class="step-timer" id="lookoutside-timer"></div>
+                </div>
+                <div class="session-controls">
+                    <button class="session-btn secondary" onclick="prevStep('lookoutside')">◀ Back</button>
+                    <button class="session-btn" id="lookoutside-pause" onclick="pauseStepTimer('lookoutside')">Pause</button>
+                    <button class="session-btn secondary" onclick="nextStep('lookoutside')">Next ▶</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Balloon School (featured game, contained modal, own game+music in an iframe) -->
         <div class="session-overlay" id="session-balloon">
             <div class="balloon-card">
@@ -3488,7 +3524,7 @@ function scrollToExercises() {
 // at any time via the X button, clicking outside the card, or Escape —
 // nothing ever traps clicks the way the old countdown modal did.
 let activeSession = null;
-const STEP_SESSIONS = ['stretching', 'pmr', 'meditation', 'visualization', 'walking'];
+const STEP_SESSIONS = ['stretching', 'pmr', 'meditation', 'visualization', 'walking', 'lookoutside'];
 
 // Fun Games entries don't count as "an exercise" for coin purposes.
 const GAME_SESSION_IDS = ['balloon', 'zengarden', 'fireflyjar', 'windchimes', 'inkbloom'];
@@ -3532,7 +3568,7 @@ function openSession(name) {
 
     // Opening an actual movement session is a real break — reset the desk
     // timer right away rather than waiting to see if they finish it.
-    if (name === 'stretching' || name === 'walking') resetDeskBreakTimer();
+    if (name === 'stretching' || name === 'walking' || name === 'lookoutside') resetDeskBreakTimer();
 }
 
 function closeSession(name) {
@@ -3662,12 +3698,23 @@ const WALKING_STEPS = [
     { name: 'Return Gently', duration: null, instruction: "Whenever you're ready, let your pace ease back to normal." }
 ];
 
+const LOOKOUTSIDE_STEPS = [
+    { name: 'Find a Window', duration: 15, instruction: 'Find a window, a doorway, or step outside if you can.' },
+    { name: 'Pick Something Far Away', duration: 20, instruction: 'Let your eyes rest on something as far off as possible — the sky, a rooftop, a tree line.' },
+    { name: 'Notice the Light', duration: 20, instruction: 'Is it bright, dim, warm, cool? Just notice — no need to describe it perfectly.' },
+    { name: 'Notice Something Moving', duration: 20, instruction: 'Clouds, leaves, birds, cars — anything drifting or shifting.' },
+    { name: 'Notice a Color', duration: 20, instruction: 'Pick one color out there and see where else it shows up.' },
+    { name: 'Three Slow Breaths', duration: 20, instruction: 'Keep looking outward and take three slow breaths before you head back in.' },
+    { name: 'Head Back In', duration: null, instruction: "Whenever you're ready, bring your focus back to the screen." }
+];
+
 const stepState = {
     stretching: { steps: STRETCH_STEPS, index: 0, remaining: 0, interval: null, paused: false },
     visualization: { steps: VISUALIZATION_STEPS, index: 0, remaining: 0, interval: null, paused: false },
     walking: { steps: WALKING_STEPS, index: 0, remaining: 0, interval: null, paused: false },
     pmr: { steps: PMR_STEPS, index: 0, remaining: 0, interval: null, paused: false },
-    meditation: { steps: MEDITATION_STEPS, index: 0, remaining: 0, interval: null, paused: false }
+    meditation: { steps: MEDITATION_STEPS, index: 0, remaining: 0, interval: null, paused: false },
+    lookoutside: { steps: LOOKOUTSIDE_STEPS, index: 0, remaining: 0, interval: null, paused: false }
 };
 
 function startSteps(name) {
@@ -6091,7 +6138,8 @@ function updateDeskBreakDisplay() {
     if (elapsed >= DESK_BREAK_REMINDER_MS && !deskBreakNudged) {
         deskBreakNudged = true;
         const statusEl = document.getElementById('desk-break-status');
-        if (statusEl) statusEl.textContent = "You've been sitting a while — want to stretch or take a short walk?";
+        if (statusEl) statusEl.textContent = "You've been sitting a while — want to stretch or look outside for a moment?";
+        playStepBell(true); // the same soft-but-present bell used to close out an exercise — noticeable, never startling
     }
 }
 
