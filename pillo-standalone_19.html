@@ -2797,9 +2797,9 @@ body.time-night .hero-mood-greeting {
         </div>
         <div class="move-container">
             <h2 class="section-title">Daily Movement</h2>
-            <p class="section-subtitle">Calm isn't only about slowing down — my Pillo is also about actually moving. This counts your real steps using your phone's motion sensor while this page is open, adding up across every time you check in today.</p>
+            <p class="section-subtitle">Calm isn't only about slowing down — my Pillo is also about actually moving. On a phone, this counts your real steps using its motion sensor. On a computer, it keeps an honest count of how long you've been sitting instead.</p>
 
-            <div class="step-tracker-card">
+            <div class="step-tracker-card" id="step-tracker-card">
                 <div class="step-ring" id="step-ring" style="--step-pct: 0;">
                     <div class="step-ring-inner">
                         <div class="step-count-display" id="step-count-display">0</div>
@@ -5871,6 +5871,20 @@ function renderStepTracker() {
     if (goalLabel) goalLabel.textContent = STEP_GOAL.toLocaleString();
 }
 
+// A laptop/desktop has no accelerometer to read, so the phone step tracker
+// is just noise there (including any stale step count left over from before
+// this device-check existed) — hide it and let the Desk Break Timer be the
+// only "movement" card a non-touch device sees. Touch support isn't a
+// perfect phone/tablet signal, but it's a far better one than
+// DeviceMotionEvent existing, which desktop browsers define regardless of
+// whether real hardware backs it.
+function hideStepTrackerOnNonTouchDevices() {
+    const isLikelyTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (isLikelyTouchDevice) return;
+    const card = document.getElementById('step-tracker-card');
+    if (card) card.style.display = 'none';
+}
+
 function updateStepUI() {
     const pct = Math.min(100, Math.round((currentSteps / STEP_GOAL) * 100));
     const ring = document.getElementById('step-ring');
@@ -6305,6 +6319,7 @@ applyTimeOfDayTheme();
 renderMoodAwareGreeting();
 renderStreakBadge();
 renderStepTracker();
+hideStepTrackerOnNonTouchDevices();
 updateDeskBreakDisplay();
 initLogoEasterEgg();
 renderCalendar();
