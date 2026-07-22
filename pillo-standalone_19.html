@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pillo's Calming Pill - Wellness & Self-Care</title>
+    <meta name="description" content="A personal wellness space with breathing exercises, stretching, guided meditation, journaling, a mood calendar, a real phone step tracker, and calming mini-games.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://bemorale.github.io/html_games/pillo-standalone_19.html">
+    <meta property="og:title" content="Pillo's Calming Pill - Wellness & Self-Care">
+    <meta property="og:description" content="A personal wellness space with breathing exercises, stretching, guided meditation, journaling, a mood calendar, a real phone step tracker, and calming mini-games.">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Pillo's Calming Pill - Wellness & Self-Care">
+    <meta name="twitter:description" content="A personal wellness space with breathing exercises, stretching, guided meditation, journaling, a mood calendar, a real phone step tracker, and calming mini-games.">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='100' cy='100' r='95' fill='%23A8E6CF'/%3E%3Cpath d='M 20 145 C 60 135 140 155 180 145 L 180 200 L 20 200 Z' fill='%23BEE9DC'/%3E%3Cellipse cx='100' cy='125' rx='62' ry='42' fill='%238FD3BC' stroke='%234d8a72' stroke-width='4'/%3E%3Cg fill='%231a1a1a'%3E%3Ccircle cx='100' cy='72' r='17'/%3E%3Cpath d='M 84 94 C 84 86 116 86 116 94 L 120 128 C 120 137 80 137 80 128 Z'/%3E%3Cpath d='M 78 128 C 60 131 50 137 48 144 C 47 151 56 154 67 151 C 81 147 91 142 100 142 C 109 142 119 147 133 151 C 144 154 153 151 152 144 C 150 137 140 131 122 128 C 112 133 88 133 78 128 Z'/%3E%3C/g%3E%3C/svg%3E">
     <style>
 /* ===== GENERAL STYLES ===== */
@@ -441,34 +449,44 @@ body.time-night .hero-mood-greeting {
 }
 
 .interests-container {
-    max-width: 800px;
+    max-width: 1000px;
     margin: 0 auto;
     position: relative;
     z-index: 3;
 }
 
 .interests-list {
-    display: flex;
-    flex-direction: column;
-    gap: 34px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 28px;
     margin-top: 10px;
 }
 
 .interest-item {
     display: flex;
+    flex-direction: column;
     align-items: flex-start;
-    gap: 22px;
+    gap: 16px;
     text-align: left;
+    background: white;
+    border-radius: 18px;
+    padding: 30px 26px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.interest-item:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14);
 }
 
 .interest-emoji {
     font-size: 2.6rem;
     line-height: 1;
     flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.65);
+    background: rgba(152, 216, 200, 0.2);
     border-radius: 16px;
     padding: 12px;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
 }
 
 .interest-body h4 {
@@ -1093,6 +1111,26 @@ body.time-night .hero-mood-greeting {
 .session-btn.secondary {
     background: #eef7f4;
     color: #1f6954;
+}
+
+/* ===== YOUR DATA (BACKUP / RESTORE) ===== */
+.your-data {
+    background: #FAFDFB;
+    padding: 70px 20px;
+    text-align: center;
+}
+
+.your-data-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.data-actions {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 10px;
 }
 
 /* ===== BOX BREATHING VISUAL ===== */
@@ -2068,10 +2106,11 @@ body.time-night .hero-mood-greeting {
     }
 }
 
-/* Interests rows stack on small screens */
+/* Interest cards shrink their padding/gap on small screens */
 @media (max-width: 480px) {
     .interest-item {
         gap: 14px;
+        padding: 24px 20px;
     }
     .interest-emoji {
         font-size: 2rem;
@@ -2349,6 +2388,142 @@ body.time-night .hero-mood-greeting {
     color: white;
 }
 
+/* ===== FIREFLY JAR (unlockable game) ===== */
+.featured-firefly-art {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    flex-shrink: 0;
+}
+
+.featured-firefly-jar {
+    font-size: 3.4rem;
+    position: absolute;
+    left: 26px;
+    top: 26px;
+}
+
+.featured-firefly {
+    position: absolute;
+    font-size: 1.1rem;
+    animation: float 2.6s ease-in-out infinite;
+}
+
+.featured-firefly.f1 { top: 6px; right: 14px; }
+.featured-firefly.f2 { top: 30px; right: -2px; animation-delay: 0.8s; }
+
+.fireflyjar-card {
+    max-width: 720px;
+    padding: 28px 24px;
+}
+
+#fireflyjar-canvas {
+    width: 100%;
+    aspect-ratio: 640 / 420;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    cursor: pointer;
+    touch-action: none;
+    display: block;
+    margin-top: 14px;
+}
+
+/* ===== WIND CHIMES (unlockable game) ===== */
+.featured-chime-art {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    flex-shrink: 0;
+}
+
+.featured-chime-icon {
+    font-size: 3.6rem;
+    position: absolute;
+    left: 24px;
+    top: 20px;
+    animation: chimeSwayIdle 3.2s ease-in-out infinite;
+    transform-origin: top center;
+}
+
+@keyframes chimeSwayIdle {
+    0%, 100% { transform: rotate(-4deg); }
+    50% { transform: rotate(4deg); }
+}
+
+.windchimes-card {
+    max-width: 640px;
+    padding: 32px 24px;
+}
+
+.chime-rack {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 18px;
+    margin: 30px 0 10px;
+    padding-top: 12px;
+    border-top: 4px solid #b08a5a;
+}
+
+.chime-tube {
+    background: linear-gradient(180deg, #cfe8dd 0%, #8fc9b3 100%);
+    border-radius: 10px;
+    cursor: pointer;
+    transform-origin: top center;
+    transition: filter 0.2s ease;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+}
+
+.chime-tube:hover {
+    filter: brightness(1.08);
+}
+
+.chime-tube.swaying {
+    animation: chimeSwayHit 1.1s ease-out;
+}
+
+@keyframes chimeSwayHit {
+    0% { transform: rotate(0deg); }
+    15% { transform: rotate(14deg); }
+    35% { transform: rotate(-10deg); }
+    55% { transform: rotate(6deg); }
+    75% { transform: rotate(-3deg); }
+    100% { transform: rotate(0deg); }
+}
+
+/* ===== INK BLOOM (unlockable game) ===== */
+.featured-ink-art {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    flex-shrink: 0;
+}
+
+.featured-ink-blob {
+    position: absolute;
+    left: 28px;
+    top: 22px;
+    font-size: 3.2rem;
+    animation: float 3.4s ease-in-out infinite;
+}
+
+.inkbloom-card {
+    max-width: 720px;
+    padding: 28px 24px;
+}
+
+#inkbloom-canvas {
+    width: 100%;
+    aspect-ratio: 640 / 420;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    cursor: crosshair;
+    touch-action: none;
+    display: block;
+    margin-top: 14px;
+    background: #fdfbf6;
+}
+
 </style>
 </head>
 <body>
@@ -2599,7 +2774,7 @@ body.time-night .hero-mood-greeting {
         </div>
         <div class="move-container">
             <h2 class="section-title">Daily Movement</h2>
-            <p class="section-subtitle">Calm isn't only about slowing down — my Pillo is also about actually moving. This counts your real steps using your phone's motion sensor while this page is open, adding up across every time you check in today.</p>
+            <p class="section-subtitle">Calm isn't only about slowing down — my Pillo is also about actually moving. This counts real movement — your phone's motion sensor, or a shaken mouse on a computer — while this page is open, adding up across every time you check in today.</p>
 
             <div class="step-tracker-card">
                 <div class="step-ring" id="step-ring" style="--step-pct: 0;">
@@ -2610,7 +2785,7 @@ body.time-night .hero-mood-greeting {
                 </div>
                 <p class="step-status" id="step-status">Tap below to start counting your steps for today.</p>
                 <button class="cta-button step-tracker-btn" id="step-tracker-btn" onclick="toggleStepTracking()">▶ Start Step Tracking</button>
-                <p class="step-hint">Works best on a phone, carried with you while this tab stays open — it can't count steps in the background or when the page is closed.</p>
+                <p class="step-hint">On a phone, carry it with you as you walk. On a computer (no accelerometer to read), give your mouse a real shake instead. Either way, this tab needs to stay open — it can't count in the background or when the page is closed.</p>
                 <p class="step-hint" id="step-debug" style="opacity: 0.7;"></p>
             </div>
         </div>
@@ -2785,6 +2960,47 @@ body.time-night .hero-mood-greeting {
                         <span class="featured-tag">Bonus Game</span>
                         <h3>Zen Sand Garden</h3>
                         <p>Drag through the sand to rake calm, curving lines around the rocks. No score, no timer — smooth it clean and start again anytime.</p>
+                        <span class="featured-play">▶ Play</span>
+                    </div>
+                </div>
+
+                <!-- Unlockable game — hidden until earned in the Coin Shop -->
+                <div class="featured-project locked-game" data-unlock-id="fireflyjar" onclick="openSession('fireflyjar')">
+                    <div class="featured-firefly-art" aria-hidden="true">
+                        <span class="featured-firefly-jar">🫙</span>
+                        <span class="featured-firefly f1">✨</span>
+                        <span class="featured-firefly f2">✨</span>
+                    </div>
+                    <div class="featured-text">
+                        <span class="featured-tag">Bonus Game</span>
+                        <h3>Firefly Jar</h3>
+                        <p>Catch drifting fireflies and watch your jar glow at dusk. No score, no timer — let a few back out anytime you like.</p>
+                        <span class="featured-play">▶ Play</span>
+                    </div>
+                </div>
+
+                <!-- Unlockable game — hidden until earned in the Coin Shop -->
+                <div class="featured-project locked-game" data-unlock-id="windchimes" onclick="openSession('windchimes')">
+                    <div class="featured-chime-art" aria-hidden="true">
+                        <span class="featured-chime-icon">🎐</span>
+                    </div>
+                    <div class="featured-text">
+                        <span class="featured-tag">Bonus Game</span>
+                        <h3>Wind Chimes</h3>
+                        <p>Tap the hanging chimes and let them sway. Every note is tuned to sound calming together, so you can't play it wrong.</p>
+                        <span class="featured-play">▶ Play</span>
+                    </div>
+                </div>
+
+                <!-- Unlockable game — hidden until earned in the Coin Shop -->
+                <div class="featured-project locked-game" data-unlock-id="inkbloom" onclick="openSession('inkbloom')">
+                    <div class="featured-ink-art" aria-hidden="true">
+                        <span class="featured-ink-blob">🎨</span>
+                    </div>
+                    <div class="featured-text">
+                        <span class="featured-tag">Bonus Game</span>
+                        <h3>Ink Bloom</h3>
+                        <p>Tap anywhere to bloom soft color into the page. No score, no timer — just build a little abstract art at your own pace.</p>
                         <span class="featured-play">▶ Play</span>
                     </div>
                 </div>
@@ -3112,9 +3328,56 @@ body.time-night .hero-mood-greeting {
                 </div>
             </div>
         </div>
+
+        <div class="session-overlay" id="session-fireflyjar">
+            <div class="session-card fireflyjar-card">
+                <button class="session-close" onclick="closeSession('fireflyjar')" aria-label="Close">✕</button>
+                <h3>Firefly Jar</h3>
+                <p class="pillo-note">"Tap a firefly to catch it. There's always more dusk out there, so let a few go again whenever you want." <span class="pillo-signature">— Pillo</span></p>
+                <canvas id="fireflyjar-canvas" width="640" height="420"></canvas>
+                <div class="session-controls">
+                    <button class="session-btn secondary" onclick="releaseFireflies()">🌬️ Release All</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="session-overlay" id="session-windchimes">
+            <div class="session-card windchimes-card">
+                <button class="session-close" onclick="closeSession('windchimes')" aria-label="Close">✕</button>
+                <h3>Wind Chimes</h3>
+                <p class="pillo-note">"Tap any chime, or a few at once. They're all tuned to the same calm scale, so there's no wrong note." <span class="pillo-signature">— Pillo</span></p>
+                <div class="chime-rack" id="chime-rack"></div>
+            </div>
+        </div>
+
+        <div class="session-overlay" id="session-inkbloom">
+            <div class="session-card inkbloom-card">
+                <button class="session-close" onclick="closeSession('inkbloom')" aria-label="Close">✕</button>
+                <h3>Ink Bloom</h3>
+                <p class="pillo-note">"Tap anywhere and watch the color settle in. No score, no timer — just see what you make." <span class="pillo-signature">— Pillo</span></p>
+                <canvas id="inkbloom-canvas" width="640" height="420"></canvas>
+                <div class="session-controls">
+                    <button class="session-btn secondary" onclick="clearInkBloom()">🔄 Clear</button>
+                </div>
+            </div>
+        </div>
     </section>
 
     <!-- ===== CONTACT SECTION ===== -->
+    <!-- ===== YOUR DATA (BACKUP / RESTORE) ===== -->
+    <section id="your-data" class="your-data">
+        <div class="your-data-container">
+            <h2 class="section-title">Your Data</h2>
+            <p class="section-subtitle">Journal entries, mood history, streaks, coins, and steps all live only in this browser. Keep a copy so a cleared cache or a new phone never loses them.</p>
+            <div class="data-actions">
+                <button class="session-btn" onclick="exportPilloData()">⬇ Export My Data</button>
+                <button class="session-btn secondary" onclick="document.getElementById('data-import-input').click()">⬆ Import My Data</button>
+            </div>
+            <input type="file" id="data-import-input" accept="application/json" style="display: none;" onchange="importPilloData(event)">
+            <p class="step-hint" id="data-status"></p>
+        </div>
+    </section>
+
     <section id="contact" class="contact">
         <div class="wave-divider" aria-hidden="true">
             <svg viewBox="0 0 1440 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
@@ -3194,7 +3457,7 @@ let activeSession = null;
 const STEP_SESSIONS = ['stretching', 'pmr', 'meditation', 'visualization', 'walking'];
 
 // Fun Games entries don't count as "an exercise" for coin purposes.
-const GAME_SESSION_IDS = ['balloon', 'zengarden'];
+const GAME_SESSION_IDS = ['balloon', 'zengarden', 'fireflyjar', 'windchimes', 'inkbloom'];
 const EXERCISE_COIN_THRESHOLD_MS = 7000;
 const EXERCISE_COIN_REWARD = 10;
 let sessionOpenedAt = 0;
@@ -3224,6 +3487,9 @@ function openSession(name) {
     else if (name === 'plant') renderPlant();
     else if (name === 'balloon') startBalloonGame();
     else if (name === 'zengarden') startZenGarden();
+    else if (name === 'fireflyjar') startFireflyJar();
+    else if (name === 'windchimes') startWindChimes();
+    else if (name === 'inkbloom') startInkBloom();
     else if (name === 'boxbreathing') startBoxBreathing();
 
     // Every real exercise counts as taking care of yourself today, which is
@@ -3257,6 +3523,9 @@ function closeSession(name) {
     else if (name === 'bubbles') stopBubbles();
     else if (name === 'balloon') stopBalloonGame();
     else if (name === 'zengarden') stopZenGarden();
+    else if (name === 'fireflyjar') stopFireflyJar();
+    else if (name === 'windchimes') stopWindChimes();
+    else if (name === 'inkbloom') stopInkBloom();
     else if (name === 'boxbreathing') stopBoxBreathing();
 
     if (activeSession === name) {
@@ -3264,10 +3533,19 @@ function closeSession(name) {
     }
 }
 
-// Close by clicking the dark backdrop
+// Close by clicking the dark backdrop — but only if the press actually
+// started on the backdrop. Session cards scroll internally, so a swipe or
+// drag that starts inside the card (reading instructions, adjusting grip
+// during a physical exercise) can easily end past the card's edge; checking
+// only where the click lands would misread that as "clicked outside" and
+// close the whole exercise mid-way.
 document.querySelectorAll('.session-overlay').forEach(overlay => {
+    let pressStartedOnBackdrop = false;
+    overlay.addEventListener('pointerdown', (e) => {
+        pressStartedOnBackdrop = e.target === overlay;
+    });
     overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
+        if (e.target === overlay && pressStartedOnBackdrop) {
             closeSession(overlay.id.replace('session-', ''));
         }
     });
@@ -4835,9 +5113,10 @@ function zenPointerUp() {
     zenLastPoint = null;
 }
 
-// Each tine gets a soft shadow + a soft highlight, offset a hair either
-// side of center, so it reads as an actual carved groove instead of a flat
-// painted line.
+// Each tine now carves a proper trough: a dark groove down the center with
+// sand visibly piled up on both sides (pushed out by the tine), plus a thin
+// lit edge along the top of the groove wall — reads as sand actually
+// displaced, not just a line drawn on top of it.
 function zenRakeLine(from, to) {
     const dx = to.x - from.x, dy = to.y - from.y;
     const len = Math.hypot(dx, dy) || 1;
@@ -4848,18 +5127,32 @@ function zenRakeLine(from, to) {
         const fx = from.x + nx * off, fy = from.y + ny * off;
         const tx = to.x + nx * off, ty = to.y + ny * off;
 
-        zenCtx.strokeStyle = 'rgba(96, 74, 42, 0.4)';
-        zenCtx.lineWidth = 2.6;
+        // Piled sand on both sides of the groove
+        [-1, 1].forEach(side => {
+            const px = fx + nx * side * 3.4, py = fy + ny * side * 3.4;
+            const qx = tx + nx * side * 3.4, qy = ty + ny * side * 3.4;
+            zenCtx.strokeStyle = 'rgba(255, 250, 232, 0.55)';
+            zenCtx.lineWidth = 2.8;
+            zenCtx.beginPath();
+            zenCtx.moveTo(px, py);
+            zenCtx.lineTo(qx, qy);
+            zenCtx.stroke();
+        });
+
+        // Deep shadowed trough at the center of the groove
+        zenCtx.strokeStyle = 'rgba(90, 68, 38, 0.55)';
+        zenCtx.lineWidth = 4.2;
         zenCtx.beginPath();
-        zenCtx.moveTo(fx + 0.8, fy + 0.8);
-        zenCtx.lineTo(tx + 0.8, ty + 0.8);
+        zenCtx.moveTo(fx, fy);
+        zenCtx.lineTo(tx, ty);
         zenCtx.stroke();
 
-        zenCtx.strokeStyle = 'rgba(255, 250, 232, 0.5)';
-        zenCtx.lineWidth = 1.1;
+        // Thin lit edge along the upper-left wall of the trough
+        zenCtx.strokeStyle = 'rgba(255, 250, 232, 0.6)';
+        zenCtx.lineWidth = 1.2;
         zenCtx.beginPath();
-        zenCtx.moveTo(fx - 0.6, fy - 0.6);
-        zenCtx.lineTo(tx - 0.6, ty - 0.6);
+        zenCtx.moveTo(fx - nx * 1.3 - 0.6, fy - ny * 1.3 - 0.6);
+        zenCtx.lineTo(tx - nx * 1.3 - 0.6, ty - ny * 1.3 - 0.6);
         zenCtx.stroke();
     });
 
@@ -4908,30 +5201,423 @@ function zenPlayRakeSound(strokeLen, isErase) {
     if (ac.state === 'suspended') ac.resume();
 
     try {
-        const dur = 0.14;
+        const dur = 0.19;
         const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * dur), ac.sampleRate);
         const data = buf.getChannelData(0);
         for (let i = 0; i < data.length; i++) {
-            data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ac.sampleRate * dur * 0.35));
+            data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ac.sampleRate * dur * 0.4));
         }
 
         const src = ac.createBufferSource();
         src.buffer = buf;
 
+        // A lower-passed layer under the main texture gives each stroke a
+        // grittier, more granular weight — closer to real sand than a thin
+        // scrape.
         const filter = ac.createBiquadFilter();
         filter.type = isErase ? 'lowpass' : 'bandpass';
-        filter.frequency.value = isErase ? 900 : 2200;
-        filter.Q.value = isErase ? 0.7 : 1.1;
+        filter.frequency.value = isErase ? 700 : 1500;
+        filter.Q.value = isErase ? 0.7 : 1.3;
 
         const gain = ac.createGain();
         const speed = Math.min(1, strokeLen / 40);
-        gain.gain.value = 0.05 + speed * 0.05; // deliberately quiet and textured, never harsh
+        gain.gain.value = 0.06 + speed * 0.06; // deliberately quiet and textured, never harsh
 
         src.connect(filter);
         filter.connect(gain);
         gain.connect(ac.destination);
         src.start();
     } catch (e) { /* ignore — sound is a nice-to-have, not required */ }
+}
+
+// ===== FIREFLY JAR (unlockable game) =====
+// Fireflies drift freely until tapped, then arc into the jar and settle
+// there permanently (within the visit) — "Release All" lets them back out
+// so the jar never feels like a one-way trip.
+let fireflyCtx = null;
+let fireflyInited = false;
+let fireflyAnimId = null;
+let fireflies = [];
+let fireflyAC = null;
+const FIREFLY_JAR = { x: 320, y: 340, w: 130, h: 110 };
+
+function getFireflyAC() {
+    if (!fireflyAC) {
+        try { fireflyAC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { /* audio unavailable — the visual still works fine */ }
+    }
+    return fireflyAC;
+}
+
+function playFireflyChime() {
+    const ac = getFireflyAC();
+    if (!ac) return;
+    if (ac.state === 'suspended') ac.resume();
+    try {
+        const now = ac.currentTime;
+        [880, 1318.5].forEach((f, i) => {
+            const osc = ac.createOscillator();
+            const gain = ac.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = f;
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.08 / (i + 1), now + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+            osc.connect(gain);
+            gain.connect(ac.destination);
+            osc.start(now);
+            osc.stop(now + 0.55);
+        });
+    } catch (e) { /* sound is a bonus, never an error */ }
+}
+
+function spawnFirefly() {
+    const canvas = fireflyCtx.canvas;
+    return {
+        x: 40 + Math.random() * (canvas.width - 80),
+        y: 30 + Math.random() * (canvas.height - 180),
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.4,
+        phase: Math.random() * Math.PI * 2,
+        r: 3 + Math.random() * 2,
+        caught: false,
+        flying: false,
+        flyT: 0,
+        flyFrom: null,
+        flyTo: null
+    };
+}
+
+function startFireflyJar() {
+    const canvas = document.getElementById('fireflyjar-canvas');
+    if (!canvas) return;
+    fireflyCtx = canvas.getContext('2d');
+
+    if (!fireflyInited) {
+        fireflyInited = true;
+        canvas.addEventListener('pointerdown', handleFireflyClick);
+        for (let i = 0; i < 10; i++) fireflies.push(spawnFirefly());
+    }
+    if (fireflyAnimId) cancelAnimationFrame(fireflyAnimId);
+    fireflyLoop();
+}
+
+function stopFireflyJar() {
+    if (fireflyAnimId) cancelAnimationFrame(fireflyAnimId);
+    fireflyAnimId = null;
+}
+
+function fireflyLoop() {
+    drawFireflyScene();
+    fireflyAnimId = requestAnimationFrame(fireflyLoop);
+}
+
+function drawJar(ctx) {
+    const { x, y, w, h } = FIREFLY_JAR;
+    const left = x - w / 2, top = y - h / 2, right = x + w / 2, bottom = y + h / 2, r = 18;
+    ctx.save();
+    ctx.fillStyle = 'rgba(200, 230, 220, 0.18)';
+    ctx.strokeStyle = 'rgba(230, 245, 240, 0.55)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(left, top + r);
+    ctx.arcTo(left, top, left + r, top, r);
+    ctx.lineTo(right - r, top);
+    ctx.arcTo(right, top, right, top + r, r);
+    ctx.lineTo(right, bottom - r);
+    ctx.arcTo(right, bottom, right - r, bottom, r);
+    ctx.lineTo(left + r, bottom);
+    ctx.arcTo(left, bottom, left, bottom - r, r);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(140, 110, 70, 0.85)';
+    ctx.fillRect(x - w * 0.32, top - 14, w * 0.64, 16);
+    ctx.restore();
+}
+
+function drawFireflyScene() {
+    const ctx = fireflyCtx;
+    const canvas = ctx.canvas;
+    const W = canvas.width, H = canvas.height;
+
+    const sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, '#1b1f3b');
+    sky.addColorStop(1, '#3c2f52');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
+
+    drawJar(ctx);
+
+    const t = performance.now() / 1000;
+    fireflies.forEach(f => {
+        if (f.flying) {
+            f.flyT += 0.045;
+            const p = Math.min(1, f.flyT);
+            f.x = f.flyFrom.x + (f.flyTo.x - f.flyFrom.x) * p;
+            f.y = f.flyFrom.y + (f.flyTo.y - f.flyFrom.y) * p - Math.sin(p * Math.PI) * 40;
+            if (p >= 1) { f.flying = false; f.caught = true; }
+        } else if (!f.caught) {
+            f.x += f.vx + Math.sin(t + f.phase) * 0.15;
+            f.y += f.vy + Math.cos(t * 0.8 + f.phase) * 0.15;
+            if (f.x < 20 || f.x > W - 20) f.vx *= -1;
+            if (f.y < 20 || f.y > H - 160) f.vy *= -1;
+        } else {
+            f.x += Math.sin(t * 1.3 + f.phase) * 0.3;
+            f.y += Math.cos(t * 1.1 + f.phase) * 0.2;
+            f.x = Math.max(FIREFLY_JAR.x - FIREFLY_JAR.w / 2 + 14, Math.min(FIREFLY_JAR.x + FIREFLY_JAR.w / 2 - 14, f.x));
+            f.y = Math.max(FIREFLY_JAR.y - FIREFLY_JAR.h / 2 + 14, Math.min(FIREFLY_JAR.y + FIREFLY_JAR.h / 2 - 4, f.y));
+        }
+
+        const glow = 0.6 + Math.sin(t * 3 + f.phase * 5) * 0.4;
+        const r = f.r * (f.flying ? 1.4 : 1);
+        const grad = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r * 4);
+        grad.addColorStop(0, `rgba(255, 246, 173, ${0.9 * glow})`);
+        grad.addColorStop(1, 'rgba(255, 246, 173, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, r * 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = `rgba(255, 255, 220, ${0.9 * glow})`;
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, r, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    const freeCount = fireflies.filter(f => !f.caught && !f.flying).length;
+    if (freeCount < 6) fireflies.push(spawnFirefly());
+}
+
+function handleFireflyClick(e) {
+    const canvas = fireflyCtx.canvas;
+    const rect = canvas.getBoundingClientRect();
+    const px = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const py = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+    let closest = null, closestDist = 26;
+    fireflies.forEach(f => {
+        if (f.caught || f.flying) return;
+        const d = Math.hypot(f.x - px, f.y - py);
+        if (d < closestDist) { closest = f; closestDist = d; }
+    });
+
+    if (closest) {
+        closest.flying = true;
+        closest.flyT = 0;
+        closest.flyFrom = { x: closest.x, y: closest.y };
+        closest.flyTo = {
+            x: FIREFLY_JAR.x + (Math.random() - 0.5) * (FIREFLY_JAR.w - 40),
+            y: FIREFLY_JAR.y + (Math.random() - 0.5) * (FIREFLY_JAR.h - 40)
+        };
+        playFireflyChime();
+    }
+}
+
+function releaseFireflies() {
+    fireflies = fireflies.filter(f => !f.caught && !f.flying);
+    for (let i = fireflies.length; i < 10; i++) fireflies.push(spawnFirefly());
+}
+
+// ===== WIND CHIMES (unlockable game) =====
+// Every tube plays a note from the same pentatonic-style scale, so any tap
+// or combination of taps always sounds pleasant together — there's no wrong
+// note to hit.
+const CHIME_NOTES = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5];
+let chimeInited = false;
+let chimeAC = null;
+
+function getChimeAC() {
+    if (!chimeAC) {
+        try { chimeAC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { /* audio unavailable — the visual still works fine */ }
+    }
+    return chimeAC;
+}
+
+function startWindChimes() {
+    const rack = document.getElementById('chime-rack');
+    if (!rack) return;
+    if (!chimeInited) {
+        chimeInited = true;
+        rack.innerHTML = CHIME_NOTES.map((freq, i) => {
+            const height = 130 - i * 12;
+            return `<div class="chime-tube" style="width:26px;height:${height}px;" onclick="ringChime(${i})" title="Tap for a note"></div>`;
+        }).join('');
+    }
+}
+
+function stopWindChimes() {
+    // Notes are short one-shot tones that decay on their own — nothing to
+    // tear down when the session closes.
+}
+
+function ringChime(i) {
+    const rack = document.getElementById('chime-rack');
+    const tube = rack ? rack.children[i] : null;
+    if (tube) {
+        tube.classList.remove('swaying');
+        void tube.offsetWidth; // restart the sway animation even if it's still mid-swing
+        tube.classList.add('swaying');
+    }
+
+    const ac = getChimeAC();
+    if (!ac) return;
+    if (ac.state === 'suspended') ac.resume();
+    try {
+        const now = ac.currentTime;
+        const freq = CHIME_NOTES[i];
+        [1, 2.01, 3.0].forEach((mult, h) => {
+            const osc = ac.createOscillator();
+            const gain = ac.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq * mult;
+            const vol = 0.12 / (h + 1.5);
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(vol, now + 0.015);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.6);
+            osc.connect(gain);
+            gain.connect(ac.destination);
+            osc.start(now);
+            osc.stop(now + 1.65);
+        });
+    } catch (e) { /* sound is a bonus, never an error */ }
+}
+
+// ===== INK BLOOM (unlockable game) =====
+// Finished blooms are stamped onto an offscreen "settled" canvas so they
+// persist permanently (within the visit); only blooms still mid-growth are
+// redrawn on top of it each frame, so overlapping taps never stomp on each
+// other's animation.
+let inkCtx = null;
+let inkInited = false;
+let inkSettledCanvas = null;
+let inkSettledCtx = null;
+let inkActiveBlooms = [];
+let inkAnimId = null;
+let inkAC = null;
+const INK_COLORS = [
+    { core: 'rgba(152, 216, 200, 0.55)', mid: 'rgba(152, 216, 200, 0.22)' },
+    { core: 'rgba(122, 156, 221, 0.5)', mid: 'rgba(122, 156, 221, 0.2)' },
+    { core: 'rgba(230, 170, 200, 0.5)', mid: 'rgba(230, 170, 200, 0.2)' },
+    { core: 'rgba(245, 200, 120, 0.5)', mid: 'rgba(245, 200, 120, 0.2)' },
+    { core: 'rgba(180, 150, 220, 0.5)', mid: 'rgba(180, 150, 220, 0.2)' }
+];
+
+function getInkAC() {
+    if (!inkAC) {
+        try { inkAC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { /* audio unavailable — the visual still works fine */ }
+    }
+    return inkAC;
+}
+
+function playInkSound() {
+    const ac = getInkAC();
+    if (!ac) return;
+    if (ac.state === 'suspended') ac.resume();
+    try {
+        const now = ac.currentTime;
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(180, now + 0.4);
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.07, now + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+        osc.connect(gain);
+        gain.connect(ac.destination);
+        osc.start(now);
+        osc.stop(now + 0.55);
+    } catch (e) { /* sound is a bonus, never an error */ }
+}
+
+function startInkBloom() {
+    const canvas = document.getElementById('inkbloom-canvas');
+    if (!canvas) return;
+    inkCtx = canvas.getContext('2d');
+
+    if (!inkInited) {
+        inkInited = true;
+        inkSettledCanvas = document.createElement('canvas');
+        inkSettledCanvas.width = canvas.width;
+        inkSettledCanvas.height = canvas.height;
+        inkSettledCtx = inkSettledCanvas.getContext('2d');
+        canvas.addEventListener('pointerdown', handleInkClick);
+    }
+    drawInkFrame();
+}
+
+function stopInkBloom() {
+    if (inkAnimId) cancelAnimationFrame(inkAnimId);
+    inkAnimId = null;
+    // Finalize any still-growing blooms so closing mid-animation doesn't
+    // just erase whatever was about to be drawn.
+    if (inkSettledCtx) {
+        inkActiveBlooms.forEach(b => stampInkBloom(inkSettledCtx, b));
+        inkActiveBlooms = [];
+    }
+}
+
+function handleInkClick(e) {
+    const canvas = inkCtx.canvas;
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+    const color = INK_COLORS[Math.floor(Math.random() * INK_COLORS.length)];
+    inkActiveBlooms.push({ x, y, startedAt: performance.now(), duration: 650 + Math.random() * 250, maxR: 35 + Math.random() * 35, color, progress: 0 });
+    playInkSound();
+    if (!inkAnimId) inkLoop();
+}
+
+function stampInkBloom(ctx, b) {
+    const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.maxR);
+    grad.addColorStop(0, b.color.core);
+    grad.addColorStop(0.7, b.color.mid);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.maxR, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function drawInkFrame() {
+    const ctx = inkCtx;
+    const canvas = ctx.canvas;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(inkSettledCanvas, 0, 0);
+
+    inkActiveBlooms.forEach(b => {
+        const eased = 1 - Math.pow(1 - b.progress, 3);
+        const r = eased * b.maxR;
+        const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, r);
+        grad.addColorStop(0, b.color.core);
+        grad.addColorStop(0.7, b.color.mid);
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, r, 0, Math.PI * 2);
+        ctx.fill();
+    });
+}
+
+function inkLoop() {
+    const now = performance.now();
+    inkActiveBlooms.forEach(b => { b.progress = Math.min(1, (now - b.startedAt) / b.duration); });
+
+    const finished = inkActiveBlooms.filter(b => b.progress >= 1);
+    finished.forEach(b => stampInkBloom(inkSettledCtx, b));
+    inkActiveBlooms = inkActiveBlooms.filter(b => b.progress < 1);
+
+    drawInkFrame();
+
+    if (inkActiveBlooms.length > 0) inkAnimId = requestAnimationFrame(inkLoop);
+    else inkAnimId = null;
+}
+
+function clearInkBloom() {
+    inkActiveBlooms = [];
+    if (inkSettledCtx) inkSettledCtx.clearRect(0, 0, inkSettledCanvas.width, inkSettledCanvas.height);
+    drawInkFrame();
 }
 
 // ===== COIN SHOP (spend Calm Face Coins to unlock new content) =====
@@ -4944,7 +5630,10 @@ const EXERCISE_UNLOCK_QUEUE = [
     { id: 'walking', icon: '🚶‍♀️', title: 'Mindful Walking', desc: 'Slow down and notice each step, breath, and surrounding' }
 ];
 const GAME_UNLOCK_QUEUE = [
-    { id: 'zengarden', icon: '🪨', title: 'Zen Sand Garden', desc: 'Rake calming lines through the sand — no score, no timer' }
+    { id: 'zengarden', icon: '🪨', title: 'Zen Sand Garden', desc: 'Rake calming lines through the sand — no score, no timer' },
+    { id: 'fireflyjar', icon: '🫙', title: 'Firefly Jar', desc: 'Catch drifting fireflies and watch your jar glow at dusk' },
+    { id: 'windchimes', icon: '🎐', title: 'Wind Chimes', desc: 'Tap hanging chimes tuned so nothing ever sounds wrong' },
+    { id: 'inkbloom', icon: '🎨', title: 'Ink Bloom', desc: 'Tap to bloom soft color and build a little abstract art' }
 ];
 const EXERCISE_UNLOCK_COST = 250;
 const GAME_UNLOCK_COST = 400;
@@ -5113,12 +5802,16 @@ const STEP_MAX_DELTA = 6;
 const STEP_MIN_INTERVAL_MS = 250;
 const STEP_MAX_GAIT_GAP_MS = 900;
 const STEP_CONFIRM_STREAK = 3;
+const STEP_CADENCE_TOLERANCE = 0.3;
+const MOUSE_SHAKE_SCALE = 0.06; // maps mouse-movement pixels onto the same magnitude scale as accelerometer m/s²
 
 let stepTrackingActive = false;
 let stepBaseline = 9.8;
 let lastStepTime = 0;
 let stepPeakDetected = false;
 let stepRhythmStreak = 0;
+let lastGaitGap = 0;
+let mouseShakeBaseline = 0;
 let stepNoMotionTimer = null;
 let currentSteps = 0;
 let stepEventCount = 0;
@@ -5173,11 +5866,10 @@ function toggleStepTracking() {
 }
 
 function startStepTracking() {
-    if (typeof DeviceMotionEvent === 'undefined') {
-        setStepStatus('Step tracking needs a phone with motion sensors — try opening this page on your phone!');
-        return;
-    }
-    if (typeof DeviceMotionEvent.requestPermission === 'function') {
+    // DeviceMotionEvent existing (or not) no longer gates whether tracking can
+    // start at all — a computer with no motion sensor still has a mouse, and
+    // handleMouseShake below gives it an equivalent way to register steps.
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
         DeviceMotionEvent.requestPermission().then(response => {
             if (response === 'granted') beginStepListening();
             else setStepStatus("Motion access was declined — you can allow it in your phone's browser settings if you change your mind.");
@@ -5193,23 +5885,27 @@ function beginStepListening() {
     lastStepTime = 0;
     stepPeakDetected = false;
     stepRhythmStreak = 0;
+    lastGaitGap = 0;
     stepEventCount = 0;
+    mouseShakeBaseline = 0;
 
     window.addEventListener('devicemotion', handleStepMotion);
+    window.addEventListener('mousemove', handleMouseShake);
     clearTimeout(stepNoMotionTimer);
     stepNoMotionTimer = setTimeout(() => {
-        if (stepTrackingActive) setStepStatus("Not seeing any motion yet — make sure you're carrying your phone as you walk.");
+        if (stepTrackingActive) setStepStatus("Not seeing any motion yet — walk with your phone, or give your mouse a shake, to get started.");
     }, 4000);
 
     const btn = document.getElementById('step-tracker-btn');
     if (btn) btn.textContent = '⏸ Stop Step Tracking';
-    setStepStatus('Tracking! Walk around with your phone to count steps.');
+    setStepStatus('Tracking! Walk with your phone, or shake your mouse, to count steps.');
     setStepDebug('Waiting for the first signal from your motion sensor…');
 }
 
 function stopStepTracking() {
     stepTrackingActive = false;
     window.removeEventListener('devicemotion', handleStepMotion);
+    window.removeEventListener('mousemove', handleMouseShake);
     clearTimeout(stepNoMotionTimer);
 
     const btn = document.getElementById('step-tracker-btn');
@@ -5224,22 +5920,30 @@ function setStepDebug(text) {
 }
 
 // Peak-detection pedometer with a gait-rhythm filter: a slow-moving baseline
-// tracks roughly where "at rest" is (adapting to phone orientation/gravity),
-// and each acceleration spike above that baseline is a *candidate* footstep —
-// but candidates only turn into counted steps once several land back-to-back
-// at a walking/running cadence (STEP_MIN_INTERVAL_MS–STEP_MAX_GAIT_GAP_MS
-// apart). A one-off jolt (picking the phone up, tapping the screen) or a
-// spike too sharp to be a real footstep (STEP_MAX_DELTA, e.g. a shake or a
-// drop) never builds that rhythm, so it's ignored instead of counted.
+// tracks roughly where "at rest" is (adapting to phone orientation/gravity, or
+// to how still the mouse normally sits), and each spike above that baseline
+// is a *candidate* footstep — but candidates only turn into counted steps
+// once several land back-to-back at a walking/running cadence
+// (STEP_MIN_INTERVAL_MS–STEP_MAX_GAIT_GAP_MS apart) that stays roughly
+// consistent from one gap to the next (STEP_CADENCE_TOLERANCE). Real
+// footsteps (or a real deliberate mouse-shake) land at a steady, repeating
+// pace; fidgeting/tapping/gesturing doesn't, even though a single fidget can
+// be just as sharp as a footstep. A one-off jolt, an irregular fidgety pace,
+// or a spike too sharp to be real (STEP_MAX_DELTA, e.g. a shake or a drop)
+// never builds that steady rhythm, so none of them get counted.
+function resetStepNoMotionTimer() {
+    clearTimeout(stepNoMotionTimer);
+    stepNoMotionTimer = setTimeout(() => {
+        if (stepTrackingActive) setStepStatus("Not seeing any motion yet — walk with your phone, or give your mouse a shake, to get started.");
+    }, 4000);
+}
+
 function handleStepMotion(e) {
     // Any event at all means the sensor is reachable — clear the "no motion"
     // warning before checking whether this particular reading is usable,
     // since some phones/browsers only populate one of the two acceleration
     // fields (or briefly report null) even while events fire steadily.
-    clearTimeout(stepNoMotionTimer);
-    stepNoMotionTimer = setTimeout(() => {
-        if (stepTrackingActive) setStepStatus("Not seeing any motion yet — make sure you're carrying your phone as you walk.");
-    }, 4000);
+    resetStepNoMotionTimer();
     stepEventCount++;
 
     const a = e.accelerationIncludingGravity && e.accelerationIncludingGravity.x !== null && e.accelerationIncludingGravity.x !== undefined
@@ -5253,6 +5957,25 @@ function handleStepMotion(e) {
     const magnitude = Math.sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
     stepBaseline = stepBaseline * 0.9 + magnitude * 0.1;
     const delta = magnitude - stepBaseline;
+    processStepCandidate(delta, magnitude, stepBaseline);
+}
+
+// On a computer there's no accelerometer, but a mouse can stand in for one:
+// a deliberate, repeated shake produces the same "rhythmic spikes above a
+// resting baseline" shape as a footstep does, so it runs through the exact
+// same gait-rhythm filter — a single flick across the screen won't count any
+// more than a single fidget would on a phone.
+function handleMouseShake(e) {
+    resetStepNoMotionTimer();
+    stepEventCount++;
+
+    const magnitude = Math.hypot(e.movementX, e.movementY) * MOUSE_SHAKE_SCALE;
+    mouseShakeBaseline = mouseShakeBaseline * 0.9 + magnitude * 0.1;
+    const delta = magnitude - mouseShakeBaseline;
+    processStepCandidate(delta, magnitude, mouseShakeBaseline);
+}
+
+function processStepCandidate(delta, magnitude, baseline) {
     const now = Date.now();
 
     if (delta > STEP_THRESHOLD && !stepPeakDetected && (now - lastStepTime) > STEP_MIN_INTERVAL_MS) {
@@ -5265,22 +5988,34 @@ function handleStepMotion(e) {
             stepRhythmStreak = 0;
             setStepDebug(`Signal #${stepEventCount} — delta ${delta.toFixed(2)} is too sharp for a footstep (max ${STEP_MAX_DELTA}), ignored.`);
         } else if (gap <= STEP_MAX_GAIT_GAP_MS) {
-            stepRhythmStreak++;
-            if (stepRhythmStreak >= STEP_CONFIRM_STREAK) {
-                registerStep();
-                setStepDebug(`Signal #${stepEventCount} — step counted (rhythm streak ${stepRhythmStreak}, gap ${gap === Infinity ? '—' : gap}ms).`);
+            // In range, but is it about the same pace as the last gap? Real
+            // gait is metronomic; fidgeting/tapping wanders all over the place
+            // even when a given gap happens to land in the walking window.
+            const previousGap = lastGaitGap;
+            const consistent = previousGap === 0 || Math.abs(gap - previousGap) <= previousGap * STEP_CADENCE_TOLERANCE;
+            lastGaitGap = gap;
+            if (consistent) {
+                stepRhythmStreak++;
+                if (stepRhythmStreak >= STEP_CONFIRM_STREAK) {
+                    registerStep();
+                    setStepDebug(`Signal #${stepEventCount} — step counted (rhythm streak ${stepRhythmStreak}, gap ${gap}ms).`);
+                } else {
+                    setStepDebug(`Signal #${stepEventCount} — candidate footstep, building rhythm (${stepRhythmStreak}/${STEP_CONFIRM_STREAK}).`);
+                }
             } else {
-                setStepDebug(`Signal #${stepEventCount} — candidate footstep, building rhythm (${stepRhythmStreak}/${STEP_CONFIRM_STREAK}).`);
+                stepRhythmStreak = 1;
+                setStepDebug(`Signal #${stepEventCount} — candidate footstep, but pace changed too much from the last one (${gap}ms vs ${previousGap}ms) — not a steady gait, restarting.`);
             }
         } else {
             stepRhythmStreak = 1;
+            lastGaitGap = 0;
             setStepDebug(`Signal #${stepEventCount} — candidate footstep, but ${gap}ms since the last one broke the rhythm (restarting).`);
         }
         lastStepTime = now;
     } else if (delta < STEP_THRESHOLD * 0.4) {
         stepPeakDetected = false;
     } else {
-        setStepDebug(`Signal #${stepEventCount} — magnitude ${magnitude.toFixed(2)}, baseline ${stepBaseline.toFixed(2)}, delta ${delta.toFixed(2)} (need > ${STEP_THRESHOLD})`);
+        setStepDebug(`Signal #${stepEventCount} — magnitude ${magnitude.toFixed(2)}, baseline ${baseline.toFixed(2)}, delta ${delta.toFixed(2)} (need > ${STEP_THRESHOLD})`);
     }
 }
 
@@ -5288,8 +6023,13 @@ function handleStepMotion(e) {
 // actually visible — pick back up automatically once it is again.
 document.addEventListener('visibilitychange', () => {
     if (!stepTrackingActive) return;
-    if (document.hidden) window.removeEventListener('devicemotion', handleStepMotion);
-    else window.addEventListener('devicemotion', handleStepMotion);
+    if (document.hidden) {
+        window.removeEventListener('devicemotion', handleStepMotion);
+        window.removeEventListener('mousemove', handleMouseShake);
+    } else {
+        window.addEventListener('devicemotion', handleStepMotion);
+        window.addEventListener('mousemove', handleMouseShake);
+    }
 });
 
 // ===== DAILY STREAK (built from the same active-days log the Calm Plant uses) =====
@@ -5430,6 +6170,74 @@ function initLogoEasterEgg() {
             }
         });
     });
+}
+
+// ===== YOUR DATA: EXPORT / IMPORT =====
+// Every feature on this site saves under a "pillo-" prefixed localStorage
+// key, so backup/restore is just: gather everything with that prefix, bundle
+// it into one file, and (on the way back in) write it straight back under
+// its original key.
+function setDataStatus(text) {
+    const el = document.getElementById('data-status');
+    if (el) el.textContent = text;
+}
+
+function exportPilloData() {
+    const data = {};
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('pillo-')) data[key] = localStorage.getItem(key);
+    }
+
+    const payload = { exportedAt: new Date().toISOString(), data };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pillo-backup-${toDateKey(new Date())}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    setDataStatus('Downloaded! Keep this file somewhere safe.');
+}
+
+function importPilloData(event) {
+    const input = event.target;
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+        let payload;
+        try {
+            payload = JSON.parse(reader.result);
+        } catch (e) {
+            setDataStatus("That file doesn't look like a Pillo backup — couldn't read it.");
+            input.value = '';
+            return;
+        }
+
+        const data = payload && typeof payload.data === 'object' ? payload.data : null;
+        const keys = data ? Object.keys(data).filter(k => k.startsWith('pillo-')) : [];
+        if (!data || keys.length === 0) {
+            setDataStatus("That file doesn't look like a Pillo backup.");
+            input.value = '';
+            return;
+        }
+
+        const confirmed = confirm(`Import ${keys.length} saved item(s)? This replaces your current journal entries, mood history, streaks, and coins with what's in this file.`);
+        if (!confirmed) {
+            input.value = '';
+            return;
+        }
+
+        keys.forEach(key => localStorage.setItem(key, data[key]));
+        input.value = '';
+        setDataStatus('Imported! Reloading…');
+        setTimeout(() => location.reload(), 600);
+    };
+    reader.readAsText(file);
 }
 
 // ===== PAGE LOAD =====

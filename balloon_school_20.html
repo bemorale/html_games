@@ -888,7 +888,10 @@ function resumeGame(){
   state='playing';SCR.style.display='none';startBgMusic(level);
 }
 window.addEventListener('message',e=>{
-  if(e.data&&e.data.type==='balloonPauseRequest'&&state==='playing')pauseGame();
+  if(e.data&&e.data.type==='balloonPauseRequest'){
+    stopBgMusic(); // always kill any looping music, regardless of state
+    if(state==='playing')pauseGame();
+  }
 });
 
 const HSIZE={pencil:22,tack:9,ruler:20,scissors:27,pin:9,cactus:29,beaker:19,wire:17,spike:13,rock:17,birdpoop:8,fork:15,pepper:13,dart:20,bird:22,spark:13,note:15,yarn:18};
