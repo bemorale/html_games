@@ -583,6 +583,29 @@ body.time-night .hero-mood-greeting {
     line-height: 1.5;
 }
 
+/* ===== DESK BREAK TIMER ===== */
+.desk-break-card {
+    background: white;
+    border-radius: 24px;
+    padding: 40px 32px;
+    margin-top: 28px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.desk-break-card h3 {
+    font-size: 1.3rem;
+    color: #1a1a1a;
+    margin-bottom: 14px;
+}
+
+.desk-break-time {
+    font-size: 2.6rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+    font-variant-numeric: tabular-nums;
+}
+
 /* ===== EXERCISES SECTION ===== */
 .exercises {
     padding: 0 0 280px;
@@ -2774,7 +2797,7 @@ body.time-night .hero-mood-greeting {
         </div>
         <div class="move-container">
             <h2 class="section-title">Daily Movement</h2>
-            <p class="section-subtitle">Calm isn't only about slowing down — my Pillo is also about actually moving. This counts real movement — your phone's motion sensor, or a shaken mouse on a computer — while this page is open, adding up across every time you check in today.</p>
+            <p class="section-subtitle">Calm isn't only about slowing down — my Pillo is also about actually moving. This counts your real steps using your phone's motion sensor while this page is open, adding up across every time you check in today.</p>
 
             <div class="step-tracker-card">
                 <div class="step-ring" id="step-ring" style="--step-pct: 0;">
@@ -2785,8 +2808,19 @@ body.time-night .hero-mood-greeting {
                 </div>
                 <p class="step-status" id="step-status">Tap below to start counting your steps for today.</p>
                 <button class="cta-button step-tracker-btn" id="step-tracker-btn" onclick="toggleStepTracking()">▶ Start Step Tracking</button>
-                <p class="step-hint">On a phone, carry it with you as you walk. On a computer (no accelerometer to read), give your mouse a real shake instead. Either way, this tab needs to stay open — it can't count in the background or when the page is closed.</p>
+                <p class="step-hint">Works best on a phone, carried with you while this tab stays open — it can't count steps in the background or when the page is closed. Computers don't have a motion sensor to read, so there's a different kind of tracker for those below instead.</p>
                 <p class="step-hint" id="step-debug" style="opacity: 0.7;"></p>
+            </div>
+
+            <div class="desk-break-card">
+                <h3>🪑 Desk Break Timer</h3>
+                <p class="desk-break-time" id="desk-break-elapsed">0:00</p>
+                <p class="step-status" id="desk-break-status">Time since your last break — works on any device, no sensor needed.</p>
+                <div class="session-controls">
+                    <button class="session-btn" onclick="openSession('stretching')">🧘 Stretch Now</button>
+                    <button class="session-btn secondary" onclick="resetDeskBreakTimer()">✅ I Took a Break</button>
+                </div>
+                <p class="step-hint">Counts real elapsed time this tab has been open and in view — pauses if you switch away, and resets whenever you open a stretch or take a break yourself.</p>
             </div>
         </div>
     </section>
@@ -3495,6 +3529,10 @@ function openSession(name) {
     // Every real exercise counts as taking care of yourself today, which is
     // what makes the Calm Plant grow (the plant view itself doesn't count).
     if (name !== 'plant') recordActiveDay();
+
+    // Opening an actual movement session is a real break — reset the desk
+    // timer right away rather than waiting to see if they finish it.
+    if (name === 'stretching' || name === 'walking') resetDeskBreakTimer();
 }
 
 function closeSession(name) {
@@ -5803,7 +5841,6 @@ const STEP_MIN_INTERVAL_MS = 250;
 const STEP_MAX_GAIT_GAP_MS = 900;
 const STEP_CONFIRM_STREAK = 3;
 const STEP_CADENCE_TOLERANCE = 0.3;
-const MOUSE_SHAKE_SCALE = 0.06; // maps mouse-movement pixels onto the same magnitude scale as accelerometer m/s²
 
 let stepTrackingActive = false;
 let stepBaseline = 9.8;
@@ -5811,7 +5848,6 @@ let lastStepTime = 0;
 let stepPeakDetected = false;
 let stepRhythmStreak = 0;
 let lastGaitGap = 0;
-let mouseShakeBaseline = 0;
 let stepNoMotionTimer = null;
 let currentSteps = 0;
 let stepEventCount = 0;
@@ -5866,10 +5902,11 @@ function toggleStepTracking() {
 }
 
 function startStepTracking() {
-    // DeviceMotionEvent existing (or not) no longer gates whether tracking can
-    // start at all — a computer with no motion sensor still has a mouse, and
-    // handleMouseShake below gives it an equivalent way to register steps.
-    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+    if (typeof DeviceMotionEvent === 'undefined') {
+        setStepStatus('Step tracking needs a phone with motion sensors — try opening this page on your phone!');
+        return;
+    }
+    if (typeof DeviceMotionEvent.requestPermission === 'function') {
         DeviceMotionEvent.requestPermission().then(response => {
             if (response === 'granted') beginStepListening();
             else setStepStatus("Motion access was declined — you can allow it in your phone's browser settings if you change your mind.");
@@ -5887,25 +5924,22 @@ function beginStepListening() {
     stepRhythmStreak = 0;
     lastGaitGap = 0;
     stepEventCount = 0;
-    mouseShakeBaseline = 0;
 
     window.addEventListener('devicemotion', handleStepMotion);
-    window.addEventListener('mousemove', handleMouseShake);
     clearTimeout(stepNoMotionTimer);
     stepNoMotionTimer = setTimeout(() => {
-        if (stepTrackingActive) setStepStatus("Not seeing any motion yet — walk with your phone, or give your mouse a shake, to get started.");
+        if (stepTrackingActive) setStepStatus("Not seeing any motion yet — make sure you're carrying your phone as you walk.");
     }, 4000);
 
     const btn = document.getElementById('step-tracker-btn');
     if (btn) btn.textContent = '⏸ Stop Step Tracking';
-    setStepStatus('Tracking! Walk with your phone, or shake your mouse, to count steps.');
+    setStepStatus('Tracking! Walk around with your phone to count steps.');
     setStepDebug('Waiting for the first signal from your motion sensor…');
 }
 
 function stopStepTracking() {
     stepTrackingActive = false;
     window.removeEventListener('devicemotion', handleStepMotion);
-    window.removeEventListener('mousemove', handleMouseShake);
     clearTimeout(stepNoMotionTimer);
 
     const btn = document.getElementById('step-tracker-btn');
@@ -5920,30 +5954,26 @@ function setStepDebug(text) {
 }
 
 // Peak-detection pedometer with a gait-rhythm filter: a slow-moving baseline
-// tracks roughly where "at rest" is (adapting to phone orientation/gravity, or
-// to how still the mouse normally sits), and each spike above that baseline
-// is a *candidate* footstep — but candidates only turn into counted steps
-// once several land back-to-back at a walking/running cadence
-// (STEP_MIN_INTERVAL_MS–STEP_MAX_GAIT_GAP_MS apart) that stays roughly
-// consistent from one gap to the next (STEP_CADENCE_TOLERANCE). Real
-// footsteps (or a real deliberate mouse-shake) land at a steady, repeating
-// pace; fidgeting/tapping/gesturing doesn't, even though a single fidget can
-// be just as sharp as a footstep. A one-off jolt, an irregular fidgety pace,
-// or a spike too sharp to be real (STEP_MAX_DELTA, e.g. a shake or a drop)
-// never builds that steady rhythm, so none of them get counted.
-function resetStepNoMotionTimer() {
-    clearTimeout(stepNoMotionTimer);
-    stepNoMotionTimer = setTimeout(() => {
-        if (stepTrackingActive) setStepStatus("Not seeing any motion yet — walk with your phone, or give your mouse a shake, to get started.");
-    }, 4000);
-}
-
+// tracks roughly where "at rest" is (adapting to phone orientation/gravity),
+// and each acceleration spike above that baseline is a *candidate* footstep —
+// but candidates only turn into counted steps once several land back-to-back
+// at a walking/running cadence (STEP_MIN_INTERVAL_MS–STEP_MAX_GAIT_GAP_MS
+// apart) that stays roughly consistent from one gap to the next
+// (STEP_CADENCE_TOLERANCE). Real footsteps land at a steady, repeating pace;
+// fidgeting/tapping/gesturing with the phone in hand doesn't, even though a
+// single fidget can be just as sharp as a footstep. A one-off jolt, an
+// irregular fidgety pace, or a spike too sharp to be a real footstep
+// (STEP_MAX_DELTA, e.g. a shake or a drop) never builds that steady rhythm,
+// so none of them get counted.
 function handleStepMotion(e) {
     // Any event at all means the sensor is reachable — clear the "no motion"
     // warning before checking whether this particular reading is usable,
     // since some phones/browsers only populate one of the two acceleration
     // fields (or briefly report null) even while events fire steadily.
-    resetStepNoMotionTimer();
+    clearTimeout(stepNoMotionTimer);
+    stepNoMotionTimer = setTimeout(() => {
+        if (stepTrackingActive) setStepStatus("Not seeing any motion yet — make sure you're carrying your phone as you walk.");
+    }, 4000);
     stepEventCount++;
 
     const a = e.accelerationIncludingGravity && e.accelerationIncludingGravity.x !== null && e.accelerationIncludingGravity.x !== undefined
@@ -5958,21 +5988,6 @@ function handleStepMotion(e) {
     stepBaseline = stepBaseline * 0.9 + magnitude * 0.1;
     const delta = magnitude - stepBaseline;
     processStepCandidate(delta, magnitude, stepBaseline);
-}
-
-// On a computer there's no accelerometer, but a mouse can stand in for one:
-// a deliberate, repeated shake produces the same "rhythmic spikes above a
-// resting baseline" shape as a footstep does, so it runs through the exact
-// same gait-rhythm filter — a single flick across the screen won't count any
-// more than a single fidget would on a phone.
-function handleMouseShake(e) {
-    resetStepNoMotionTimer();
-    stepEventCount++;
-
-    const magnitude = Math.hypot(e.movementX, e.movementY) * MOUSE_SHAKE_SCALE;
-    mouseShakeBaseline = mouseShakeBaseline * 0.9 + magnitude * 0.1;
-    const delta = magnitude - mouseShakeBaseline;
-    processStepCandidate(delta, magnitude, mouseShakeBaseline);
 }
 
 function processStepCandidate(delta, magnitude, baseline) {
@@ -6023,14 +6038,55 @@ function processStepCandidate(delta, magnitude, baseline) {
 // actually visible — pick back up automatically once it is again.
 document.addEventListener('visibilitychange', () => {
     if (!stepTrackingActive) return;
-    if (document.hidden) {
-        window.removeEventListener('devicemotion', handleStepMotion);
-        window.removeEventListener('mousemove', handleMouseShake);
-    } else {
-        window.addEventListener('devicemotion', handleStepMotion);
-        window.addEventListener('mousemove', handleMouseShake);
-    }
+    if (document.hidden) window.removeEventListener('devicemotion', handleStepMotion);
+    else window.addEventListener('devicemotion', handleStepMotion);
 });
+
+// ===== DESK BREAK TIMER =====
+// No accelerometer needed here — this only measures one honest, computer-
+// friendly thing: how long this tab has actually been open and in view since
+// the last break. It pauses while the tab is hidden (we genuinely don't know
+// what you're doing elsewhere) and resets whenever you open a stretch/walk
+// session or tell it yourself that you took a break.
+const DESK_BREAK_REMINDER_MS = 45 * 60 * 1000;
+let deskSitAccumulatedMs = 0;
+let deskSitResumedAt = Date.now();
+let deskBreakNudged = false;
+
+function deskSitElapsedMs() {
+    const currentStretch = document.hidden ? 0 : (Date.now() - deskSitResumedAt);
+    return deskSitAccumulatedMs + currentStretch;
+}
+
+function resetDeskBreakTimer() {
+    deskSitAccumulatedMs = 0;
+    deskSitResumedAt = Date.now();
+    deskBreakNudged = false;
+    const statusEl = document.getElementById('desk-break-status');
+    if (statusEl) statusEl.textContent = 'Time since your last break — works on any device, no sensor needed.';
+    updateDeskBreakDisplay();
+}
+
+function updateDeskBreakDisplay() {
+    const elapsed = deskSitElapsedMs();
+    const mins = Math.floor(elapsed / 60000);
+    const secs = Math.floor((elapsed % 60000) / 1000);
+    const el = document.getElementById('desk-break-elapsed');
+    if (el) el.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+    if (elapsed >= DESK_BREAK_REMINDER_MS && !deskBreakNudged) {
+        deskBreakNudged = true;
+        const statusEl = document.getElementById('desk-break-status');
+        if (statusEl) statusEl.textContent = "You've been sitting a while — want to stretch or take a short walk?";
+    }
+}
+
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) deskSitAccumulatedMs += Date.now() - deskSitResumedAt;
+    else deskSitResumedAt = Date.now();
+});
+
+setInterval(updateDeskBreakDisplay, 1000);
 
 // ===== DAILY STREAK (built from the same active-days log the Calm Plant uses) =====
 function getCurrentStreak() {
@@ -6249,6 +6305,7 @@ applyTimeOfDayTheme();
 renderMoodAwareGreeting();
 renderStreakBadge();
 renderStepTracker();
+updateDeskBreakDisplay();
 initLogoEasterEgg();
 renderCalendar();
 updateCoinDisplay();
