@@ -746,7 +746,7 @@ function showMenu(){
     </div>
     <button class="sbtn" id="startBtn">&#127890; Start From Level 1</button>
     <p style="font-size:11px;color:#cde;">High Score: <span id="hsMenu">${highScore}</span></p>
-    ${window.parent!==window?'<button class="sbtn teal" id="exitBtnMenu">🏠 Exit to Pillo</button>':''}`;
+    ${window.parent!==window?'<button class="sbtn teal" id="exitBtnMenu">🏠 Exit to Belinda</button>':''}`;
   document.querySelectorAll('.topt').forEach(el=>{
     if(parseInt(el.dataset.t)===timeLimitSec) el.classList.add('sel');
     el.onclick=()=>{document.querySelectorAll('.topt').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');timeLimitSec=parseInt(el.dataset.t);};
@@ -875,7 +875,7 @@ function pauseGame(){
     <button class="sbtn" id="resumeBtn2">▶ Resume</button>
     <button class="sbtn gray" id="restartBtn2">🔄 Restart Level</button>
     <button class="sbtn gray" id="quitBtn2">↩ Main Menu</button>
-    ${window.parent!==window?'<button class="sbtn teal" id="exitBtn2">🏠 Exit to Pillo</button>':''}
+    ${window.parent!==window?'<button class="sbtn teal" id="exitBtn2">🏠 Exit to Belinda</button>':''}
     <p style="font-size:11px;color:#bcd;">Press P or Esc to resume</p>`;
   document.getElementById('resumeBtn2').onclick=resumeGame;
   document.getElementById('restartBtn2').onclick=()=>{showBriefing(level);};
