@@ -36,6 +36,7 @@
   const langZhBtn = document.getElementById("langZh");
   const mascotWrap = document.getElementById("mascotWrap");
   const mascotImg = document.getElementById("mascotImg");
+  const mascotWaitingCan = document.getElementById("mascotWaitingCan");
 
   // ---------- Greeting ----------
   function setGreeting() {
@@ -300,6 +301,7 @@
     trashcan: "mascot/mascot-trashcan.png",
     trashcanDigging: "mascot/mascot-trashcan-digging.png",
     trashcanFallen: "mascot/mascot-trashcan-fallen.png",
+    trashcanToLicking: "mascot/mascot-trashcan-to-licking.png",
   };
   const MASCOT_MARGIN = 16;
   // How close scroll progress (0-1) has to be to the true top/bottom to
@@ -320,6 +322,15 @@
   let mascotLickTimer = null;
   let mascotTravelTimer = null;
   let mascotLoopTimer = null;
+
+  // Every assignment to mascotRestingWhere goes through here so the waiting
+  // can (the empty-can prop that previews where the mascot is headed) stays
+  // in sync automatically — visible any time the mascot ISN'T actually
+  // resting in it yet, hidden once its own can-inclusive artwork takes over.
+  function mascotSetRestingWhere(where) {
+    mascotRestingWhere = where;
+    mascotWaitingCan.classList.toggle("hidden", where === "bottom");
+  }
 
   // Crossfades between poses instead of hard-swapping the src, so the idle
   // show at the bottom reads as one continuous bit happening to the same
@@ -422,7 +433,8 @@
     { img: "trashcan", cls: ["mascot-wiggle"], hold: 300, instant: true },
     { img: "trashcanDigging", cls: ["mascot-wiggle"], hold: 300, instant: true },
     { img: "trashcan", cls: ["mascot-toppled"], hold: 550 },
-    { img: "trashcanFallen", cls: [], hold: 1800 },
+    { img: "trashcanFallen", cls: [], hold: 1500 },
+    { img: "trashcanToLicking", cls: [], hold: 650 },
     { img: "licking", cls: [], hold: 420, instant: true },
     { img: "licking2", cls: [], hold: 420, instant: true },
     { img: "licking", cls: [], hold: 420, instant: true },
@@ -461,7 +473,7 @@
     mascotClearTravel();
     mascotClearBottomLoop();
     mascotState = "thinking";
-    mascotRestingWhere = "mic";
+    mascotSetRestingWhere("mic");
     mascotWrap.classList.remove("mascot-licking");
     mascotWrap.classList.add("mascot-thinking");
     mascotSetImage("thinking");
@@ -493,7 +505,7 @@
   function mascotEnterIdle() {
     mascotState = "idle";
     mascotWrap.classList.remove("mascot-thinking", "mascot-licking");
-    mascotRestingWhere = null; // force mascotUpdateFromScroll to re-settle
+    mascotSetRestingWhere(null); // force mascotUpdateFromScroll to re-settle
     mascotUpdateFromScroll();
   }
 
@@ -525,7 +537,7 @@
     if (atTop) {
       mascotMoveTo(a.micX, a.micY);
       if (mascotRestingWhere !== "mic") {
-        mascotRestingWhere = "mic";
+        mascotSetRestingWhere("mic");
         mascotClearTravel();
         mascotClearBottomLoop();
         mascotSetImage("idle");
@@ -536,7 +548,7 @@
     if (atBottom) {
       mascotMoveTo(a.bottomX, a.bottomY);
       if (mascotRestingWhere !== "bottom") {
-        mascotRestingWhere = "bottom";
+        mascotSetRestingWhere("bottom");
         mascotClearTravel();
         mascotStartBottomShow();
       }
@@ -547,7 +559,7 @@
     // progress — this is what keeps the whole trip tied to the true top and
     // true bottom of the page rather than just "the mic isn't visible."
     if (mascotRestingWhere !== null) {
-      mascotRestingWhere = null;
+      mascotSetRestingWhere(null);
       mascotClearTravel();
       mascotClearBottomLoop();
     }

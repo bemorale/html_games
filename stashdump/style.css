@@ -785,6 +785,24 @@ body {
 
 .hidden { display: none !important; }
 
+/* An empty can sitting at the bottom-center of the viewport, visible
+   whenever the mascot ISN'T currently there (see mascotSetRestingWhere in
+   app.js) — a "landing zone" preview so scrolling down doesn't reveal a
+   blank spot right up until the mascot actually arrives. Lower z-index than
+   .mascot-wrap so once the mascot's own can-inclusive artwork (jump-in,
+   half-in, etc.) shows up, it draws over this rather than the two
+   overlapping. */
+.mascot-waiting-can {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 110px;
+  pointer-events: none;
+  z-index: 400;
+  filter: drop-shadow(0 10px 14px rgba(124, 92, 255, 0.18));
+}
+
 /* ---------- Mascot ---------- */
 /* Fixed to the viewport, parked on top of the mic button by default — the
    wrap handles WHERE it is (by the mic, or hopped down to the bottom corner
