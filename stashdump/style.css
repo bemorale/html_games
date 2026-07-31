@@ -800,11 +800,18 @@ body {
   width: 118px;
   pointer-events: none;
   z-index: 500;
-  transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* No transition on transform — position is set directly from scroll
+     progress on every scroll event (see mascotUpdateFromScroll in app.js),
+     so it has to track 1:1 with the gesture instead of easing toward a
+     target on its own timeline. */
   filter: drop-shadow(0 10px 14px rgba(124, 92, 255, 0.22));
 }
 
 .mascot-img {
+  /* Crossfades pose changes instead of hard-swapping src (see
+     mascotSetImage) so the idle show reads as one continuous bit rather
+     than a slideshow of unrelated illustrations. */
+  transition: opacity 0.16s ease;
   display: block;
   width: 100%;
   height: auto;
@@ -876,9 +883,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .mascot-img {
     animation: none !important;
-  }
-  .mascot-wrap {
-    transition: none;
+    transition: none !important;
   }
 }
 
