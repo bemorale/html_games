@@ -34,6 +34,8 @@
   const calendarPastNote = document.getElementById("calendarPastNote");
   const langEnBtn = document.getElementById("langEn");
   const langZhBtn = document.getElementById("langZh");
+  const mascotWrap = document.getElementById("mascotWrap");
+  const mascotImg = document.getElementById("mascotImg");
 
   // ---------- Greeting ----------
   function setGreeting() {
@@ -234,6 +236,7 @@
     if (speechSupported) {
       try { recognition.start(); } catch (e) { /* no-op if already started */ }
     }
+    mascotEnterThinking();
   }
 
   function stopRecording(skipProcessing) {
@@ -248,6 +251,7 @@
     if (speechSupported) {
       try { recognition.stop(); } catch (e) { /* no-op */ }
     }
+    mascotEnterLicking();
 
     const transcript = finalTranscript.trim();
     liveTranscriptEl.textContent = "";
@@ -271,6 +275,108 @@
     fallbackInput.value = "";
     fallbackForm.classList.add("hidden");
   });
+
+  // ---------- Mascot ----------
+  // Lives in a fixed-position layer above everything, always pointer-events:
+  // none so it never steals a tap meant for a real button. Three states:
+  // idle (wanders the screen on its own), thinking (parked by the mic while
+  // listening), licking (parked by the mic for a moment after you stop, then
+  // wanders off again). A scroll does a quick "jump" hop regardless of state.
+  const MASCOT_SRC = { idle: "mascot/mascot-idle.png", thinking: "mascot/mascot-thinking.png", licking: "mascot/mascot-licking.png" };
+  const MASCOT_MARGIN = 16;
+  let mascotState = "idle";
+  let mascotX = 20;
+  let mascotY = window.innerHeight * 0.6;
+  let mascotRoamTimer = null;
+  let mascotLickTimer = null;
+
+  function mascotSetImage(state) {
+    if (mascotImg.getAttribute("src") !== MASCOT_SRC[state]) mascotImg.src = MASCOT_SRC[state];
+  }
+
+  function mascotMoveTo(x, y) {
+    const w = mascotWrap.offsetWidth || 118;
+    const h = mascotWrap.offsetHeight || 118;
+    const maxX = window.innerWidth - w - MASCOT_MARGIN;
+    const maxY = window.innerHeight - h - MASCOT_MARGIN;
+    const clampedX = Math.max(MASCOT_MARGIN, Math.min(maxX, x));
+    const clampedY = Math.max(MASCOT_MARGIN, Math.min(maxY, y));
+    mascotWrap.classList.toggle("mascot-flip", clampedX < mascotX);
+    mascotX = clampedX;
+    mascotY = clampedY;
+    mascotWrap.style.setProperty("--mx", `${clampedX}px`);
+    mascotWrap.style.setProperty("--my", `${clampedY}px`);
+    mascotWrap.style.transform = `translate3d(${clampedX}px, ${clampedY}px, 0)`;
+  }
+
+  function mascotRoamOnce() {
+    if (mascotState !== "idle") return;
+    const x = MASCOT_MARGIN + Math.random() * (window.innerWidth - 118 - MASCOT_MARGIN * 2);
+    const y = window.innerHeight * 0.15 + Math.random() * (window.innerHeight * 0.65);
+    mascotMoveTo(x, y);
+    mascotRoamTimer = setTimeout(mascotRoamOnce, 5000 + Math.random() * 4000);
+  }
+
+  function mascotStopRoaming() {
+    if (mascotRoamTimer) clearTimeout(mascotRoamTimer);
+    mascotRoamTimer = null;
+  }
+
+  function mascotParkByMic() {
+    const rect = micBtn.getBoundingClientRect();
+    const w = mascotWrap.offsetWidth || 118;
+    mascotMoveTo(rect.left + rect.width / 2 - w / 2, rect.top - (mascotWrap.offsetHeight || 118) * 0.75);
+  }
+
+  function mascotEnterThinking() {
+    if (mascotLickTimer) clearTimeout(mascotLickTimer);
+    mascotStopRoaming();
+    mascotState = "thinking";
+    mascotWrap.classList.remove("mascot-licking");
+    mascotWrap.classList.add("mascot-thinking");
+    mascotSetImage("thinking");
+    mascotParkByMic();
+  }
+
+  function mascotEnterLicking() {
+    mascotState = "licking";
+    mascotWrap.classList.remove("mascot-thinking");
+    mascotWrap.classList.add("mascot-licking");
+    mascotSetImage("licking");
+    mascotParkByMic();
+    mascotLickTimer = setTimeout(mascotEnterIdle, 2600);
+  }
+
+  function mascotEnterIdle() {
+    mascotState = "idle";
+    mascotWrap.classList.remove("mascot-thinking", "mascot-licking");
+    mascotSetImage("idle");
+    mascotRoamOnce();
+  }
+
+  let mascotJumpTimer = null;
+  function mascotJump() {
+    mascotWrap.classList.remove("mascot-jump");
+    // Force reflow so re-adding the class restarts the animation even if a
+    // jump is already mid-flight from rapid scrolling.
+    void mascotWrap.offsetWidth;
+    mascotWrap.classList.add("mascot-jump");
+    if (mascotJumpTimer) clearTimeout(mascotJumpTimer);
+    mascotJumpTimer = setTimeout(() => mascotWrap.classList.remove("mascot-jump"), 650);
+  }
+
+  let mascotScrollTicking = false;
+  window.addEventListener("scroll", () => {
+    if (mascotScrollTicking) return;
+    mascotScrollTicking = true;
+    requestAnimationFrame(() => {
+      mascotJump();
+      mascotScrollTicking = false;
+    });
+  }, { passive: true });
+
+  mascotMoveTo(mascotX, mascotY);
+  mascotRoamOnce();
 
   // ---------- "AI" processing pipeline (mocked LLM) ----------
   // Splits a raw transcript into individual items, auto-classifies each one
