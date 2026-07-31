@@ -281,14 +281,30 @@
   // none so it never steals a tap meant for a real button. It parks right on
   // top of the mic button by default — thinking while you talk, licking its
   // paws for a moment after you stop — and only leaves that spot once the
-  // mic button scrolls out of view, hopping down to the bottom corner so it
-  // stays out of the way of whatever you scrolled down to see. Hopping back
-  // up happens the same way once the mic is back in view.
-  const MASCOT_SRC = { idle: "mascot/mascot-idle.png", thinking: "mascot/mascot-thinking.png", licking: "mascot/mascot-licking.png" };
+  // mic button scrolls out of view: it jumps down to a trash can parked in
+  // the bottom corner (using the jump-down pose mid-flight), settles in with
+  // just its rear end and tail sticking out, and idles there with an
+  // occasional wiggle-then-topple gag. Scrolling the mic back into view
+  // jumps it back out (jump-up pose) to its spot above the mic.
+  const MASCOT_SRC = {
+    idle: "mascot/mascot-idle.png",
+    thinking: "mascot/mascot-thinking.png",
+    licking: "mascot/mascot-licking.png",
+    jumpDown: "mascot/mascot-jump-down.png",
+    jumpUp: "mascot/mascot-jump-up.png",
+    trashcan: "mascot/mascot-trashcan.png",
+  };
   const MASCOT_MARGIN = 16;
+  // Matches the wrap's CSS transition duration — used as a deterministic
+  // "arrived" signal instead of a transitionend listener, since transitionend
+  // never fires when a move lands on a position it's already at (e.g. two
+  // scroll direction changes in a row before the first hop finishes).
+  const MASCOT_TRAVEL_MS = 550;
   let mascotState = "idle"; // idle | thinking | licking
   let mascotAwayFromMic = false;
   let mascotLickTimer = null;
+  let mascotTravelTimer = null;
+  let mascotWiggleTimer = null;
 
   function mascotSetImage(state) {
     if (mascotImg.getAttribute("src") !== MASCOT_SRC[state]) mascotImg.src = MASCOT_SRC[state];
@@ -317,13 +333,65 @@
     mascotMoveTo(window.innerWidth - w - MASCOT_MARGIN, window.innerHeight - h - MASCOT_MARGIN);
   }
 
+  function mascotClearTravel() {
+    if (mascotTravelTimer) clearTimeout(mascotTravelTimer);
+    mascotTravelTimer = null;
+  }
+
+  function mascotClearWiggle() {
+    if (mascotWiggleTimer) clearTimeout(mascotWiggleTimer);
+    mascotWiggleTimer = null;
+    mascotWrap.classList.remove("mascot-wiggle", "mascot-toppled");
+  }
+
+  // The trash-can idle gag: a little shake like something's moving inside,
+  // then it topples onto its side for a beat, then rights itself and waits
+  // to do it again — loops for as long as the mascot stays parked down here.
+  function mascotWiggleLoop() {
+    if (mascotState !== "idle" || !mascotAwayFromMic) return;
+    mascotWrap.classList.add("mascot-wiggle");
+    mascotWiggleTimer = setTimeout(() => {
+      mascotWrap.classList.remove("mascot-wiggle");
+      mascotWrap.classList.add("mascot-toppled");
+      mascotWiggleTimer = setTimeout(() => {
+        mascotWrap.classList.remove("mascot-toppled");
+        mascotWiggleTimer = setTimeout(mascotWiggleLoop, 4000 + Math.random() * 2000);
+      }, 2200);
+    }, 900);
+  }
+
+  function mascotGoToBottom() {
+    mascotClearTravel();
+    mascotClearWiggle();
+    mascotSetImage("jumpDown");
+    mascotParkAtBottom();
+    mascotTravelTimer = setTimeout(() => {
+      if (mascotState !== "idle" || !mascotAwayFromMic) return;
+      mascotSetImage("trashcan");
+      mascotWiggleTimer = setTimeout(mascotWiggleLoop, 3000 + Math.random() * 2000);
+    }, MASCOT_TRAVEL_MS);
+  }
+
+  function mascotGoToMic() {
+    mascotClearTravel();
+    mascotClearWiggle();
+    mascotSetImage("jumpUp");
+    mascotParkByMic();
+    mascotTravelTimer = setTimeout(() => {
+      if (mascotState !== "idle" || mascotAwayFromMic) return;
+      mascotSetImage("idle");
+    }, MASCOT_TRAVEL_MS);
+  }
+
   function mascotSettle() {
-    if (mascotAwayFromMic) mascotParkAtBottom();
-    else mascotParkByMic();
+    if (mascotAwayFromMic) mascotGoToBottom();
+    else mascotGoToMic();
   }
 
   function mascotEnterThinking() {
     if (mascotLickTimer) clearTimeout(mascotLickTimer);
+    mascotClearTravel();
+    mascotClearWiggle();
     mascotState = "thinking";
     mascotAwayFromMic = false;
     mascotWrap.classList.remove("mascot-licking");
@@ -344,7 +412,6 @@
   function mascotEnterIdle() {
     mascotState = "idle";
     mascotWrap.classList.remove("mascot-thinking", "mascot-licking");
-    mascotSetImage("idle");
     mascotSettle();
   }
 
@@ -369,9 +436,11 @@
   }, { passive: true });
 
   window.addEventListener("resize", () => {
-    if (mascotState === "idle") mascotSettle();
+    if (mascotState === "idle" && !mascotAwayFromMic) mascotParkByMic();
+    else if (mascotState === "idle") mascotParkAtBottom();
   });
 
+  mascotSetImage("idle");
   mascotParkByMic();
 
   // ---------- "AI" processing pipeline (mocked LLM) ----------
