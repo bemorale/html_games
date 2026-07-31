@@ -327,10 +327,12 @@
     mascotMoveTo(rect.left + rect.width / 2 - w / 2, rect.top - h * 0.75);
   }
 
+  // Horizontally centered, same as the mic button, so the jump down to the
+  // trash can (and back up) is a straight vertical hop, not a diagonal one.
   function mascotParkAtBottom() {
     const w = mascotWrap.offsetWidth || 118;
     const h = mascotWrap.offsetHeight || 118;
-    mascotMoveTo(window.innerWidth - w - MASCOT_MARGIN, window.innerHeight - h - MASCOT_MARGIN);
+    mascotMoveTo(window.innerWidth / 2 - w / 2, window.innerHeight - h - MASCOT_MARGIN);
   }
 
   function mascotClearTravel() {
@@ -419,9 +421,20 @@
     const rect = micBtn.getBoundingClientRect();
     const micVisible = rect.bottom > 0 && rect.top < window.innerHeight;
     const away = !micVisible;
-    if (away === mascotAwayFromMic) return;
+    const crossed = away !== mascotAwayFromMic;
     mascotAwayFromMic = away;
-    if (mascotState === "idle") mascotSettle();
+    if (mascotState !== "idle") return;
+    if (crossed) {
+      // Just crossed into/out of view — play the full jump sequence.
+      mascotSettle();
+    } else if (!away) {
+      // Still visible but the mic itself keeps moving as the page scrolls
+      // (it's a normal-flow element, not fixed) — without this, rapid
+      // scrolling back and forth can leave the mascot glued to a stale spot
+      // from the last threshold crossing instead of the mic's actual
+      // current position.
+      mascotParkByMic();
+    }
   }
 
   // Time-based throttle rather than requestAnimationFrame — an rAF callback
