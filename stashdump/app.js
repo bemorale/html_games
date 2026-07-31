@@ -291,12 +291,15 @@
   // the mic, or the trash-can idle show at the bottom.
   const MASCOT_SRC = {
     idle: "mascot/mascot-idle.png",
+    tailwag: "mascot/mascot-tailwag.png",
     thinking: "mascot/mascot-thinking.png",
     licking: "mascot/mascot-licking.png",
+    licking2: "mascot/mascot-licking2.png",
     jumpDown: "mascot/mascot-jump-down.png",
     jumpUp: "mascot/mascot-jump-up.png",
     jumpIn: "mascot/mascot-jump-in.png",
     trashcan: "mascot/mascot-trashcan.png",
+    trashcanDigging: "mascot/mascot-trashcan-digging.png",
     trashcanFallen: "mascot/mascot-trashcan-fallen.png",
   };
   const MASCOT_MARGIN = 16;
@@ -312,7 +315,13 @@
   // Crossfades between poses instead of hard-swapping the src, so the idle
   // show at the bottom reads as one continuous bit happening to the same
   // character rather than a slideshow of unrelated illustrations.
-  function mascotSetImage(state) {
+  // instant skips the crossfade entirely — used for rapid flipbook-style
+  // alternation between two similar poses (tail wag, licking, digging in the
+  // trash) where a fade would just blur the two frames together instead of
+  // reading as quick motion. The smooth crossfade stays for bigger scene
+  // changes (settling into the can, climbing out, jumping) where instantly
+  // cutting between very different illustrations would feel like a jump-cut.
+  function mascotSetImage(state, instant) {
     const src = MASCOT_SRC[state];
     // Falls back to the actual rendered src the first time this runs (before
     // any fade has ever been kicked off), so the very first call — which
@@ -324,6 +333,11 @@
       return;
     }
     mascotImg.dataset.target = src;
+    if (instant) {
+      mascotImg.src = src;
+      mascotImg.style.opacity = "1";
+      return;
+    }
     mascotImg.style.opacity = "0";
     setTimeout(() => {
       if (mascotImg.dataset.target !== src) return; // superseded by a newer swap
@@ -367,52 +381,77 @@
     mascotTravelTimer = null;
   }
 
+  // Bumped every time the loop is cleared, and checked by each in-flight
+  // step before it acts — a defensive guard against two overlapping loop
+  // chains ever both being able to touch the DOM (which would show a step
+  // from one chain's image next to a different step's class, or otherwise
+  // desync image/class/timing), regardless of what causes the overlap.
+  let mascotLoopToken = 0;
+
   function mascotClearBottomLoop() {
     if (mascotLoopTimer) clearTimeout(mascotLoopTimer);
     mascotLoopTimer = null;
+    mascotLoopToken++;
     mascotWrap.classList.remove("mascot-wiggle", "mascot-toppled", "mascot-sideways");
   }
 
   // The idle show that plays on a loop for as long as the mascot is parked
-  // at the bottom: settle in, wiggle like something's moving inside, topple
-  // the can over, climb out, lick its paws clean, then dive back in
-  // (sideways this time) and repeat. Each step only schedules the next one
-  // if we're still resting at the bottom, so scrolling away at any point
-  // cuts the loop off cleanly instead of a stray step firing later.
+  // at the bottom: settle in, rummage around (paws flailing — the actual
+  // motion cue, not just a CSS shake of one static pose), topple the can
+  // over, climb out, lick its paws clean (tongue actually moving between two
+  // frames), then dive back in (sideways this time) and repeat. Each step
+  // only schedules the next one if we're still resting at the bottom, so
+  // scrolling away at any point cuts the loop off cleanly instead of a
+  // stray step firing later. instant:true skips the crossfade for the
+  // rapid alternation beats (digging, licking) so they read as quick
+  // motion rather than a blur.
   const MASCOT_BOTTOM_LOOP = [
-    { img: "trashcan", cls: [], hold: () => 2600 + Math.random() * 1400 },
-    { img: "trashcan", cls: ["mascot-wiggle"], hold: 1200 },
+    { img: "trashcan", cls: [], hold: () => 2400 + Math.random() * 1200 },
+    { img: "trashcanDigging", cls: ["mascot-wiggle"], hold: 300, instant: true },
+    { img: "trashcan", cls: ["mascot-wiggle"], hold: 300, instant: true },
+    { img: "trashcanDigging", cls: ["mascot-wiggle"], hold: 300, instant: true },
+    { img: "trashcan", cls: ["mascot-wiggle"], hold: 300, instant: true },
+    { img: "trashcanDigging", cls: ["mascot-wiggle"], hold: 300, instant: true },
     { img: "trashcan", cls: ["mascot-toppled"], hold: 550 },
-    { img: "trashcanFallen", cls: [], hold: 1900 },
-    { img: "licking", cls: [], hold: 2400 },
+    { img: "trashcanFallen", cls: [], hold: 1800 },
+    { img: "licking", cls: [], hold: 420, instant: true },
+    { img: "licking2", cls: [], hold: 420, instant: true },
+    { img: "licking", cls: [], hold: 420, instant: true },
+    { img: "licking2", cls: [], hold: 420, instant: true },
+    { img: "licking", cls: [], hold: 500, instant: true },
     { img: "jumpIn", cls: ["mascot-sideways"], hold: 750 },
   ];
 
-  function mascotBottomLoopStep(i) {
-    if (mascotRestingWhere !== "bottom") return;
+  function mascotBottomLoopStep(i, token) {
+    if (mascotRestingWhere !== "bottom" || token !== mascotLoopToken) return;
     const step = MASCOT_BOTTOM_LOOP[i % MASCOT_BOTTOM_LOOP.length];
     mascotWrap.classList.remove("mascot-wiggle", "mascot-toppled", "mascot-sideways");
     step.cls.forEach((c) => mascotWrap.classList.add(c));
-    mascotSetImage(step.img);
+    mascotSetImage(step.img, step.instant);
     const hold = typeof step.hold === "function" ? step.hold() : step.hold;
-    mascotLoopTimer = setTimeout(() => mascotBottomLoopStep(i + 1), hold);
+    mascotLoopTimer = setTimeout(() => mascotBottomLoopStep(i + 1, token), hold);
   }
 
   // The initial dive in, upright — after this the repeating show above
   // takes over (which starts with the same settled "half in" pose).
   function mascotStartBottomShow() {
-    mascotClearBottomLoop();
+    mascotClearBottomLoop(); // bumps mascotLoopToken, invalidating any prior chain
+    const token = mascotLoopToken;
     mascotSetImage("jumpIn");
     mascotTravelTimer = setTimeout(() => {
-      if (mascotRestingWhere !== "bottom") return;
-      mascotBottomLoopStep(0);
+      if (mascotRestingWhere !== "bottom" || token !== mascotLoopToken) return;
+      mascotBottomLoopStep(0, token);
     }, 550);
   }
 
+  let mascotLickCycleTimer = null;
+
   function mascotEnterThinking() {
     if (mascotLickTimer) clearTimeout(mascotLickTimer);
+    if (mascotLickCycleTimer) clearTimeout(mascotLickCycleTimer);
     mascotClearTravel();
     mascotClearBottomLoop();
+    mascotClearWag();
     mascotState = "thinking";
     mascotRestingWhere = "mic";
     mascotWrap.classList.remove("mascot-licking");
@@ -422,14 +461,26 @@
     mascotMoveTo(a.micX, a.micY);
   }
 
+  // Tongue actually goes back and forth between the two licking frames for
+  // the whole hold, instead of sitting on one static illustration.
   function mascotEnterLicking() {
     mascotState = "licking";
+    mascotClearWag();
     mascotWrap.classList.remove("mascot-thinking");
     mascotWrap.classList.add("mascot-licking");
-    mascotSetImage("licking");
     const a = mascotAnchors();
     mascotMoveTo(a.micX, a.micY);
-    mascotLickTimer = setTimeout(mascotEnterIdle, 2600);
+    let frame = 0;
+    const cycle = () => {
+      mascotSetImage(frame % 2 === 0 ? "licking" : "licking2", true);
+      frame++;
+      mascotLickCycleTimer = setTimeout(cycle, 420);
+    };
+    cycle();
+    mascotLickTimer = setTimeout(() => {
+      clearTimeout(mascotLickCycleTimer);
+      mascotEnterIdle();
+    }, 2600);
   }
 
   function mascotEnterIdle() {
@@ -437,6 +488,25 @@
     mascotWrap.classList.remove("mascot-thinking", "mascot-licking");
     mascotRestingWhere = null; // force mascotUpdateFromScroll to re-settle
     mascotUpdateFromScroll();
+  }
+
+  // An occasional tail wag while it's just sitting on the mic doing nothing
+  // else — a quick two-frame flip, held briefly, then back to idle for a
+  // while before the next wag. Only runs while genuinely resting at the mic;
+  // any state change (thinking, mid-scroll, resting at the bottom) clears it.
+  let mascotWagTimer = null;
+  function mascotClearWag() {
+    if (mascotWagTimer) clearTimeout(mascotWagTimer);
+    mascotWagTimer = null;
+  }
+  function mascotWagLoop() {
+    if (mascotRestingWhere !== "mic" || mascotState !== "idle") return;
+    mascotSetImage("tailwag", true);
+    mascotWagTimer = setTimeout(() => {
+      if (mascotRestingWhere !== "mic" || mascotState !== "idle") return;
+      mascotSetImage("idle", true);
+      mascotWagTimer = setTimeout(mascotWagLoop, 2600 + Math.random() * 2600);
+    }, 480);
   }
 
   // The single source of truth for where the mascot is and what pose it's
@@ -461,6 +531,7 @@
         mascotClearTravel();
         mascotClearBottomLoop();
         mascotSetImage("idle");
+        mascotWagTimer = setTimeout(mascotWagLoop, 2600 + Math.random() * 2600);
       }
       return;
     }
@@ -470,6 +541,7 @@
       if (mascotRestingWhere !== "bottom") {
         mascotRestingWhere = "bottom";
         mascotClearTravel();
+        mascotClearWag();
         mascotStartBottomShow();
       }
       return;
@@ -482,6 +554,7 @@
       mascotRestingWhere = null;
       mascotClearTravel();
       mascotClearBottomLoop();
+      mascotClearWag();
     }
     mascotMoveTo(a.micX + (a.bottomX - a.micX) * progress, a.micY + (a.bottomY - a.micY) * progress);
     if (scrollingDown) mascotSetImage("jumpDown");
