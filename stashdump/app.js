@@ -291,7 +291,6 @@
   // the mic, or the trash-can idle show at the bottom.
   const MASCOT_SRC = {
     idle: "mascot/mascot-idle.png",
-    tailwag: "mascot/mascot-tailwag.png",
     thinking: "mascot/mascot-thinking.png",
     licking: "mascot/mascot-licking.png",
     licking2: "mascot/mascot-licking2.png",
@@ -303,9 +302,19 @@
     trashcanFallen: "mascot/mascot-trashcan-fallen.png",
   };
   const MASCOT_MARGIN = 16;
-  // How close scroll progress (0-1) has to be to either end to count as
-  // "there" rather than still in transit.
-  const MASCOT_PROGRESS_EPS = 0.01;
+  // How close scroll progress (0-1) has to be to the true top/bottom to
+  // ENTER a resting state. Deliberately tight — the trash-can show
+  // shouldn't start just because the mic is scrolled mostly out of view.
+  const MASCOT_PROGRESS_ENTER_EPS = 0.01;
+  // How far scroll progress has to move AWAY from the end to actually LEAVE
+  // a resting state once already there. Deliberately much looser than the
+  // enter threshold — real touch scrolling rubber-bands/bounces a few dozen
+  // pixels past the true edge and back, and without this gap every one of
+  // those bounces would toggle the resting state off and on, restarting the
+  // whole trash-can show from step 0 each time (which is exactly what
+  // looked like "images lasting less than a second" / the loop "not working
+  // out" — the loop WAS working, it just kept getting restarted).
+  const MASCOT_PROGRESS_EXIT_EPS = 0.06;
   let mascotState = "idle"; // idle | thinking | licking
   let mascotRestingWhere = null; // "mic" | "bottom" | null (null = mid-transit)
   let mascotLickTimer = null;
@@ -451,7 +460,6 @@
     if (mascotLickCycleTimer) clearTimeout(mascotLickCycleTimer);
     mascotClearTravel();
     mascotClearBottomLoop();
-    mascotClearWag();
     mascotState = "thinking";
     mascotRestingWhere = "mic";
     mascotWrap.classList.remove("mascot-licking");
@@ -465,7 +473,6 @@
   // the whole hold, instead of sitting on one static illustration.
   function mascotEnterLicking() {
     mascotState = "licking";
-    mascotClearWag();
     mascotWrap.classList.remove("mascot-thinking");
     mascotWrap.classList.add("mascot-licking");
     const a = mascotAnchors();
@@ -490,25 +497,6 @@
     mascotUpdateFromScroll();
   }
 
-  // An occasional tail wag while it's just sitting on the mic doing nothing
-  // else — a quick two-frame flip, held briefly, then back to idle for a
-  // while before the next wag. Only runs while genuinely resting at the mic;
-  // any state change (thinking, mid-scroll, resting at the bottom) clears it.
-  let mascotWagTimer = null;
-  function mascotClearWag() {
-    if (mascotWagTimer) clearTimeout(mascotWagTimer);
-    mascotWagTimer = null;
-  }
-  function mascotWagLoop() {
-    if (mascotRestingWhere !== "mic" || mascotState !== "idle") return;
-    mascotSetImage("tailwag", true);
-    mascotWagTimer = setTimeout(() => {
-      if (mascotRestingWhere !== "mic" || mascotState !== "idle") return;
-      mascotSetImage("idle", true);
-      mascotWagTimer = setTimeout(mascotWagLoop, 2600 + Math.random() * 2600);
-    }, 480);
-  }
-
   // The single source of truth for where the mascot is and what pose it's
   // in, called on every scroll (and on resize/init). No CSS transition is
   // involved in the transit branch — the position IS the scroll position,
@@ -524,24 +512,32 @@
     mascotLastScrollYSeen = scrollY;
     const a = mascotAnchors();
 
-    if (progress <= MASCOT_PROGRESS_EPS) {
+    // Hysteresis: the threshold to ENTER a resting state is tight, but once
+    // resting there the threshold to LEAVE it is much looser — see
+    // MASCOT_PROGRESS_EXIT_EPS above for why.
+    const atTop = mascotRestingWhere === "mic"
+      ? progress <= MASCOT_PROGRESS_EXIT_EPS
+      : progress <= MASCOT_PROGRESS_ENTER_EPS;
+    const atBottom = mascotRestingWhere === "bottom"
+      ? progress >= 1 - MASCOT_PROGRESS_EXIT_EPS
+      : progress >= 1 - MASCOT_PROGRESS_ENTER_EPS;
+
+    if (atTop) {
       mascotMoveTo(a.micX, a.micY);
       if (mascotRestingWhere !== "mic") {
         mascotRestingWhere = "mic";
         mascotClearTravel();
         mascotClearBottomLoop();
         mascotSetImage("idle");
-        mascotWagTimer = setTimeout(mascotWagLoop, 2600 + Math.random() * 2600);
       }
       return;
     }
 
-    if (progress >= 1 - MASCOT_PROGRESS_EPS) {
+    if (atBottom) {
       mascotMoveTo(a.bottomX, a.bottomY);
       if (mascotRestingWhere !== "bottom") {
         mascotRestingWhere = "bottom";
         mascotClearTravel();
-        mascotClearWag();
         mascotStartBottomShow();
       }
       return;
@@ -554,7 +550,6 @@
       mascotRestingWhere = null;
       mascotClearTravel();
       mascotClearBottomLoop();
-      mascotClearWag();
     }
     mascotMoveTo(a.micX + (a.bottomX - a.micX) * progress, a.micY + (a.bottomY - a.micY) * progress);
     if (scrollingDown) mascotSetImage("jumpDown");
@@ -563,6 +558,18 @@
 
   window.addEventListener("scroll", mascotUpdateFromScroll, { passive: true });
   window.addEventListener("resize", mascotUpdateFromScroll);
+
+  // Warms the browser's cache for every pose up front, so the FIRST time
+  // any of them is actually needed (e.g. scrolling straight to the bottom
+  // before the trash-can images have ever been requested) doesn't have to
+  // wait on a network fetch + decode mid-animation — which is what was
+  // showing up as a "flash" (the crossfade opacity was already transitioning
+  // back in before the new image had actually finished loading, so it just
+  // popped in abruptly once the data arrived instead of smoothly fading).
+  Object.values(MASCOT_SRC).forEach((src) => {
+    const img = new Image();
+    img.src = src;
+  });
 
   mascotSetImage("idle");
   mascotUpdateFromScroll();

@@ -1,4 +1,4 @@
-const CACHE_NAME = "stashdump-v11";
+const CACHE_NAME = "stashdump-v12";
 const ASSETS = [
   "./",
   "./index.html",
@@ -8,7 +8,6 @@ const ASSETS = [
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./mascot/mascot-idle.png",
-  "./mascot/mascot-tailwag.png",
   "./mascot/mascot-thinking.png",
   "./mascot/mascot-licking.png",
   "./mascot/mascot-licking2.png",
