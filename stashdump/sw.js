@@ -1,4 +1,4 @@
-const CACHE_NAME = "stashdump-v5";
+const CACHE_NAME = "stashdump-v6";
 const ASSETS = [
   "./",
   "./index.html",
