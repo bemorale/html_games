@@ -301,7 +301,6 @@
     trashcan: "mascot/mascot-trashcan.png",
     trashcanDigging: "mascot/mascot-trashcan-digging.png",
     trashcanFallen: "mascot/mascot-trashcan-fallen.png",
-    trashcanToLicking: "mascot/mascot-trashcan-to-licking.png",
   };
   const MASCOT_MARGIN = 16;
   // How close scroll progress (0-1) has to be to the true top/bottom to
@@ -416,30 +415,37 @@
   }
 
   // The idle show that plays on a loop for as long as the mascot is parked
-  // at the bottom: settle in, rummage around (paws flailing — the actual
-  // motion cue, not just a CSS shake of one static pose), topple the can
-  // over, climb out, lick its paws clean (tongue actually moving between two
-  // frames), then dive back in (sideways this time) and repeat. Each step
+  // at the bottom. The story, one beat per line below:
+  //   1. settled in the can, just its rear + tail sticking out
+  //   2-4. rummaging around inside (paws flailing — real motion between two
+  //        different poses, not a CSS shake of one static image)
+  //   5. the can visibly shaking from all the commotion (CSS wiggle)
+  //   6. it tips over (CSS rotate)
+  //   7. climbing out into the mess it made — held long, since it's the
+  //      busiest, most detail-rich frame and needs time to actually read
+  //   8-11. licking its paws clean (tongue moving between two frames)
+  //   12. dives back in (reusing the entry pose, mirrored) to loop
+  // Every frame is padded to the same 320x320 canvas (see pad_canvas.py) so
+  // the mascot's on-screen size never jumps between beats — the source
+  // illustrations were different aspect ratios, and that alone was making
+  // the sequence unreadable regardless of ordering or timing. Each step
   // only schedules the next one if we're still resting at the bottom, so
   // scrolling away at any point cuts the loop off cleanly instead of a
   // stray step firing later. instant:true skips the crossfade for the
-  // rapid alternation beats (digging, licking) so they read as quick
-  // motion rather than a blur.
+  // rapid alternation beats (digging, licking) so they read as quick motion
+  // rather than a blur.
   const MASCOT_BOTTOM_LOOP = [
-    { img: "trashcan", cls: [], hold: () => 2400 + Math.random() * 1200 },
-    { img: "trashcanDigging", cls: ["mascot-wiggle"], hold: 300, instant: true },
-    { img: "trashcan", cls: ["mascot-wiggle"], hold: 300, instant: true },
-    { img: "trashcanDigging", cls: ["mascot-wiggle"], hold: 300, instant: true },
-    { img: "trashcan", cls: ["mascot-wiggle"], hold: 300, instant: true },
-    { img: "trashcanDigging", cls: ["mascot-wiggle"], hold: 300, instant: true },
-    { img: "trashcan", cls: ["mascot-toppled"], hold: 550 },
-    { img: "trashcanFallen", cls: [], hold: 1500 },
-    { img: "trashcanToLicking", cls: [], hold: 650 },
-    { img: "licking", cls: [], hold: 420, instant: true },
-    { img: "licking2", cls: [], hold: 420, instant: true },
-    { img: "licking", cls: [], hold: 420, instant: true },
-    { img: "licking2", cls: [], hold: 420, instant: true },
+    { img: "trashcan", cls: [], hold: () => 2800 + Math.random() * 1200 },
+    { img: "trashcanDigging", cls: [], hold: 550, instant: true },
+    { img: "trashcan", cls: [], hold: 450, instant: true },
+    { img: "trashcanDigging", cls: [], hold: 550, instant: true },
+    { img: "trashcan", cls: ["mascot-wiggle"], hold: 900 },
+    { img: "trashcan", cls: ["mascot-toppled"], hold: 600 },
+    { img: "trashcanFallen", cls: [], hold: 2600 },
     { img: "licking", cls: [], hold: 500, instant: true },
+    { img: "licking2", cls: [], hold: 500, instant: true },
+    { img: "licking", cls: [], hold: 500, instant: true },
+    { img: "licking2", cls: [], hold: 600, instant: true },
     { img: "jumpIn", cls: ["mascot-sideways"], hold: 750 },
   ];
 
