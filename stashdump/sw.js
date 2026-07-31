@@ -1,4 +1,4 @@
-const CACHE_NAME = "stashdump-v8";
+const CACHE_NAME = "stashdump-v9";
 const ASSETS = [
   "./",
   "./index.html",
@@ -12,7 +12,9 @@ const ASSETS = [
   "./mascot/mascot-licking.png",
   "./mascot/mascot-jump-down.png",
   "./mascot/mascot-jump-up.png",
+  "./mascot/mascot-jump-in.png",
   "./mascot/mascot-trashcan.png",
+  "./mascot/mascot-trashcan-fallen.png",
 ];
 
 self.addEventListener("install", (event) => {

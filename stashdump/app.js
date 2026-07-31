@@ -281,58 +281,82 @@
   // none so it never steals a tap meant for a real button. It parks right on
   // top of the mic button by default — thinking while you talk, licking its
   // paws for a moment after you stop — and only leaves that spot once the
-  // mic button scrolls out of view: it jumps down to a trash can parked in
-  // the bottom corner (using the jump-down pose mid-flight), settles in with
-  // just its rear end and tail sticking out, and idles there with an
-  // occasional wiggle-then-topple gag. Scrolling the mic back into view
-  // jumps it back out (jump-up pose) to its spot above the mic.
+  // mic button scrolls out of view: it hops down to a trash can parked at
+  // the bottom center, dives in, and runs a little idle show (wiggle, topple,
+  // climb out, lick its paws, dive back in) for as long as it stays down
+  // there. Scrolling the mic back into view hops it straight back up.
   const MASCOT_SRC = {
     idle: "mascot/mascot-idle.png",
     thinking: "mascot/mascot-thinking.png",
     licking: "mascot/mascot-licking.png",
     jumpDown: "mascot/mascot-jump-down.png",
     jumpUp: "mascot/mascot-jump-up.png",
+    jumpIn: "mascot/mascot-jump-in.png",
     trashcan: "mascot/mascot-trashcan.png",
+    trashcanFallen: "mascot/mascot-trashcan-fallen.png",
   };
   const MASCOT_MARGIN = 16;
-  // Matches the wrap's CSS transition duration — used as a deterministic
-  // "arrived" signal instead of a transitionend listener, since transitionend
-  // never fires when a move lands on a position it's already at (e.g. two
-  // scroll direction changes in a row before the first hop finishes).
-  const MASCOT_TRAVEL_MS = 550;
+  // Fixed duration for hops that aren't tied to a scroll gesture (parking by
+  // the mic for thinking/licking, the very first position on page load).
+  const MASCOT_DEFAULT_MS = 550;
+  // Bounds for scroll-driven hops — see mascotMoveTo.
+  const MASCOT_MIN_MS = 220;
+  const MASCOT_MAX_MS = 1400;
   let mascotState = "idle"; // idle | thinking | licking
   let mascotAwayFromMic = false;
   let mascotLickTimer = null;
   let mascotTravelTimer = null;
-  let mascotWiggleTimer = null;
+  let mascotLoopTimer = null;
+  let mascotCurX = 0;
+  let mascotCurY = 0;
 
   function mascotSetImage(state) {
     if (mascotImg.getAttribute("src") !== MASCOT_SRC[state]) mascotImg.src = MASCOT_SRC[state];
   }
 
-  function mascotMoveTo(x, y) {
+  // How fast the page has actually been scrolling recently, in px/ms — kept
+  // fresh by the scroll listener below. Falling back to the mid-range 0.5
+  // when nothing has scrolled yet only matters for the very first hop.
+  let mascotScrollSpeed = 0.5;
+
+  // durationMs omitted means "figure it out from how fast the user is
+  // scrolling" — a fast flick makes the hop quick, a slow drag makes it
+  // slow, instead of every hop taking the same fixed time regardless of
+  // gesture speed. Returns the duration actually used, so callers that also
+  // need to time a follow-up step (e.g. when to swap in the landing pose)
+  // can stay in sync with the animation instead of guessing.
+  function mascotMoveTo(x, y, durationMs) {
     const w = mascotWrap.offsetWidth || 118;
     const h = mascotWrap.offsetHeight || 118;
     const maxX = window.innerWidth - w - MASCOT_MARGIN;
     const maxY = window.innerHeight - h - MASCOT_MARGIN;
     const clampedX = Math.max(MASCOT_MARGIN, Math.min(maxX, x));
     const clampedY = Math.max(MASCOT_MARGIN, Math.min(maxY, y));
+    let ms = durationMs;
+    if (ms == null) {
+      const dist = Math.hypot(clampedX - mascotCurX, clampedY - mascotCurY);
+      ms = Math.max(MASCOT_MIN_MS, Math.min(MASCOT_MAX_MS, dist / Math.max(mascotScrollSpeed, 0.12)));
+    }
+    mascotWrap.style.transitionDuration = `${ms}ms`;
+    mascotCurX = clampedX;
+    mascotCurY = clampedY;
     mascotWrap.style.transform = `translate3d(${clampedX}px, ${clampedY}px, 0)`;
+    return ms;
   }
 
-  function mascotParkByMic() {
+  function mascotParkByMic(durationMs) {
     const rect = micBtn.getBoundingClientRect();
     const w = mascotWrap.offsetWidth || 118;
     const h = mascotWrap.offsetHeight || 118;
-    mascotMoveTo(rect.left + rect.width / 2 - w / 2, rect.top - h * 0.75);
+    return mascotMoveTo(rect.left + rect.width / 2 - w / 2, rect.top - h * 0.75, durationMs);
   }
 
-  // Horizontally centered, same as the mic button, so the jump down to the
-  // trash can (and back up) is a straight vertical hop, not a diagonal one.
-  function mascotParkAtBottom() {
+  // Horizontally centered, same as the mic button, so the hop down to the
+  // trash can (and back up) is a straight vertical line, not a diagonal one.
+  function mascotParkAtBottom(durationMs) {
     const w = mascotWrap.offsetWidth || 118;
     const h = mascotWrap.offsetHeight || 118;
-    mascotMoveTo(window.innerWidth / 2 - w / 2, window.innerHeight - h - MASCOT_MARGIN);
+    return mascotMoveTo(window.innerWidth / 2 - w / 2, window.innerHeight - h - MASCOT_MARGIN, durationMs);
   }
 
   function mascotClearTravel() {
@@ -340,66 +364,80 @@
     mascotTravelTimer = null;
   }
 
-  function mascotClearWiggle() {
-    if (mascotWiggleTimer) clearTimeout(mascotWiggleTimer);
-    mascotWiggleTimer = null;
-    mascotWrap.classList.remove("mascot-wiggle", "mascot-toppled");
+  function mascotClearBottomLoop() {
+    if (mascotLoopTimer) clearTimeout(mascotLoopTimer);
+    mascotLoopTimer = null;
+    mascotWrap.classList.remove("mascot-wiggle", "mascot-toppled", "mascot-sideways");
   }
 
-  // The trash-can idle gag: a little shake like something's moving inside,
-  // then it topples onto its side for a beat, then rights itself and waits
-  // to do it again — loops for as long as the mascot stays parked down here.
-  function mascotWiggleLoop() {
+  // The idle show that plays on a loop for as long as the mascot is parked
+  // at the bottom: settle in, wiggle like something's moving inside, topple
+  // the can over, climb out, lick its paws clean, then dive back in
+  // (sideways this time) and repeat. Each step only schedules the next one
+  // if we're still idle and away from the mic, so scrolling back up at any
+  // point cuts the loop off cleanly instead of a stray step firing later.
+  const MASCOT_BOTTOM_LOOP = [
+    { img: "trashcan", cls: [], hold: () => 3000 + Math.random() * 2000 },
+    { img: "trashcan", cls: ["mascot-wiggle"], hold: 900 },
+    { img: "trashcan", cls: ["mascot-toppled"], hold: 400 },
+    { img: "trashcanFallen", cls: [], hold: 1700 },
+    { img: "licking", cls: [], hold: 2400 },
+    { img: "jumpIn", cls: ["mascot-sideways"], hold: 550 },
+  ];
+
+  function mascotBottomLoopStep(i) {
     if (mascotState !== "idle" || !mascotAwayFromMic) return;
-    mascotWrap.classList.add("mascot-wiggle");
-    mascotWiggleTimer = setTimeout(() => {
-      mascotWrap.classList.remove("mascot-wiggle");
-      mascotWrap.classList.add("mascot-toppled");
-      mascotWiggleTimer = setTimeout(() => {
-        mascotWrap.classList.remove("mascot-toppled");
-        mascotWiggleTimer = setTimeout(mascotWiggleLoop, 4000 + Math.random() * 2000);
-      }, 2200);
-    }, 900);
+    const step = MASCOT_BOTTOM_LOOP[i % MASCOT_BOTTOM_LOOP.length];
+    mascotWrap.classList.remove("mascot-wiggle", "mascot-toppled", "mascot-sideways");
+    step.cls.forEach((c) => mascotWrap.classList.add(c));
+    mascotSetImage(step.img);
+    const hold = typeof step.hold === "function" ? step.hold() : step.hold;
+    mascotLoopTimer = setTimeout(() => mascotBottomLoopStep(i + 1), hold);
   }
 
-  function mascotGoToBottom() {
+  function mascotGoToBottom(durationMs) {
     mascotClearTravel();
-    mascotClearWiggle();
+    mascotClearBottomLoop();
     mascotSetImage("jumpDown");
-    mascotParkAtBottom();
+    const ms = mascotParkAtBottom(durationMs);
     mascotTravelTimer = setTimeout(() => {
       if (mascotState !== "idle" || !mascotAwayFromMic) return;
-      mascotSetImage("trashcan");
-      mascotWiggleTimer = setTimeout(mascotWiggleLoop, 3000 + Math.random() * 2000);
-    }, MASCOT_TRAVEL_MS);
+      // The initial dive in, upright — after this the repeating show below
+      // takes over (which starts with the same settled "half in" pose).
+      mascotSetImage("jumpIn");
+      mascotTravelTimer = setTimeout(() => {
+        if (mascotState !== "idle" || !mascotAwayFromMic) return;
+        mascotBottomLoopStep(0);
+      }, 500);
+    }, ms);
   }
 
-  function mascotGoToMic() {
+  function mascotGoToMic(durationMs) {
     mascotClearTravel();
-    mascotClearWiggle();
+    mascotClearBottomLoop();
     mascotSetImage("jumpUp");
-    mascotParkByMic();
+    const ms = mascotParkByMic(durationMs);
     mascotTravelTimer = setTimeout(() => {
       if (mascotState !== "idle" || mascotAwayFromMic) return;
       mascotSetImage("idle");
-    }, MASCOT_TRAVEL_MS);
+    }, ms);
   }
 
-  function mascotSettle() {
-    if (mascotAwayFromMic) mascotGoToBottom();
-    else mascotGoToMic();
+  function mascotSettle(durationMs) {
+    if (mascotAwayFromMic) mascotGoToBottom(durationMs);
+    else mascotGoToMic(durationMs);
   }
 
   function mascotEnterThinking() {
     if (mascotLickTimer) clearTimeout(mascotLickTimer);
     mascotClearTravel();
-    mascotClearWiggle();
+    mascotClearBottomLoop();
     mascotState = "thinking";
     mascotAwayFromMic = false;
     mascotWrap.classList.remove("mascot-licking");
     mascotWrap.classList.add("mascot-thinking");
     mascotSetImage("thinking");
-    mascotParkByMic();
+    mascotParkByMic(MASCOT_DEFAULT_MS);
   }
 
   function mascotEnterLicking() {
@@ -407,14 +445,14 @@
     mascotWrap.classList.remove("mascot-thinking");
     mascotWrap.classList.add("mascot-licking");
     mascotSetImage("licking");
-    mascotParkByMic();
+    mascotParkByMic(MASCOT_DEFAULT_MS);
     mascotLickTimer = setTimeout(mascotEnterIdle, 2600);
   }
 
   function mascotEnterIdle() {
     mascotState = "idle";
     mascotWrap.classList.remove("mascot-thinking", "mascot-licking");
-    mascotSettle();
+    mascotSettle(MASCOT_DEFAULT_MS);
   }
 
   function mascotHandleScroll() {
@@ -425,7 +463,8 @@
     mascotAwayFromMic = away;
     if (mascotState !== "idle") return;
     if (crossed) {
-      // Just crossed into/out of view — play the full jump sequence.
+      // Just crossed into/out of view — play the full hop, paced to how
+      // fast the scroll that triggered it was.
       mascotSettle();
     } else if (!away) {
       // Still visible but the mic itself keeps moving as the page scrolls
@@ -440,21 +479,45 @@
   // Time-based throttle rather than requestAnimationFrame — an rAF callback
   // can go unfired for a while if the tab loses focus mid-scroll, which
   // would leave a ticking flag stuck forever and the mascot stranded.
+  // Trailing-edge: a scroll event that lands inside the throttle window
+  // still schedules a check for when the window reopens, instead of just
+  // being dropped — otherwise a single sharp flick short enough to fire
+  // only one scroll event could have that event throttled away with
+  // nothing left to ever re-trigger the check.
+  const MASCOT_SCROLL_THROTTLE_MS = 120;
   let mascotScrollLast = 0;
+  let mascotScrollPending = false;
+  let mascotLastScrollY = window.scrollY;
+  let mascotLastScrollT = Date.now();
   window.addEventListener("scroll", () => {
     const now = Date.now();
-    if (now - mascotScrollLast < 120) return;
-    mascotScrollLast = now;
-    mascotHandleScroll();
+    const dt = now - mascotLastScrollT;
+    if (dt > 8) {
+      mascotScrollSpeed = Math.abs(window.scrollY - mascotLastScrollY) / dt;
+      mascotLastScrollY = window.scrollY;
+      mascotLastScrollT = now;
+    }
+    const elapsed = now - mascotScrollLast;
+    if (elapsed >= MASCOT_SCROLL_THROTTLE_MS) {
+      mascotScrollLast = now;
+      mascotHandleScroll();
+    } else if (!mascotScrollPending) {
+      mascotScrollPending = true;
+      setTimeout(() => {
+        mascotScrollPending = false;
+        mascotScrollLast = Date.now();
+        mascotHandleScroll();
+      }, MASCOT_SCROLL_THROTTLE_MS - elapsed);
+    }
   }, { passive: true });
 
   window.addEventListener("resize", () => {
-    if (mascotState === "idle" && !mascotAwayFromMic) mascotParkByMic();
-    else if (mascotState === "idle") mascotParkAtBottom();
+    if (mascotState === "idle" && !mascotAwayFromMic) mascotParkByMic(MASCOT_DEFAULT_MS);
+    else if (mascotState === "idle") mascotParkAtBottom(MASCOT_DEFAULT_MS);
   });
 
   mascotSetImage("idle");
-  mascotParkByMic();
+  mascotParkByMic(MASCOT_DEFAULT_MS);
 
   // ---------- "AI" processing pipeline (mocked LLM) ----------
   // Splits a raw transcript into individual items, auto-classifies each one
