@@ -828,8 +828,12 @@ body {
 .mascot-img {
   /* Crossfades pose changes instead of hard-swapping src (see
      mascotSetImage) so the idle show reads as one continuous bit rather
-     than a slideshow of unrelated illustrations. */
-  transition: opacity 0.16s ease;
+     than a slideshow of unrelated illustrations. Every pose change uses
+     this, including the rapid alternation beats — a hard instant swap is
+     what reads as a "flash," so nothing skips the fade anymore. Must match
+     the 130ms timeout in mascotSetImage exactly, or the JS would swap the
+     src before the CSS fade-out has actually finished animating to 0. */
+  transition: opacity 0.13s ease;
   display: block;
   width: 100%;
   height: auto;

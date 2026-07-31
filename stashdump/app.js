@@ -316,8 +316,11 @@
   // looked like "images lasting less than a second" / the loop "not working
   // out" — the loop WAS working, it just kept getting restarted).
   const MASCOT_PROGRESS_EXIT_EPS = 0.06;
+  // How many full left-right swings the mid-transit zigzag makes over the
+  // whole trip from the mic to the trash can.
+  const MASCOT_ZIGZAG_CYCLES = 3;
   let mascotState = "idle"; // idle | thinking | licking
-  let mascotRestingWhere = null; // "mic" | "bottom" | null (null = mid-transit)
+  let mascotRestingWhere = null; // "mic" | "bottom" | "mid" | null (null = actively scrolling)
   let mascotLickTimer = null;
   let mascotTravelTimer = null;
   let mascotLoopTimer = null;
@@ -331,16 +334,14 @@
     mascotWaitingCan.classList.toggle("hidden", where === "bottom");
   }
 
-  // Crossfades between poses instead of hard-swapping the src, so the idle
-  // show at the bottom reads as one continuous bit happening to the same
-  // character rather than a slideshow of unrelated illustrations.
-  // instant skips the crossfade entirely — used for rapid flipbook-style
-  // alternation between two similar poses (tail wag, licking, digging in the
-  // trash) where a fade would just blur the two frames together instead of
-  // reading as quick motion. The smooth crossfade stays for bigger scene
-  // changes (settling into the can, climbing out, jumping) where instantly
-  // cutting between very different illustrations would feel like a jump-cut.
-  function mascotSetImage(state, instant) {
+  // Crossfades between poses instead of hard-swapping the src, so every
+  // change — including the rapid alternation beats (digging, licking) —
+  // reads as one continuous animated bit rather than a slideshow with a
+  // flash between each illustration. An instant src swap used to be used
+  // for those rapid beats on the theory that a fade would blur two similar
+  // poses together, but a hard cut with literally zero transition is
+  // exactly what a "flash" is — always fading, even briefly, is smoother.
+  function mascotSetImage(state) {
     const src = MASCOT_SRC[state];
     // Falls back to the actual rendered src the first time this runs (before
     // any fade has ever been kicked off), so the very first call — which
@@ -352,17 +353,12 @@
       return;
     }
     mascotImg.dataset.target = src;
-    if (instant) {
-      mascotImg.src = src;
-      mascotImg.style.opacity = "1";
-      return;
-    }
     mascotImg.style.opacity = "0";
     setTimeout(() => {
       if (mascotImg.dataset.target !== src) return; // superseded by a newer swap
       mascotImg.src = src;
       mascotImg.style.opacity = "1";
-    }, 160);
+    }, 130);
   }
 
   function mascotMoveTo(x, y) {
@@ -431,21 +427,19 @@
   // the sequence unreadable regardless of ordering or timing. Each step
   // only schedules the next one if we're still resting at the bottom, so
   // scrolling away at any point cuts the loop off cleanly instead of a
-  // stray step firing later. instant:true skips the crossfade for the
-  // rapid alternation beats (digging, licking) so they read as quick motion
-  // rather than a blur.
+  // stray step firing later.
   const MASCOT_BOTTOM_LOOP = [
     { img: "trashcan", cls: [], hold: () => 2800 + Math.random() * 1200 },
-    { img: "trashcanDigging", cls: [], hold: 550, instant: true },
-    { img: "trashcan", cls: [], hold: 450, instant: true },
-    { img: "trashcanDigging", cls: [], hold: 550, instant: true },
+    { img: "trashcanDigging", cls: [], hold: 550 },
+    { img: "trashcan", cls: [], hold: 450 },
+    { img: "trashcanDigging", cls: [], hold: 550 },
     { img: "trashcan", cls: ["mascot-wiggle"], hold: 900 },
     { img: "trashcan", cls: ["mascot-toppled"], hold: 600 },
     { img: "trashcanFallen", cls: [], hold: 2600 },
-    { img: "licking", cls: [], hold: 500, instant: true },
-    { img: "licking2", cls: [], hold: 500, instant: true },
-    { img: "licking", cls: [], hold: 500, instant: true },
-    { img: "licking2", cls: [], hold: 600, instant: true },
+    { img: "licking", cls: [], hold: 500 },
+    { img: "licking2", cls: [], hold: 500 },
+    { img: "licking", cls: [], hold: 500 },
+    { img: "licking2", cls: [], hold: 600 },
     { img: "jumpIn", cls: ["mascot-sideways"], hold: 750 },
   ];
 
@@ -454,7 +448,7 @@
     const step = MASCOT_BOTTOM_LOOP[i % MASCOT_BOTTOM_LOOP.length];
     mascotWrap.classList.remove("mascot-wiggle", "mascot-toppled", "mascot-sideways");
     step.cls.forEach((c) => mascotWrap.classList.add(c));
-    mascotSetImage(step.img, step.instant);
+    mascotSetImage(step.img);
     const hold = typeof step.hold === "function" ? step.hold() : step.hold;
     mascotLoopTimer = setTimeout(() => mascotBottomLoopStep(i + 1, token), hold);
   }
@@ -478,6 +472,7 @@
     if (mascotLickCycleTimer) clearTimeout(mascotLickCycleTimer);
     mascotClearTravel();
     mascotClearBottomLoop();
+    mascotClearMidIdle();
     mascotState = "thinking";
     mascotSetRestingWhere("mic");
     mascotWrap.classList.remove("mascot-licking");
@@ -497,7 +492,7 @@
     mascotMoveTo(a.micX, a.micY);
     let frame = 0;
     const cycle = () => {
-      mascotSetImage(frame % 2 === 0 ? "licking" : "licking2", true);
+      mascotSetImage(frame % 2 === 0 ? "licking" : "licking2");
       frame++;
       mascotLickCycleTimer = setTimeout(cycle, 420);
     };
@@ -513,6 +508,55 @@
     mascotWrap.classList.remove("mascot-thinking", "mascot-licking");
     mascotSetRestingWhere(null); // force mascotUpdateFromScroll to re-settle
     mascotUpdateFromScroll();
+  }
+
+  // Whenever scrolling pauses somewhere between the mic and the trash can
+  // (neither all the way at the top nor the bottom), the mascot freezes
+  // right where the zigzag left it and idles in place — rather than always
+  // snapping back to one of the two fixed spots — so it settles wherever is
+  // least likely to be sitting on top of whatever the user scrolled to see.
+  // scheduleMidIdle is a debounce: it's rescheduled on every scroll event
+  // during transit and only actually fires once ~220ms passes with no new
+  // scroll, which is what "stopped scrolling" means here.
+  let mascotMidIdleScheduleTimer = null;
+  let mascotMidIdleStepTimer = null;
+  let mascotMidIdleToken = 0;
+
+  function mascotClearMidIdle() {
+    if (mascotMidIdleScheduleTimer) clearTimeout(mascotMidIdleScheduleTimer);
+    mascotMidIdleScheduleTimer = null;
+    if (mascotMidIdleStepTimer) clearTimeout(mascotMidIdleStepTimer);
+    mascotMidIdleStepTimer = null;
+    mascotMidIdleToken++;
+  }
+
+  function mascotScheduleMidIdle() {
+    if (mascotMidIdleScheduleTimer) clearTimeout(mascotMidIdleScheduleTimer);
+    mascotMidIdleScheduleTimer = setTimeout(() => {
+      if (mascotRestingWhere !== null || mascotState !== "idle") return;
+      mascotStartMidIdle();
+    }, 220);
+  }
+
+  const MASCOT_MID_IDLE_LOOP = [
+    { img: "idle", hold: () => 2400 + Math.random() * 2000 },
+    { img: "licking", hold: 480 },
+    { img: "licking2", hold: 480 },
+    { img: "licking", hold: 480 },
+    { img: "licking2", hold: 560 },
+  ];
+
+  function mascotMidIdleStep(i, token) {
+    if (mascotRestingWhere !== "mid" || token !== mascotMidIdleToken) return;
+    const step = MASCOT_MID_IDLE_LOOP[i % MASCOT_MID_IDLE_LOOP.length];
+    mascotSetImage(step.img);
+    const hold = typeof step.hold === "function" ? step.hold() : step.hold;
+    mascotMidIdleStepTimer = setTimeout(() => mascotMidIdleStep(i + 1, token), hold);
+  }
+
+  function mascotStartMidIdle() {
+    mascotSetRestingWhere("mid");
+    mascotMidIdleStep(0, mascotMidIdleToken);
   }
 
   // The single source of truth for where the mascot is and what pose it's
@@ -546,6 +590,7 @@
         mascotSetRestingWhere("mic");
         mascotClearTravel();
         mascotClearBottomLoop();
+        mascotClearMidIdle();
         mascotSetImage("idle");
       }
       return;
@@ -556,22 +601,33 @@
       if (mascotRestingWhere !== "bottom") {
         mascotSetRestingWhere("bottom");
         mascotClearTravel();
+        mascotClearMidIdle();
         mascotStartBottomShow();
       }
       return;
     }
 
-    // Mid-transit: directly interpolate between the two anchors by scroll
-    // progress — this is what keeps the whole trip tied to the true top and
-    // true bottom of the page rather than just "the mic isn't visible."
+    // Mid-transit: Y still tracks scroll progress in a straight line, but X
+    // zigzags side to side instead of sitting in one fixed column — so it
+    // isn't parked over the same spot (likely right on top of whatever's
+    // center-aligned) for the entire trip. The moment scrolling actually
+    // stops, mascotScheduleMidIdle below freezes it right here and it idles
+    // in place instead of snapping back to a fixed spot.
     if (mascotRestingWhere !== null) {
       mascotSetRestingWhere(null);
       mascotClearTravel();
       mascotClearBottomLoop();
     }
-    mascotMoveTo(a.micX + (a.bottomX - a.micX) * progress, a.micY + (a.bottomY - a.micY) * progress);
+    mascotClearMidIdle();
+    const w = mascotWrap.offsetWidth || 118;
+    const usableWidth = Math.max(0, window.innerWidth - w - MASCOT_MARGIN * 2);
+    const zigzagX = MASCOT_MARGIN + usableWidth / 2
+      + (usableWidth / 2) * Math.sin(progress * MASCOT_ZIGZAG_CYCLES * Math.PI * 2);
+    const y = a.micY + (a.bottomY - a.micY) * progress;
+    mascotMoveTo(zigzagX, y);
     if (scrollingDown) mascotSetImage("jumpDown");
     else if (scrollingUp) mascotSetImage("jumpUp");
+    mascotScheduleMidIdle();
   }
 
   window.addEventListener("scroll", mascotUpdateFromScroll, { passive: true });
