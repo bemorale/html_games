@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Stashdump</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7c5cff">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Stashdump">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <header class="greeting-wrap">
+    <p class="greeting-eyebrow">Stashdump</p>
+    <h1 id="greeting" class="greeting">Good morning!</h1>
+    <p class="subgreeting">What do you want to check?</p>
+  </header>
+
+  <main class="mic-stage">
+    <div class="waveform" id="waveform" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span>
+    </div>
+
+    <button id="micBtn" class="mic-btn" type="button" aria-label="Tap to speak">
+      <svg viewBox="0 0 24 24" class="mic-icon" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 15a3.5 3.5 0 0 0 3.5-3.5V6a3.5 3.5 0 1 0-7 0v5.5A3.5 3.5 0 0 0 12 15Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M6.5 11a5.5 5.5 0 0 0 11 0M12 18.5V22M9 22h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+
+    <p id="micLabel" class="mic-label">Tap to Speak</p>
+
+    <div class="lang-toggle" role="group" aria-label="Speech language">
+      <button id="langEn" class="lang-btn" type="button" data-lang="en-US">EN</button>
+      <button id="langZh" class="lang-btn" type="button" data-lang="zh-CN">中文</button>
+    </div>
+
+    <div id="recordingActions" class="recording-actions hidden">
+      <button id="stopBtn" class="stop-btn" type="button">
+        <span class="stop-square"></span> Stop
+      </button>
+    </div>
+    <p id="recordingHint" class="recording-hint hidden">Say anything — tasks, things you did, where you put stuff. Tap Stop when you're done. I'll sort it out.</p>
+
+    <p id="liveTranscript" class="live-transcript" aria-live="polite"></p>
+
+    <form id="fallbackForm" class="fallback-form hidden">
+      <textarea id="fallbackInput" placeholder="Type anything — English or 中文…"></textarea>
+      <button type="submit" class="fallback-submit">Add it</button>
+    </form>
+
+    <p class="mic-note">If the mic doesn't respond, allow microphone access for this page — you can always type instead.</p>
+  </main>
+
+  <section class="rows">
+    <section class="category-row" data-category="done">
+      <div class="row-header">
+        <h2 class="row-title"><span class="row-icon">✅</span> Already Done</h2>
+        <p class="row-hint">Glance here to double-check once you're out the door.</p>
+      </div>
+      <ul class="row-list" id="list-done"></ul>
+      <p class="row-empty" id="empty-done">Nothing logged yet.</p>
+    </section>
+
+    <section class="category-row" data-category="todo">
+      <div class="row-header">
+        <h2 class="row-title"><span class="row-icon">☐</span> Needs to Be Done</h2>
+        <p class="row-hint">Your running checklist.</p>
+      </div>
+      <ul class="row-list" id="list-todo"></ul>
+      <p class="row-empty" id="empty-todo">Nothing on the list yet.</p>
+    </section>
+
+    <section class="category-row" data-category="find">
+      <div class="row-header">
+        <h2 class="row-title"><span class="row-icon">📍</span> Find My Place</h2>
+        <p class="row-hint">Where you left things.</p>
+      </div>
+      <ul class="row-list" id="list-find"></ul>
+      <p class="row-empty" id="empty-find">No locations saved yet.</p>
+    </section>
+  </section>
+
+  <section class="calendar-card">
+    <div class="calendar-header">
+      <button id="calPrev" class="cal-nav" type="button" aria-label="Previous month">‹</button>
+      <h2 id="calMonthLabel" class="calendar-title">Calendar</h2>
+      <button id="calNext" class="cal-nav" type="button" aria-label="Next month">›</button>
+    </div>
+    <p class="row-hint calendar-subhint">Track how each day felt, and keep anything with its own date — like "attend coding class" — here instead of the lists above.</p>
+
+    <div class="calendar-weekdays" aria-hidden="true">
+      <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+    </div>
+    <div id="calendarGrid" class="calendar-grid"></div>
+
+    <div id="calendarDetail" class="calendar-detail hidden">
+      <div class="calendar-detail-header">
+        <h3 id="calDetailDate" class="calendar-detail-date"></h3>
+        <button id="calDetailClose" class="cal-detail-close" type="button" aria-label="Close">✕</button>
+      </div>
+
+      <div id="moodPicker" class="mood-picker"></div>
+
+      <ul id="calendarEventList" class="calendar-event-list"></ul>
+      <p id="calendarEventEmpty" class="calendar-event-empty">Nothing scheduled yet.</p>
+
+      <form id="calendarEventForm" class="calendar-event-form">
+        <input id="calendarEventInput" type="text" placeholder="Add something for this day…">
+        <button type="submit">Add</button>
+      </form>
+      <p id="calendarPastNote" class="calendar-past-note hidden">This day has passed — you can see what's here, but not add anything new.</p>
+    </div>
+  </section>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
