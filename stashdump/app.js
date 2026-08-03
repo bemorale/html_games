@@ -7,7 +7,9 @@
     find: { label: "Find My Place", icon: "📍", type: "location" },
   };
 
+  const appEl = document.querySelector(".app");
   const greetingEl = document.getElementById("greeting");
+  const greetingWrap = document.querySelector(".greeting-wrap");
   const micBtn = document.getElementById("micBtn");
   const micLabel = document.getElementById("micLabel");
   const recordingActions = document.getElementById("recordingActions");
@@ -35,8 +37,11 @@
   const langEnBtn = document.getElementById("langEn");
   const langZhBtn = document.getElementById("langZh");
   const mascotWrap = document.getElementById("mascotWrap");
-  const mascotImg = document.getElementById("mascotImg");
+  const mascotHop = document.getElementById("mascotHop");
+  const mascotImgA = document.getElementById("mascotImgA");
+  const mascotImgB = document.getElementById("mascotImgB");
   const mascotWaitingCan = document.getElementById("mascotWaitingCan");
+  const mascotLinePath = document.getElementById("mascotLinePath");
 
   // ---------- Greeting ----------
   function setGreeting() {
@@ -281,15 +286,20 @@
   // Lives in a fixed-position layer above everything, always pointer-events:
   // none so it never steals a tap meant for a real button.
   //
-  // Position is a direct function of scroll progress across the WHOLE page
+  // Y is a direct function of scroll progress across the WHOLE page
   // (scrollY / maxScrollY), recomputed on every scroll event with no
-  // animation/easing of its own — so it moves exactly as fast as the user
-  // scrolls, and it can only reach the trash can once they've actually
-  // scrolled to the true bottom of the page, not just past the mic. While
-  // it's between the two ends it shows the jump-down/jump-up pose (whichever
-  // direction the scroll is currently going); once it settles at either end
-  // it shows the resting pose for that end — idle (or thinking/licking) at
-  // the mic, or the trash-can idle show at the bottom.
+  // animation/easing of its own — so it can only reach the trash can once
+  // the user has actually scrolled to the true bottom of the page, not just
+  // past the mic. X is deliberately NOT tied to scroll progress: while in
+  // transit it only ever hops between the two edges of the empty gutter to
+  // the right of the content column (see mascotRightZone/mascotStartHop
+  // below), one hop per scroll "burst", at its own fixed pace — so it's
+  // never sitting on top of whatever the user scrolled to read, the way a
+  // hop spanning the full width could. While it's between the two
+  // ends it shows the jump-down/jump-up pose (whichever direction the
+  // scroll is currently going); once it settles at either end it shows the
+  // resting pose for that end — idle (or thinking/licking) at the mic, or
+  // the trash-can idle show at the bottom.
   const MASCOT_SRC = {
     idle: "mascot/mascot-idle.png",
     thinking: "mascot/mascot-thinking.png",
@@ -300,9 +310,18 @@
     jumpIn: "mascot/mascot-jump-in.png",
     trashcan: "mascot/mascot-trashcan.png",
     trashcanDigging: "mascot/mascot-trashcan-digging.png",
+    trashcanTipping: "mascot/mascot-trashcan-tipping.png",
     trashcanFallen: "mascot/mascot-trashcan-fallen.png",
+    walkRight1: "mascot/mascot-walk-right-1.png",
+    walkRight2: "mascot/mascot-walk-right-2.png",
+    collectTrash: "mascot/mascot-collect-trash.png",
+    walkTrash1: "mascot/mascot-walk-trash-1.png",
+    walkTrash2: "mascot/mascot-walk-trash-2.png",
   };
   const MASCOT_MARGIN = 16;
+  // Minimum gap kept between the bottom of the greeting text and the
+  // mascot's resting spot above the mic — see mascotAnchors.
+  const MASCOT_GREETING_GAP = 12;
   // How close scroll progress (0-1) has to be to the true top/bottom to
   // ENTER a resting state. Deliberately tight — the trash-can show
   // shouldn't start just because the mic is scrolled mostly out of view.
@@ -316,14 +335,76 @@
   // looked like "images lasting less than a second" / the loop "not working
   // out" — the loop WAS working, it just kept getting restarted).
   const MASCOT_PROGRESS_EXIT_EPS = 0.06;
-  // How many full left-right swings the mid-transit zigzag makes over the
-  // whole trip from the mic to the trash can.
-  const MASCOT_ZIGZAG_CYCLES = 3;
-  let mascotState = "idle"; // idle | thinking | licking
+  // Duration of one side-to-side hop during transit — fixed, so the hop
+  // cadence never speeds up or slows down with how fast the user scrolls.
+  // Written into --mascot-hop-ms on mascotWrap below, which both the
+  // .mascot-hop transition and the .mascot-hopping jump-arc animation in
+  // style.css read from — so this one number is the only place hop speed
+  // is ever tuned.
+  const MASCOT_HOP_MS = 620;
+  // The "go collect the trash, carry it to the can, walk back" performance
+  // (see mascotStartFetchTrash) covers three very different distances — a
+  // short hop left to the trash, then all the way over to the can's column
+  // on the right, then back — so each leg's duration is derived from how
+  // far it actually travels rather than a single fixed time, the same way
+  // MASCOT_TRACE_SPEED_PX_MS paces the line-tracing easter egg. Clamped so
+  // a short leg still reads as a walk (not a flicker) and a long one still
+  // arrives promptly instead of taking forever on a wide viewport.
+  const MASCOT_WALK_MS_PER_PX = 4;
+  const MASCOT_WALK_MIN_LEG_MS = 450;
+  const MASCOT_WALK_MAX_LEG_MS = 1400;
+  // How far left of its resting spot (at the mic) the trash sits.
+  const MASCOT_FETCH_DISTANCE_PX = 130;
+  const MASCOT_FETCH_COLLECT_MS = 550;
+  const MASCOT_FETCH_DROP_MS = 350; // how long it lingers over the can before heading back
+  const MASCOT_WALK_STEP_MS = 200; // how often the walk-cycle pose alternates
+  // A mouse press that never moves this far is a click on the page
+  // background, not an attempt to draw a line — below this, nothing about
+  // the drawing feature ever activates, so a stray pixel of jitter during
+  // a normal click can't accidentally start it.
+  const MASCOT_TRACE_MIN_DRAG_PX = 10;
+  // How fast the mascot travels along a drawn line, in px of path per ms —
+  // used to turn the line's length into a travel duration, clamped so a
+  // tiny scribble doesn't finish instantly and a page-spanning line doesn't
+  // take forever.
+  const MASCOT_TRACE_SPEED_PX_MS = 0.9;
+  const MASCOT_TRACE_MIN_MS = 220;
+  const MASCOT_TRACE_MAX_MS = 2200;
+  // How recently a scroll event has to have landed, at the moment a hop
+  // finishes, for that to count as "still scrolling" and chain into
+  // another hop. A single small scroll (one flick, a few wheel ticks) still
+  // fires a handful of scroll events in a quick burst, so "did ANY scroll
+  // event happen at some point during this hop" (the old check) was true
+  // almost every time, even for a tiny nudge — that's what caused a barely-
+  // there scroll to still bounce the mascot there and immediately back.
+  // Requiring the LAST scroll event to be recent, rather than merely
+  // having happened at some point mid-hop, is what actually distinguishes
+  // "still scrolling right now" from "scrolled a little a while ago."
+  const MASCOT_HOP_CHAIN_RECENCY_MS = 180;
+  let mascotState = "idle"; // idle | thinking | licking | fetching
   let mascotRestingWhere = null; // "mic" | "bottom" | "mid" | null (null = actively scrolling)
   let mascotLickTimer = null;
   let mascotTravelTimer = null;
   let mascotLoopTimer = null;
+  // The "walk over, collect the trash, walk back" performance — see
+  // mascotStartFetchTrash. mascotFetching guards against a second utterance
+  // starting a new walk while one is already in flight.
+  let mascotFetching = false;
+  let mascotFetchTimer = null;
+  let mascotFetchStepTimer = null;
+  let mascotFetchTransitionHandler = null;
+  // Which margin the mascot is currently on/hopping toward during transit,
+  // and whether a hop is in flight — see mascotStartHop.
+  let mascotHopSide = "right"; // "left" | "right"
+  let mascotHopping = false;
+  let mascotHopTimer = null;
+  // Freshest scroll direction/progress/timestamp seen, read by
+  // mascotStartHop when it fires — including when chained from a completed
+  // hop's own timeout, where the values that triggered the ORIGINAL hop
+  // would otherwise be stale.
+  let mascotLastScrollDir = "down"; // "up" | "down"
+  let mascotLastProgressSeen = 0;
+  let mascotLastScrollAt = 0;
 
   // Every assignment to mascotRestingWhere goes through here so the waiting
   // can (the empty-can prop that previews where the mascot is headed) stays
@@ -332,35 +413,45 @@
   function mascotSetRestingWhere(where) {
     mascotRestingWhere = where;
     mascotWaitingCan.classList.toggle("hidden", where === "bottom");
+    // The trash-can poses need a bigger, taller box than everything else
+    // (idle/thinking/licking/jump-up/jump-down) to show the can at a solid,
+    // consistent size without cropping the raccoon — see .mascot-at-can in
+    // style.css. Toggling it only for "bottom" keeps every OTHER pose in
+    // the small square box those images were actually drawn for, which is
+    // what keeps things like the mic-overlap math simple and correct: the
+    // box height genuinely matches the visible content again, instead of
+    // being inflated by can-sized padding no other pose needs.
+    mascotWrap.classList.toggle("mascot-at-can", where === "bottom");
   }
 
-  // Crossfades between poses instead of hard-swapping the src, so every
-  // change — including the rapid alternation beats (digging, licking) —
-  // reads as one continuous animated bit rather than a slideshow with a
-  // flash between each illustration. An instant src swap used to be used
-  // for those rapid beats on the theory that a fade would blur two similar
-  // poses together, but a hard cut with literally zero transition is
-  // exactly what a "flash" is — always fading, even briefly, is smoother.
+  // Two stacked <img> layers (see .mascot-img in style.css) that swap which
+  // one is on top every pose change, crossfading between them — at any
+  // instant during the swap, at least one layer is opaque, so the mascot
+  // never actually goes fully transparent. A single-<img> fade (set
+  // opacity to 0, swap src, fade back to 1) was tried before this and
+  // always had a moment of true invisibility in the middle — however
+  // short, that reads as a flash/blink, not a smooth fade, no matter how
+  // the timing is tuned. Two layers is what actually fixes it, not a
+  // shorter or longer transition on one layer.
+  let mascotImgFront = mascotImgA;
+  let mascotImgBack = mascotImgB;
+  let mascotCurrentTarget = mascotImgA.getAttribute("src");
+
   function mascotSetImage(state) {
     const src = MASCOT_SRC[state];
-    // Falls back to the actual rendered src the first time this runs (before
-    // any fade has ever been kicked off), so the very first call — which
-    // just confirms the pose already sitting in the static HTML — doesn't
-    // trigger a pointless fade-out-then-back-in of identical content.
-    const current = mascotImg.dataset.target || mascotImg.getAttribute("src");
-    if (current === src) {
-      mascotImg.dataset.target = src;
-      return;
-    }
-    mascotImg.dataset.target = src;
-    mascotImg.style.opacity = "0";
-    setTimeout(() => {
-      if (mascotImg.dataset.target !== src) return; // superseded by a newer swap
-      mascotImg.src = src;
-      mascotImg.style.opacity = "1";
-    }, 130);
+    if (mascotCurrentTarget === src) return; // already showing (or fading to) this pose
+    mascotCurrentTarget = src;
+    mascotImgBack.src = src; // preloaded already (see the warm-cache pass below), so this paints immediately
+    mascotImgBack.classList.remove("mascot-img-hidden");
+    mascotImgFront.classList.add("mascot-img-hidden");
+    const swap = mascotImgFront;
+    mascotImgFront = mascotImgBack;
+    mascotImgBack = swap;
   }
 
+  // Y is written to mascotWrap (instant, no transition) and X to the inner
+  // mascotHop (which carries its own CSS transition) — see the comment on
+  // .mascot-wrap in style.css for why they're split across two elements.
   function mascotMoveTo(x, y) {
     const w = mascotWrap.offsetWidth || 118;
     const h = mascotWrap.offsetHeight || 118;
@@ -368,7 +459,30 @@
     const maxY = window.innerHeight - h - MASCOT_MARGIN;
     const clampedX = Math.max(MASCOT_MARGIN, Math.min(maxX, x));
     const clampedY = Math.max(MASCOT_MARGIN, Math.min(maxY, y));
-    mascotWrap.style.transform = `translate3d(${clampedX}px, ${clampedY}px, 0)`;
+    mascotWrap.style.transform = `translate3d(0, ${clampedY}px, 0)`;
+    mascotHop.style.transform = `translate3d(${clampedX}px, 0, 0)`;
+  }
+
+  // The trash can lives in the empty gutter to the right of the content
+  // column (.app), not centered in the viewport — so both the hop's
+  // zigzag and the can's final resting spot stay inside that same real
+  // empty space instead of ever crossing over actual content. On a wide
+  // viewport that gutter is genuinely empty (nothing to block). On a
+  // narrow/mobile one .app fills the width already, so there's no gutter
+  // to speak of — leftEdge collapses down to meet rightEdge instead of
+  // forcing a wide zigzag across content that isn't actually empty.
+  function mascotRightZone() {
+    const w = mascotWrap.offsetWidth || 118;
+    const rightEdge = window.innerWidth - w - MASCOT_MARGIN;
+    const appRight = appEl ? appEl.getBoundingClientRect().right : rightEdge;
+    const leftEdge = Math.min(appRight + MASCOT_MARGIN, rightEdge);
+    return { leftEdge, rightEdge };
+  }
+
+  // The X coordinate of whichever margin mascotHopSide currently points at.
+  function mascotSideX(side) {
+    const zone = mascotRightZone();
+    return side === "left" ? zone.leftEdge : zone.rightEdge;
   }
 
   // Both anchors, freshly computed — cheap enough to call on every scroll
@@ -379,10 +493,22 @@
     const micRect = micBtn.getBoundingClientRect();
     const w = mascotWrap.offsetWidth || 118;
     const h = mascotWrap.offsetHeight || 118;
+    // Floating h*0.75 above the mic is normally enough clearance, but on a
+    // short/narrow viewport (or if the greeting text wraps to an extra
+    // line) that can still land on top of the greeting instead of above
+    // it — so it's also never allowed higher than the greeting block's own
+    // bottom edge, measured live rather than assumed from a fixed margin.
+    const greetingBottom = greetingWrap.getBoundingClientRect().bottom + window.scrollY;
     return {
       micX: micRect.left + micRect.width / 2 - w / 2,
-      micY: micRect.top + window.scrollY - h * 0.75,
-      bottomX: window.innerWidth / 2 - w / 2,
+      micY: Math.max(
+        micRect.top + window.scrollY - h * 0.75,
+        greetingBottom + MASCOT_GREETING_GAP
+      ),
+      // Flush with the right edge of the hop zone — the same spot the
+      // rightmost hop already lands on, so settling into the can never
+      // needs a final horizontal jump of its own.
+      bottomX: mascotRightZone().rightEdge,
       bottomY: window.innerHeight - h - MASCOT_MARGIN,
     };
   }
@@ -394,6 +520,44 @@
   function mascotClearTravel() {
     if (mascotTravelTimer) clearTimeout(mascotTravelTimer);
     mascotTravelTimer = null;
+  }
+
+  function mascotClearHop() {
+    if (mascotHopTimer) clearTimeout(mascotHopTimer);
+    mascotHopTimer = null;
+    mascotHopping = false;
+    mascotWrap.classList.remove("mascot-hopping");
+  }
+
+  // Flips to the other margin and animates there over the fixed
+  // MASCOT_HOP_MS (the .mascot-hop CSS transition does the actual easing —
+  // this just sets the new target). When this hop lands, it only chains
+  // straight into another one if a scroll event has landed within the last
+  // MASCOT_HOP_CHAIN_RECENCY_MS — i.e. the user is still actively
+  // scrolling right now, not just "scrolled at some point during this
+  // hop." Otherwise it hands off to the mid-idle show.
+  function mascotStartHop() {
+    mascotHopping = true;
+    mascotHopSide = mascotHopSide === "left" ? "right" : "left";
+    mascotSetImage(mascotLastScrollDir === "up" ? "jumpUp" : "jumpDown");
+    // Remove-then-reflow-then-add so the CSS animation restarts from 0%
+    // every hop, even back-to-back chained ones — just re-adding an
+    // already-present class doesn't retrigger a CSS animation.
+    mascotWrap.classList.remove("mascot-hopping");
+    void mascotWrap.offsetWidth;
+    mascotWrap.classList.add("mascot-hopping");
+    const a = mascotAnchors();
+    const y = a.micY + (a.bottomY - a.micY) * mascotLastProgressSeen;
+    mascotMoveTo(mascotSideX(mascotHopSide), y);
+    mascotHopTimer = setTimeout(() => {
+      mascotHopping = false;
+      if (performance.now() - mascotLastScrollAt < MASCOT_HOP_CHAIN_RECENCY_MS) {
+        mascotStartHop();
+      } else {
+        mascotWrap.classList.remove("mascot-hopping");
+        mascotScheduleMidIdle();
+      }
+    }, MASCOT_HOP_MS);
   }
 
   // Bumped every time the loop is cleared, and checked by each in-flight
@@ -410,42 +574,63 @@
     mascotWrap.classList.remove("mascot-wiggle", "mascot-toppled", "mascot-sideways");
   }
 
-  // The idle show that plays on a loop for as long as the mascot is parked
-  // at the bottom. The story, one beat per line below:
-  //   1. settled in the can, just its rear + tail sticking out
-  //   2-4. rummaging around inside (paws flailing — real motion between two
-  //        different poses, not a CSS shake of one static image)
-  //   5. the can visibly shaking from all the commotion (CSS wiggle)
-  //   6. it tips over (CSS rotate)
-  //   7. climbing out into the mess it made — held long, since it's the
-  //      busiest, most detail-rich frame and needs time to actually read
-  //   8-11. licking its paws clean (tongue moving between two frames)
-  //   12. dives back in (reusing the entry pose, mirrored) to loop
+  // The idle show that plays once the mascot settles at the bottom, in two
+  // parts that are deliberately NOT one big loop:
+  //
+  //   INTRO plays exactly once, beat per line:
+  //     1. settled in the can, just its rear + tail sticking out
+  //     2-4. rummaging around inside (paws flailing — real motion between
+  //          two different poses, not a CSS shake of one static image)
+  //     5. the can visibly shaking from all the commotion (CSS wiggle)
+  //     6. rim gone askew, right on the verge (real art — trashcanTipping —
+  //        not a CSS fake; a flat rotation can't reproduce how the rim
+  //        ellipse and base actually foreshorten mid-tip, which is exactly
+  //        what made the old CSS-only topple look like it span past a
+  //        believable fall)
+  //     7. it goes all the way over (CSS rotate, bridging the gap between
+  //        the tipping art above and the fallen art below — direction
+  //        matters here, see .mascot-toppled in style.css)
+  //     8. climbing out into the mess it made — held long, since it's the
+  //        busiest, most detail-rich frame and needs time to actually read
+  //   It does NOT loop back around to beat 1. There's no artwork showing
+  //   the raccoon climbing back INTO a can that's now lying tipped over on
+  //   the ground, so the only way to repeat the intro would be to cut
+  //   straight from "just climbed out" back to "resting inside, can
+  //   upright again" — which is exactly the "in, out, in, out, doesn't
+  //   connect" jump this used to make, once every ~10 seconds.
+  //
+  //   STEADY is what plays forever after the intro finishes: the raccoon
+  //   sitting by the fallen can licking its paws clean. This one genuinely
+  //   IS a loop, because licking and licking2 are two frames of the SAME
+  //   continuous action, not two different scenes standing in for each
+  //   other.
+  //
   // Every frame is padded to the same 320x320 canvas (see pad_canvas.py) so
-  // the mascot's on-screen size never jumps between beats — the source
-  // illustrations were different aspect ratios, and that alone was making
-  // the sequence unreadable regardless of ordering or timing. Each step
-  // only schedules the next one if we're still resting at the bottom, so
-  // scrolling away at any point cuts the loop off cleanly instead of a
+  // the mascot's on-screen size never jumps between beats. Each step only
+  // schedules the next one if we're still resting at the bottom, so
+  // scrolling away at any point cuts the show off cleanly instead of a
   // stray step firing later.
-  const MASCOT_BOTTOM_LOOP = [
+  const MASCOT_BOTTOM_INTRO = [
     { img: "trashcan", cls: [], hold: () => 2800 + Math.random() * 1200 },
     { img: "trashcanDigging", cls: [], hold: 550 },
     { img: "trashcan", cls: [], hold: 450 },
     { img: "trashcanDigging", cls: [], hold: 550 },
     { img: "trashcan", cls: ["mascot-wiggle"], hold: 900 },
-    { img: "trashcan", cls: ["mascot-toppled"], hold: 600 },
+    { img: "trashcanTipping", cls: [], hold: 550 },
+    { img: "trashcan", cls: ["mascot-toppled"], hold: 450 },
     { img: "trashcanFallen", cls: [], hold: 2600 },
+  ];
+
+  const MASCOT_BOTTOM_STEADY = [
     { img: "licking", cls: [], hold: 500 },
     { img: "licking2", cls: [], hold: 500 },
-    { img: "licking", cls: [], hold: 500 },
-    { img: "licking2", cls: [], hold: 600 },
-    { img: "jumpIn", cls: ["mascot-sideways"], hold: 750 },
   ];
 
   function mascotBottomLoopStep(i, token) {
     if (mascotRestingWhere !== "bottom" || token !== mascotLoopToken) return;
-    const step = MASCOT_BOTTOM_LOOP[i % MASCOT_BOTTOM_LOOP.length];
+    const step = i < MASCOT_BOTTOM_INTRO.length
+      ? MASCOT_BOTTOM_INTRO[i]
+      : MASCOT_BOTTOM_STEADY[(i - MASCOT_BOTTOM_INTRO.length) % MASCOT_BOTTOM_STEADY.length];
     mascotWrap.classList.remove("mascot-wiggle", "mascot-toppled", "mascot-sideways");
     step.cls.forEach((c) => mascotWrap.classList.add(c));
     mascotSetImage(step.img);
@@ -473,6 +658,8 @@
     mascotClearTravel();
     mascotClearBottomLoop();
     mascotClearMidIdle();
+    mascotClearHop();
+    if (mascotFetching) mascotCancelFetch();
     mascotState = "thinking";
     mascotSetRestingWhere("mic");
     mascotWrap.classList.remove("mascot-licking");
@@ -510,6 +697,274 @@
     mascotUpdateFromScroll();
   }
 
+  // ---------- Draw-a-line easter egg ----------
+  // Press and drag anywhere on the page (except on top of a real control —
+  // see mascotIsInteractiveTarget) to draw a freehand line; the mascot drops
+  // whatever it was doing and hops along it, jumpDown pose, then the line
+  // fades and it resumes normal scroll-driven behavior (see mascotEnterIdle).
+  // On a mouse this is a plain drag (mousedown/mousemove/mouseup). On a
+  // touchscreen, one finger always means "draw" and two fingers always mean
+  // "scroll" (see the touchstart/touchmove/touchend handlers below) — since
+  // a one-finger touch drag would otherwise be indistinguishable from a
+  // scroll gesture, scrolling is deliberately moved onto its own two-finger
+  // gesture so one finger is free for drawing, mirroring the mouse's drag.
+  function mascotIsInteractiveTarget(el) {
+    return !!(el && el.closest && el.closest("button, a, input, textarea, select, label"));
+  }
+
+  let mascotDrawStartX = 0;
+  let mascotDrawStartY = 0;
+  let mascotIsDrawing = false; // past the drag threshold — actually drawing, not just a click
+  let mascotTracePoints = [];
+  let mascotTraceToken = 0;
+  let mascotTraceRaf = null;
+
+  function mascotResetLine() {
+    mascotLinePath.setAttribute("d", "");
+    mascotLinePath.classList.remove("mascot-line-fading");
+  }
+
+  function mascotAppendLinePoint(x, y) {
+    mascotTracePoints.push({ x, y });
+    const d = mascotTracePoints
+      .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`)
+      .join(" ");
+    mascotLinePath.setAttribute("d", d);
+  }
+
+  document.addEventListener("mousedown", (e) => {
+    if (e.button !== 0 || mascotIsInteractiveTarget(e.target)) return;
+    // Prevented right here on mousedown, not reactively later on mousemove
+    // — once the browser's native text-selection drag actually starts, a
+    // few pixels in, calling preventDefault on subsequent mousemoves alone
+    // doesn't reliably stop the selection highlight that already kicked
+    // off, and that highlight sweeping over the page is exactly what made
+    // the drawn line hard to even notice, let alone see clearly.
+    e.preventDefault();
+    document.body.classList.add("mascot-drawing-active");
+    mascotDrawStartX = e.clientX;
+    mascotDrawStartY = e.clientY;
+    mascotIsDrawing = false;
+    mascotTracePoints = [{ x: e.clientX, y: e.clientY }];
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (mascotTracePoints.length === 0) return; // no mousedown in flight
+    if (!mascotIsDrawing) {
+      const dx = e.clientX - mascotDrawStartX;
+      const dy = e.clientY - mascotDrawStartY;
+      if (Math.hypot(dx, dy) < MASCOT_TRACE_MIN_DRAG_PX) return;
+      mascotIsDrawing = true; // committed — this is a drag, not a click
+      mascotResetLine();
+      mascotAppendLinePoint(mascotDrawStartX, mascotDrawStartY);
+    }
+    const last = mascotTracePoints[mascotTracePoints.length - 1];
+    if (Math.hypot(e.clientX - last.x, e.clientY - last.y) >= 4) {
+      mascotAppendLinePoint(e.clientX, e.clientY);
+    }
+  });
+
+  document.addEventListener("mouseup", () => {
+    document.body.classList.remove("mascot-drawing-active");
+    if (mascotIsDrawing) mascotStartTrace(mascotTracePoints);
+    mascotIsDrawing = false;
+    mascotTracePoints = [];
+  });
+
+  // Touch is handled separately from mouse (not just fed through the same
+  // listeners) because the finger count itself is the mode switch: 1 finger
+  // draws, 2+ fingers scroll the page (see the comment above). null while no
+  // gesture is in flight, so a fresh 1-finger touch can start a new draw.
+  let mascotTouchMode = null; // null | "draw" | "scroll"
+  let mascotScrollLastX = 0;
+  let mascotScrollLastY = 0;
+
+  function mascotAverageTouch(touches) {
+    let x = 0, y = 0;
+    for (let i = 0; i < touches.length; i++) {
+      x += touches[i].clientX;
+      y += touches[i].clientY;
+    }
+    return { x: x / touches.length, y: y / touches.length };
+  }
+
+  document.addEventListener("touchstart", (e) => {
+    if (e.touches.length >= 2) {
+      mascotTouchMode = "scroll";
+      mascotIsDrawing = false;
+      mascotTracePoints = [];
+      mascotResetLine();
+      document.body.classList.remove("mascot-drawing-active");
+      const avg = mascotAverageTouch(e.touches);
+      mascotScrollLastX = avg.x;
+      mascotScrollLastY = avg.y;
+      return;
+    }
+    if (e.touches.length === 1 && mascotTouchMode === null) {
+      if (mascotIsInteractiveTarget(e.target)) return;
+      const t = e.touches[0];
+      mascotTouchMode = "draw";
+      e.preventDefault();
+      document.body.classList.add("mascot-drawing-active");
+      mascotDrawStartX = t.clientX;
+      mascotDrawStartY = t.clientY;
+      mascotIsDrawing = false;
+      mascotTracePoints = [{ x: t.clientX, y: t.clientY }];
+    }
+  }, { passive: false });
+
+  document.addEventListener("touchmove", (e) => {
+    if (mascotTouchMode === "scroll" || e.touches.length >= 2) {
+      if (mascotTouchMode !== "scroll") {
+        // A second finger landed mid-draw — abandon the line and switch to
+        // scrolling rather than trying to salvage a partial trace.
+        mascotTouchMode = "scroll";
+        mascotIsDrawing = false;
+        mascotTracePoints = [];
+        mascotResetLine();
+        document.body.classList.remove("mascot-drawing-active");
+      }
+      const avg = mascotAverageTouch(e.touches);
+      window.scrollBy(mascotScrollLastX - avg.x, mascotScrollLastY - avg.y);
+      mascotScrollLastX = avg.x;
+      mascotScrollLastY = avg.y;
+      e.preventDefault();
+      return;
+    }
+    if (mascotTouchMode !== "draw") return;
+    e.preventDefault();
+    const t = e.touches[0];
+    if (!mascotIsDrawing) {
+      const dx = t.clientX - mascotDrawStartX;
+      const dy = t.clientY - mascotDrawStartY;
+      if (Math.hypot(dx, dy) < MASCOT_TRACE_MIN_DRAG_PX) return;
+      mascotIsDrawing = true;
+      mascotResetLine();
+      mascotAppendLinePoint(mascotDrawStartX, mascotDrawStartY);
+    }
+    const last = mascotTracePoints[mascotTracePoints.length - 1];
+    if (Math.hypot(t.clientX - last.x, t.clientY - last.y) >= 4) {
+      mascotAppendLinePoint(t.clientX, t.clientY);
+    }
+  }, { passive: false });
+
+  document.addEventListener("touchend", (e) => {
+    if (e.touches.length === 0) {
+      if (mascotTouchMode === "draw" && mascotIsDrawing) mascotStartTrace(mascotTracePoints);
+      mascotTouchMode = null;
+      mascotIsDrawing = false;
+      mascotTracePoints = [];
+      document.body.classList.remove("mascot-drawing-active");
+    } else if (e.touches.length === 1 && mascotTouchMode === "scroll") {
+      // One finger lifted after a 2-finger scroll — resync to the remaining
+      // finger but stay in scroll mode until it lifts too, so the tail end
+      // of a scroll gesture is never misread as the start of a draw.
+      const avg = mascotAverageTouch(e.touches);
+      mascotScrollLastX = avg.x;
+      mascotScrollLastY = avg.y;
+    }
+  }, { passive: true });
+
+  document.addEventListener("touchcancel", () => {
+    mascotTouchMode = null;
+    mascotIsDrawing = false;
+    mascotTracePoints = [];
+    mascotResetLine();
+    document.body.classList.remove("mascot-drawing-active");
+  }, { passive: true });
+
+  // Cumulative distance at each recorded point, so a point can be found for
+  // any given distance along the whole line without re-walking it each time.
+  function mascotCumulativeDistances(points) {
+    const dists = [0];
+    for (let i = 1; i < points.length; i++) {
+      dists.push(dists[i - 1] + Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y));
+    }
+    return dists;
+  }
+
+  function mascotPointAtDistance(points, dists, target) {
+    let i = 1;
+    while (i < dists.length && dists[i] < target) i++;
+    if (i >= dists.length) return points[points.length - 1];
+    const segStart = dists[i - 1];
+    const segLen = dists[i] - segStart;
+    const t = segLen === 0 ? 0 : (target - segStart) / segLen;
+    return {
+      x: points[i - 1].x + (points[i].x - points[i - 1].x) * t,
+      y: points[i - 1].y + (points[i].y - points[i - 1].y) * t,
+    };
+  }
+
+  // Position during tracing is driven directly every animation frame (no
+  // CSS transition involved at all — see .mascot-tracing in style.css),
+  // the same reasoning mascotUpdateFromScroll's Y already uses: something
+  // that recomputes its target every ~16ms needs to just BE at that target
+  // each frame, not ease toward it. Easing a target that's already moving
+  // every frame means each new frame arrives before the previous ease
+  // finished, which is what compounded into visible shaking when this
+  // used the scroll-hop's bouncy transition at a fast, uninterrupted
+  // cadence instead.
+  function mascotStartTrace(rawPoints) {
+    const dists = mascotCumulativeDistances(rawPoints);
+    const totalLen = dists[dists.length - 1];
+    if (totalLen < MASCOT_TRACE_MIN_DRAG_PX) {
+      mascotResetLine();
+      return;
+    }
+
+    // Interrupt whatever it was doing — a drawn line always wins.
+    if (mascotLickTimer) clearTimeout(mascotLickTimer);
+    if (mascotLickCycleTimer) clearTimeout(mascotLickCycleTimer);
+    mascotClearTravel();
+    mascotClearBottomLoop();
+    mascotClearMidIdle();
+    mascotClearHop();
+    if (mascotFetching) mascotCancelFetch();
+    mascotWrap.classList.remove("mascot-thinking", "mascot-licking");
+    mascotState = "tracing";
+    mascotSetRestingWhere(null);
+    mascotWrap.classList.add("mascot-tracing");
+    mascotSetImage("jumpDown");
+
+    const token = ++mascotTraceToken;
+    const w = mascotWrap.offsetWidth || 118;
+    const h = mascotWrap.offsetHeight || 118;
+    const duration = Math.min(MASCOT_TRACE_MAX_MS, Math.max(MASCOT_TRACE_MIN_MS, totalLen / MASCOT_TRACE_SPEED_PX_MS));
+    const startTime = performance.now();
+
+    function frame(now) {
+      if (token !== mascotTraceToken) return;
+      const fraction = Math.min(1, (now - startTime) / duration);
+      const p = mascotPointAtDistance(rawPoints, dists, fraction * totalLen);
+      mascotMoveTo(p.x - w / 2, p.y - h / 2);
+      if (fraction < 1) {
+        mascotTraceRaf = requestAnimationFrame(frame);
+      } else {
+        mascotFinishTrace(token);
+      }
+    }
+    mascotTraceRaf = requestAnimationFrame(frame);
+  }
+
+  // Lands, then lingers right there — still holding its spot at the end of
+  // the line — for as long as the line takes to fade, instead of snapping
+  // back to wherever scroll position says it should be WHILE the line is
+  // still visible fading out from under it. The two resolving together
+  // (line gone, mascot back) reads as one finished beat; the mascot
+  // teleporting away first and the line fading after would read as two
+  // separate, contradictory ones.
+  function mascotFinishTrace(token) {
+    if (token !== mascotTraceToken) return;
+    mascotLinePath.classList.add("mascot-line-fading");
+    setTimeout(() => {
+      if (token !== mascotTraceToken) return;
+      mascotResetLine();
+      mascotWrap.classList.remove("mascot-tracing");
+      mascotEnterIdle();
+    }, 550);
+  }
+
   // Whenever scrolling pauses somewhere between the mic and the trash can
   // (neither all the way at the top nor the bottom), the mascot freezes
   // right where the zigzag left it and idles in place — rather than always
@@ -528,6 +983,7 @@
     if (mascotMidIdleStepTimer) clearTimeout(mascotMidIdleStepTimer);
     mascotMidIdleStepTimer = null;
     mascotMidIdleToken++;
+    mascotWrap.classList.remove("mascot-tailwag");
   }
 
   function mascotScheduleMidIdle() {
@@ -538,17 +994,28 @@
     }, 220);
   }
 
+  // Idles for 4s, then licks its paws (alternating the two licking frames)
+  // for ~5s, then back to idling — repeating for as long as it's settled
+  // here mid-scroll.
   const MASCOT_MID_IDLE_LOOP = [
-    { img: "idle", hold: () => 2400 + Math.random() * 2000 },
-    { img: "licking", hold: 480 },
-    { img: "licking2", hold: 480 },
-    { img: "licking", hold: 480 },
-    { img: "licking2", hold: 560 },
+    { img: "idle", cls: [], hold: 4000 },
+    { img: "licking", cls: [], hold: 500 },
+    { img: "licking2", cls: [], hold: 500 },
+    { img: "licking", cls: [], hold: 500 },
+    { img: "licking2", cls: [], hold: 500 },
+    { img: "licking", cls: [], hold: 500 },
+    { img: "licking2", cls: [], hold: 500 },
+    { img: "licking", cls: [], hold: 500 },
+    { img: "licking2", cls: [], hold: 500 },
+    { img: "licking", cls: [], hold: 500 },
+    { img: "licking2", cls: [], hold: 500 },
   ];
 
   function mascotMidIdleStep(i, token) {
     if (mascotRestingWhere !== "mid" || token !== mascotMidIdleToken) return;
     const step = MASCOT_MID_IDLE_LOOP[i % MASCOT_MID_IDLE_LOOP.length];
+    mascotWrap.classList.remove("mascot-tailwag");
+    step.cls.forEach((c) => mascotWrap.classList.add(c));
     mascotSetImage(step.img);
     const hold = typeof step.hold === "function" ? step.hold() : step.hold;
     mascotMidIdleStepTimer = setTimeout(() => mascotMidIdleStep(i + 1, token), hold);
@@ -560,9 +1027,9 @@
   }
 
   // The single source of truth for where the mascot is and what pose it's
-  // in, called on every scroll (and on resize/init). No CSS transition is
-  // involved in the transit branch — the position IS the scroll position,
-  // remapped, so there's nothing to "glide" independently of the gesture.
+  // in, called on every scroll (and on resize/init). Y always maps directly
+  // from the scroll position with no easing of its own. X does have its own
+  // timeline once in transit — see mascotStartHop.
   let mascotLastScrollYSeen = window.scrollY;
   function mascotUpdateFromScroll() {
     if (mascotState !== "idle") return; // thinking/licking own their own position
@@ -585,49 +1052,79 @@
       : progress >= 1 - MASCOT_PROGRESS_ENTER_EPS;
 
     if (atTop) {
-      mascotMoveTo(a.micX, a.micY);
       if (mascotRestingWhere !== "mic") {
+        // mascotSetRestingWhere may SHRINK the box (.mascot-at-can comes
+        // off if we were resting at the can) — `a` was computed above with
+        // whatever size was current before that change, so it has to be
+        // recomputed after, or the mic position lands off by the
+        // leftover can-sized padding.
         mascotSetRestingWhere("mic");
         mascotClearTravel();
         mascotClearBottomLoop();
         mascotClearMidIdle();
+        mascotClearHop();
         mascotSetImage("idle");
+        const fresh = mascotAnchors();
+        mascotMoveTo(fresh.micX, fresh.micY);
+      } else {
+        mascotMoveTo(a.micX, a.micY);
       }
       return;
     }
 
     if (atBottom) {
-      mascotMoveTo(a.bottomX, a.bottomY);
       if (mascotRestingWhere !== "bottom") {
+        // mascotSetRestingWhere GROWS the box for the can here (see
+        // .mascot-at-can in style.css) — same reasoning as above, just the
+        // other direction: recompute anchors with the new, bigger size
+        // before using them, so it actually lands centered on the bigger
+        // box instead of where the small one would have gone.
         mascotSetRestingWhere("bottom");
         mascotClearTravel();
         mascotClearMidIdle();
+        mascotClearHop();
         mascotStartBottomShow();
+        const fresh = mascotAnchors();
+        mascotMoveTo(fresh.bottomX, fresh.bottomY);
+      } else {
+        // Regardless of which margin a hop was in flight toward, reaching
+        // the true bottom always wins — this is what guarantees the
+        // mascot is actually sitting at the trash can once the user gets
+        // there, not stranded mid-hop off to one side.
+        mascotMoveTo(a.bottomX, a.bottomY);
       }
       return;
     }
 
-    // Mid-transit: Y still tracks scroll progress in a straight line, but X
-    // zigzags side to side instead of sitting in one fixed column — so it
-    // isn't parked over the same spot (likely right on top of whatever's
-    // center-aligned) for the entire trip. The moment scrolling actually
-    // stops, mascotScheduleMidIdle below freezes it right here and it idles
-    // in place instead of snapping back to a fixed spot.
+    // Mid-transit: Y still tracks scroll progress in a straight line (so
+    // it's always exactly on pace to land on the trash can at the true
+    // bottom), but X is NOT — it only moves in discrete hops between the
+    // two edges of the right-side gutter (mascotRightZone), one hop per
+    // scroll "burst", at their own fixed pace (mascotStartHop /
+    // MASCOT_HOP_MS) — so it never lingers over the middle of the screen
+    // where it'd block whatever the user scrolled to read. The moment
+    // scrolling actually stops, mascotScheduleMidIdle
+    // (kicked off once the in-flight hop lands) freezes it at whichever
+    // margin it's currently on and it idles in place there.
     if (mascotRestingWhere !== null) {
       mascotSetRestingWhere(null);
       mascotClearTravel();
       mascotClearBottomLoop();
     }
     mascotClearMidIdle();
-    const w = mascotWrap.offsetWidth || 118;
-    const usableWidth = Math.max(0, window.innerWidth - w - MASCOT_MARGIN * 2);
-    const zigzagX = MASCOT_MARGIN + usableWidth / 2
-      + (usableWidth / 2) * Math.sin(progress * MASCOT_ZIGZAG_CYCLES * Math.PI * 2);
-    const y = a.micY + (a.bottomY - a.micY) * progress;
-    mascotMoveTo(zigzagX, y);
-    if (scrollingDown) mascotSetImage("jumpDown");
-    else if (scrollingUp) mascotSetImage("jumpUp");
-    mascotScheduleMidIdle();
+    mascotLastScrollDir = scrollingUp ? "up" : "down";
+    mascotLastProgressSeen = progress;
+    mascotLastScrollAt = performance.now();
+    if (mascotHopping) {
+      // A hop is already in flight — let it finish rather than restarting
+      // it, but keep Y flowing so it doesn't fall behind the scroll.
+      // Whether to chain another hop once it lands is decided by
+      // mascotLastScrollAt above, not here.
+      const y = a.micY + (a.bottomY - a.micY) * progress;
+      mascotMoveTo(mascotSideX(mascotHopSide), y);
+    } else {
+      mascotStartHop();
+    }
   }
 
   window.addEventListener("scroll", mascotUpdateFromScroll, { passive: true });
@@ -645,8 +1142,243 @@
     img.src = src;
   });
 
+  mascotWrap.style.setProperty("--mascot-hop-ms", `${MASCOT_HOP_MS}ms`);
   mascotSetImage("idle");
   mascotUpdateFromScroll();
+
+  // A quick visual acknowledgment that something actually got stashed: a
+  // little scrap flies from (startX, startY) — defaulting to the mic, since
+  // that's usually exactly where the mascot is sitting — and lands in
+  // whichever can is actually visible right now: the real can-shaped
+  // artwork if the mascot is resting there, otherwise the fixed waiting-can
+  // icon (always on screen whenever it isn't) — never a vague guess at
+  // where the can might be. straightDown forces a purely vertical drop
+  // (endX = startX) instead of arcing over toward the can horizontally —
+  // used once the mascot has actually walked to stand right above the can
+  // (see mascotStartFetchTrash), where anything but a straight-down fall
+  // would look like it's flying off sideways instead of dropping in.
+  function mascotTossIntoCan(startX, startY, straightDown) {
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (startX === undefined || startY === undefined) {
+      const micRect = micBtn.getBoundingClientRect();
+      startX = micRect.left + micRect.width / 2;
+      startY = micRect.top + micRect.height / 2;
+    }
+    let endX, endY;
+    if (mascotRestingWhere === "bottom") {
+      // mascotWrap only ever owns Y (see the comment on .mascot-wrap in
+      // style.css) — X lives entirely on the mascotHop CHILD's own
+      // transform, which a parent's getBoundingClientRect never reflects,
+      // so reading mascotWrap here would always report X as if the mascot
+      // were still all the way over at the wrap's own left:0 origin.
+      const hopRect = mascotHop.getBoundingClientRect();
+      endX = hopRect.left + hopRect.width / 2;
+      endY = hopRect.top + hopRect.height * 0.7;
+    } else {
+      const canRect = mascotWaitingCan.getBoundingClientRect();
+      endX = canRect.left + canRect.width / 2;
+      endY = canRect.top + canRect.height * 0.35; // the can's open top, not its full-height center
+    }
+    if (straightDown) endX = startX;
+    const scrap = document.createElement("div");
+    scrap.className = straightDown ? "mascot-toss-scrap mascot-toss-drop" : "mascot-toss-scrap";
+    scrap.style.left = `${startX}px`;
+    scrap.style.top = `${startY}px`;
+    scrap.style.setProperty("--toss-dx", `${endX - startX}px`);
+    scrap.style.setProperty("--toss-dy", `${endY - startY}px`);
+    scrap.addEventListener("animationend", () => scrap.remove());
+    document.body.appendChild(scrap);
+  }
+
+  // The X mascotHop needs so the mascot's own box ends up centered exactly
+  // above the waiting-can icon — used for the fetch-trash walk's middle leg
+  // (see mascotStartFetchTrash) so the drop afterward can fall straight
+  // down onto it instead of needing any horizontal travel at all.
+  function mascotCanColumnX() {
+    const canRect = mascotWaitingCan.getBoundingClientRect();
+    const w = mascotWrap.offsetWidth || 118;
+    return canRect.left + canRect.width / 2 - w / 2;
+  }
+
+  // Sets mascotHop's translateX, optionally mirrored (the walk poses face
+  // right natively, so a leg moving leftward needs a flip — see
+  // mascotStartFetchTrash). animate=false jumps straight there with no
+  // transition, used to snap the flip on/off in place before a leg starts;
+  // interpolating scaleX itself (rather than just the translate) alongside a
+  // change in flip is what would make that jump look like a weird 3D spin
+  // instead of an instant mirror, so the two are never animated together.
+  // durationMs only matters when animate is true — it's set fresh per leg
+  // since the three legs of the fetch-trash walk cover very different
+  // distances (see MASCOT_WALK_MS_PER_PX).
+  function mascotSetHopX(x, flip, animate, durationMs) {
+    mascotHop.style.transition = animate ? "" : "none";
+    if (animate) mascotHop.style.transitionDuration = `${durationMs}ms`;
+    mascotHop.style.transform = `translate3d(${x}px, 0, 0)${flip ? " scaleX(-1)" : ""}`;
+    if (!animate) void mascotHop.offsetWidth; // force the "none" transition to commit before the next, animated set
+  }
+
+  function mascotClearFetch() {
+    if (mascotFetchTimer) clearTimeout(mascotFetchTimer);
+    if (mascotFetchStepTimer) clearInterval(mascotFetchStepTimer);
+    if (mascotFetchTransitionHandler) mascotHop.removeEventListener("transitionend", mascotFetchTransitionHandler);
+    mascotFetchTimer = null;
+    mascotFetchStepTimer = null;
+    mascotFetchTransitionHandler = null;
+  }
+
+  // Fully cancels an in-flight "go collect the trash" walk — needed both
+  // when it finishes on its own and when something else (starting a new
+  // recording, drawing a line) interrupts it partway through. Without this,
+  // mascotFetching would stay stuck true (silently disabling the walk for
+  // every future utterance) and the still-running step interval would keep
+  // fighting whatever pose the interruption just set.
+  function mascotCancelFetch() {
+    mascotClearFetch();
+    mascotFetching = false;
+    mascotWrap.classList.remove("mascot-walking");
+    // Whatever comes next (mascotEnterIdle's mascotMoveTo, or another mascot
+    // state entirely) is about to animate mascotHop to its real resting X
+    // using the normal hop transition — if the walk left it mirrored
+    // (scaleX(-1), facing left), that transition would animate the scaleX
+    // component too, which decomposes into a squish/spin instead of a clean
+    // mirror (the same reason mascotSetHopX's animate=false path exists).
+    // Dropping the flip here, instantly, means whatever runs next only ever
+    // has to animate a plain translate.
+    mascotHop.style.transition = "none";
+    mascotHop.style.transform = mascotHop.style.transform.replace(/\s*scaleX\(-?1\)/, "");
+    void mascotHop.offsetWidth; // force the "none" transition to commit
+    // Each leg also leaves its own per-leg transitionDuration sitting in
+    // mascotHop's inline style (see mascotSetHopX) — without clearing it,
+    // it would silently keep overriding the normal scroll-driven hop's
+    // duration (var(--mascot-hop-ms)) from here on.
+    mascotHop.style.transitionDuration = "";
+    mascotHop.style.transition = "";
+  }
+
+  // Walks mascotHop from fromX to toX, alternating the given two pose names
+  // every MASCOT_WALK_STEP_MS to read as footsteps, then calls onDone once
+  // it has ACTUALLY arrived. The leg's target duration scales with how far
+  // it travels — see MASCOT_WALK_MS_PER_PX — so the short hop to the trash
+  // and the much longer carry over to the can both feel like the same
+  // walking pace instead of the same fixed time.
+  //
+  // "Arrived" is decided by the CSS transition's own transitionend event,
+  // not just a setTimeout for durationMs — a callback further down this
+  // chain reads mascotHop's live position (see mascotStartFetchTrash's drop
+  // step) to know where to fall from, and a backgrounded/inactive tab can
+  // let a CSS transition's actual visual progress fall behind wall-clock
+  // time, so trusting "durationMs has elapsed" alone can read that position
+  // before the transition has actually finished settling there. The
+  // setTimeout is kept only as a fallback in case transitionend never fires
+  // at all (e.g. the browser skips straight to the end state without
+  // emitting it), so this can never hang forever.
+  function mascotWalkLeg(fromX, toX, poses, flip, onDone) {
+    const durationMs = Math.min(
+      MASCOT_WALK_MAX_LEG_MS,
+      Math.max(MASCOT_WALK_MIN_LEG_MS, Math.abs(toX - fromX) * MASCOT_WALK_MS_PER_PX)
+    );
+    let frame = 0;
+    const stepImage = () => {
+      mascotSetImage(poses[frame % 2]);
+      frame++;
+    };
+    mascotSetHopX(fromX, flip, false); // face the right way in place before stepping off
+    stepImage();
+    mascotFetchStepTimer = setInterval(stepImage, MASCOT_WALK_STEP_MS);
+
+    let arrived = false;
+    const finish = () => {
+      if (arrived) return; // transitionend and the fallback timer can both fire — only the first counts
+      arrived = true;
+      mascotClearFetch();
+      onDone();
+    };
+    mascotFetchTransitionHandler = (e) => {
+      if (e.target === mascotHop && e.propertyName === "transform") finish();
+    };
+    mascotHop.addEventListener("transitionend", mascotFetchTransitionHandler);
+    // Committing the flip above with a "none" transition, then setting the
+    // real target on the next frame, is what makes this transform (unlike
+    // the flip snap) actually animate — mascotSetHopX(..., true) leaves
+    // .mascot-walking's CSS transition in charge of the easing.
+    requestAnimationFrame(() => mascotSetHopX(toX, flip, true, durationMs));
+    mascotFetchTimer = setTimeout(finish, durationMs + 400);
+  }
+
+  // The mascot is always sitting right at the mic when this runs (stopping
+  // a recording moves it there via mascotEnterLicking before handleTranscript
+  // ever gets a chance to call this) — so "home" is the mic anchor, and the
+  // whole performance is a flat walk at that Y, no vertical movement needed:
+  // home -> trash (left of home, collect it) -> the can's column (right of
+  // home — mascotRightZone's rightEdge, the same column the actual can sits
+  // in once scrolled to the bottom — drop it in) -> back home. Ends the same
+  // way licking's own timer would have: mascotEnterIdle hands position back
+  // to the normal scroll-driven system.
+  function mascotStartFetchTrash() {
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      mascotTossIntoCan();
+      return;
+    }
+    if (mascotFetching) {
+      // A walk is already in flight for a previous utterance — still show
+      // the toss for this one rather than trying to overlap a second walk
+      // onto the same in-flight transform.
+      mascotTossIntoCan();
+      return;
+    }
+    mascotFetching = true;
+    if (mascotLickTimer) clearTimeout(mascotLickTimer);
+    if (mascotLickCycleTimer) clearTimeout(mascotLickCycleTimer);
+    mascotClearTravel();
+    mascotClearBottomLoop();
+    mascotClearMidIdle();
+    mascotClearHop();
+    mascotState = "fetching";
+    mascotWrap.classList.remove("mascot-thinking", "mascot-licking");
+    mascotWrap.classList.add("mascot-walking");
+    // The voice path already sits the mascot at the mic before this can ever
+    // run (mascotEnterLicking, from stopRecording) — but handleTranscript is
+    // also reachable straight from the typed fallback form, where the
+    // mascot could still be anywhere (mid-hop, resting at the bottom can in
+    // its bigger box, etc.). Parking it at the mic explicitly, the same way
+    // mascotEnterThinking/mascotEnterLicking do, keeps "home" actually
+    // meaning the mic regardless of which path led here.
+    mascotSetRestingWhere("mic");
+    const a = mascotAnchors();
+    mascotMoveTo(a.micX, a.micY);
+    const homeX = a.micX;
+    const trashX = Math.max(MASCOT_MARGIN, homeX - MASCOT_FETCH_DISTANCE_PX);
+    const canX = mascotCanColumnX();
+
+    const w = mascotWrap.offsetWidth || 118;
+    const h = mascotWrap.offsetHeight || 118;
+
+    mascotWalkLeg(homeX, trashX, ["walkRight1", "walkRight2"], true, () => {
+      mascotSetImage("collectTrash");
+      mascotFetchTimer = setTimeout(() => {
+        mascotWalkLeg(trashX, canX, ["walkTrash1", "walkTrash2"], false, () => {
+          // Dropped straight down from canX/micY — the leg's own KNOWN
+          // target, not a getBoundingClientRect() read off mascotHop. A
+          // rect read seems like it'd be more "live," but it's actually
+          // less reliable: it reports the CSS transition's current
+          // interpolated value, and a backgrounded/inactive tab can leave
+          // that transition's own clock paused independent of wall-clock
+          // time, so even after this leg has genuinely finished (by
+          // whichever signal — transitionend or the fallback timer — got us
+          // here), a rect read could still catch it mid-flight. The target
+          // never has that ambiguity: this leg was always going to end at
+          // canX, so that's where the trash falls from.
+          mascotTossIntoCan(canX + w / 2, a.micY + h / 2, true);
+          mascotFetchTimer = setTimeout(() => {
+            mascotWalkLeg(canX, homeX, ["walkRight1", "walkRight2"], true, () => {
+              mascotCancelFetch();
+              mascotEnterIdle();
+            });
+          }, MASCOT_FETCH_DROP_MS);
+        });
+      }, MASCOT_FETCH_COLLECT_MS);
+    });
+  }
 
   // ---------- "AI" processing pipeline (mocked LLM) ----------
   // Splits a raw transcript into individual items, auto-classifies each one
@@ -665,6 +1397,35 @@
   const LEADING_PRONOUN = /^(i|i've|i'll|i'd)\s+/i;
   const LEADING_ARTICLE = /^(the|my|your)\b/i;
   const FILLER_PATTERN = /^(that's it|that is it|done|nothing else)\.?$/i;
+
+  // Spoken disfluencies ("um", "uh", "er", "ah") are never real words in
+  // this app's context, so they're safe to strip anywhere in the raw
+  // transcript, before clause-splitting even runs — that also keeps them
+  // from confusing insertImplicitBoundaries' word-by-word scan (e.g. "fed
+  // the cat um I did laundry" needs to see "I" sitting right where a clause
+  // restart is expected, not two words after it).
+  const PURE_DISFLUENCY_PATTERN = /\b(?:u+m+|u+h+m?|e+r+m?|a+h+)\b/gi;
+
+  function stripPureDisfluencies(transcript) {
+    return transcript.replace(PURE_DISFLUENCY_PATTERN, " ").replace(/\s+/g, " ").trim();
+  }
+
+  // "ok"/"okay" and "or" ARE real words, unlike the above, so they can only
+  // be stripped where they're unambiguously a filler and not actual clause
+  // content — the front of an already-split clause ("or, feed the cat",
+  // "okay lock the door"). Left alone mid-clause ("milk or bread") where
+  // removing it would change the item's meaning.
+  const LEADING_FILLER_WORD = /^(?:ok(?:ay)?|or)\b[\s,]*/i;
+
+  function stripLeadingFillerWord(clause) {
+    let text = clause;
+    let prev;
+    do {
+      prev = text;
+      text = text.replace(LEADING_FILLER_WORD, "");
+    } while (text !== prev);
+    return text.trim();
+  }
 
   // First-word signal that a clause describes something already completed
   // ("fed the cat", "locked the door") rather than a still-open task.
@@ -892,6 +1653,7 @@
       .replace(/\band\b/gi, ",")
       .split(/[,.;]|(?:\bthen\b)/i)
       .map((s) => s.trim())
+      .map(stripLeadingFillerWord)
       .filter(Boolean)
       .filter((clause) => !FILLER_PATTERN.test(clause));
     return mergeOrphanFragments(rawClauses);
@@ -1002,12 +1764,25 @@
     return parseEventDate(clause);
   }
 
+  // Strips a leading 我/我的/的. The \s* between 我 and 的 tolerates a stray
+  // space landing at exactly that boundary — the pause-based transcript
+  // joiner (see PAUSE_BREAK_MS below) inserts a plain " " between segments
+  // when the gap is short, and Chinese speech has no spaces of its own for
+  // that joiner to instead fall back on. So "我" ...short pause... "的手机
+  // 在桌子上" comes out as "我 的手机在桌子上" — without \s* here, that
+  // space breaks "我的" into two separate tokens and only "我" matches,
+  // leaving a stray "的手机" behind. (With "他的手机" this never came up:
+  // 他 isn't 我, so the pattern was never trying to match a pronoun there
+  // in the first place — it's not that "他的" was handled correctly, it's
+  // that it was never touched at all.)
+  const ZH_LEADING_PRONOUN = /^(我\s*的?|的)/;
+
   // \w in a JS regex never matches CJK characters, so an English pattern
   // anchored with ^ (like TELEGRAPHIC_LOCATION_PATTERN) can't match at all
   // while a leading 我/我的/的 is still attached — strip it first so "我的
   // purse on the table" tests the same as "purse on the table".
   function stripLeadingZhPronoun(clause) {
-    return clause.trim().replace(/^(我的?|的)/, "").trim();
+    return clause.trim().replace(ZH_LEADING_PRONOUN, "").trim();
   }
 
   // Checks Chinese-language signals first, then falls back to the English
@@ -1029,7 +1804,7 @@
   }
 
   function cleanChineseFragment(clause) {
-    let text = clause.trim().replace(/^(我的?|的)/, "").trim();
+    let text = clause.trim().replace(ZH_LEADING_PRONOUN, "").trim();
     text = text.replace(LEADING_PRONOUN, "").trim();
     return text || clause.trim();
   }
@@ -1038,7 +1813,7 @@
     if (categoryId === "find") {
       const match = clause.match(ZH_LOCATION_PATTERN);
       if (match) {
-        const item = match[1].trim().replace(/^(我的?|的)/, "").trim();
+        const item = match[1].trim().replace(ZH_LEADING_PRONOUN, "").trim();
         const place = match[2].trim();
         return `${item}：${place}`;
       }
@@ -1114,9 +1889,11 @@
   }
 
   function handleTranscript(transcript) {
+    transcript = stripPureDisfluencies(transcript);
     const chinese = isChineseText(transcript);
     const clauses = chinese ? splitClausesChinese(transcript) : splitClauses(transcript);
     if (clauses.length === 0) return false;
+    mascotStartFetchTrash();
     clauses.forEach((clause) => {
       if (isChineseText(clause)) {
         const categoryId = classifyCategoryChinese(clause);

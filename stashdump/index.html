@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- Tells the browser directly (not just via CSS, which some mobile
+     browsers' auto/force-dark-mode heuristics don't fully respect,
+     especially before the stylesheet loads) that this page has ONE
+     deliberately-authored light theme — without this, some phones repaint
+     gradient-heavy pages like this one's background and buttons with a
+     heuristic dark inversion instead of leaving them alone. -->
+<meta name="color-scheme" content="light">
 <title>Stashdump</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#7c5cff">
@@ -128,8 +135,21 @@
 <img id="mascotWaitingCan" class="mascot-waiting-can hidden" src="mascot/mascot-trashcan-empty.png" alt="" aria-hidden="true">
 
 <div id="mascotWrap" class="mascot-wrap" aria-hidden="true">
-  <img id="mascotImg" class="mascot-img" src="mascot/mascot-idle.png" alt="">
+  <div id="mascotHop" class="mascot-hop">
+    <img id="mascotImgA" class="mascot-img" src="mascot/mascot-idle.png" alt="">
+    <img id="mascotImgB" class="mascot-img mascot-img-hidden" src="mascot/mascot-idle.png" alt="">
+  </div>
 </div>
+
+<svg id="mascotLineSvg" class="mascot-line-svg" aria-hidden="true">
+  <defs>
+    <linearGradient id="mascotLineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c5cff" />
+      <stop offset="100%" stop-color="#ff7ab8" />
+    </linearGradient>
+  </defs>
+  <path id="mascotLinePath" class="mascot-line-path" d="" />
+</svg>
 
 <script src="app.js"></script>
 </body>

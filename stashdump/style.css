@@ -14,21 +14,50 @@
 
 * { box-sizing: border-box; }
 
+html {
+  color-scheme: light;
+  background: var(--bg-2);
+}
+
 body {
   margin: 0;
   min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: var(--ink);
-  background: radial-gradient(circle at 15% 0%, var(--bg-1), transparent 55%),
+  /* Hands ALL touch-gesture handling to app.js's touchstart/touchmove
+     handlers (one finger draws, two fingers scroll) instead of letting the
+     browser start its own native one-finger scroll before JS sees it.
+     Form fields opt back into normal touch behavior below. */
+  touch-action: none;
+  /* Solid fallback underneath the gradients: some mobile browsers' forced
+     dark-mode heuristics decide whether to leave a background alone based
+     on there being a plain background-color, and skip that check (repainting
+     it dark) for gradient-only backgrounds. */
+  background-color: var(--bg-2);
+  background-image: radial-gradient(circle at 15% 0%, var(--bg-1), transparent 55%),
               radial-gradient(circle at 85% 10%, var(--bg-3), transparent 55%),
               linear-gradient(160deg, var(--bg-2), var(--bg-1) 60%, var(--bg-3));
   background-attachment: fixed;
 }
 
+input, textarea, select, button {
+  touch-action: manipulation;
+}
+
 .app {
   max-width: 560px;
   margin: 0 auto;
-  padding: 48px 24px 80px;
+  /* Bottom padding has to clear the mascot's full .mascot-at-can height
+     (see style.css's Mascot section) plus MASCOT_MARGIN, or the calendar's
+     mood picker / add-event controls — the last real content on the page —
+     end up sitting underneath the raccoon once it's resting in the can at
+     the true bottom, unreachable even though it's just visual overlap (the
+     mascot itself is pointer-events: none, but you can't tap what you
+     can't see). 350px clears the ~314px box at desktop width with room to
+     spare; see the @media override below for the smaller mobile box.
+     Bumped in step with .mascot-at-can — if that box's size ever changes,
+     this needs to move with it. */
+  padding: 48px 24px 350px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -115,7 +144,8 @@ body {
   border-radius: 50%;
   border: none;
   cursor: pointer;
-  background: linear-gradient(145deg, var(--accent), var(--accent-2));
+  background-color: var(--accent);
+  background-image: linear-gradient(145deg, var(--accent), var(--accent-2));
   color: #fff;
   display: flex;
   align-items: center;
@@ -785,32 +815,48 @@ body {
 
 .hidden { display: none !important; }
 
-/* An empty can sitting at the bottom-center of the viewport, visible
-   whenever the mascot ISN'T currently there (see mascotSetRestingWhere in
-   app.js) — a "landing zone" preview so scrolling down doesn't reveal a
-   blank spot right up until the mascot actually arrives. Lower z-index than
-   .mascot-wrap so once the mascot's own can-inclusive artwork (jump-in,
-   half-in, etc.) shows up, it draws over this rather than the two
-   overlapping. */
+/* An empty can sitting at the bottom-RIGHT of the viewport (matching
+   bottomX in mascotAnchors, app.js) — a "landing zone" preview so scrolling
+   down doesn't reveal a blank spot right up until the mascot actually
+   arrives. Visible whenever the mascot ISN'T currently there (see
+   mascotSetRestingWhere in app.js). Lower z-index than .mascot-wrap so once
+   the mascot's own can-inclusive artwork (jump-in, half-in, etc.) shows up,
+   it draws over this rather than the two overlapping. */
 .mascot-waiting-can {
   position: fixed;
   bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 110px;
+  right: 16px;
+  width: 175px;
   pointer-events: none;
   z-index: 400;
   filter: drop-shadow(0 10px 14px rgba(124, 92, 255, 0.18));
 }
 
 /* ---------- Mascot ---------- */
-/* Fixed to the viewport, parked on top of the mic button by default — the
-   wrap handles WHERE it is (by the mic, or hopped down to the bottom corner
-   once the mic scrolls out of view), the inner img handles its own idle
-   motion (bob/wobble/sway) so the two transforms never fight each other.
-   The bouncy transition on the wrap is what makes repositioning read as a
-   little hop rather than a slide. pointer-events: none throughout so it can
-   never intercept a tap meant for a real button underneath it. */
+/* Fixed to the viewport, parked on top of the mic button by default. Y and X
+   are owned by two different elements so they can move on two different
+   timelines instead of fighting over one `transform`:
+     - .mascot-wrap (this element) owns Y only, snapped instantly to scroll
+       progress every scroll event — so it's exactly at the trash can the
+       moment the user reaches the true bottom, never lagging behind.
+     - .mascot-hop (child, below) owns X only, and only ever moves between
+       the two edges of the empty gutter to the right of the content
+       column (see mascotRightZone/mascotStartHop in app.js) in discrete
+       hops — its transition is what makes each hop read as a little jump
+       rather than a slide, and it runs at its own fixed pace regardless of
+       how fast the user is scrolling. Its duration comes from the
+       --mascot-hop-ms custom property, set once from app.js's
+       MASCOT_HOP_MS so the hop pace has a single source of truth.
+   pointer-events: none throughout so the mascot can never intercept a tap
+   meant for a real button underneath it.
+   Width (and so overall size) is small/square by default — that matches
+   the actual 320x320 art for every pose EXCEPT the trash-can ones
+   (idle/thinking/licking/jump-up/jump-down). .mascot-at-can (toggled by
+   mascotSetRestingWhere in app.js, only while resting at the bottom)
+   swaps in a bigger, taller box just for those, so the can can be shown at
+   a solid, consistent size with the raccoon fully in frame without
+   inflating every other pose's box to match — see .mascot-img below for
+   why that inflation was a problem, not just unnecessary. */
 .mascot-wrap {
   position: fixed;
   top: 0;
@@ -818,27 +864,71 @@ body {
   width: 118px;
   pointer-events: none;
   z-index: 500;
-  /* No transition on transform — position is set directly from scroll
-     progress on every scroll event (see mascotUpdateFromScroll in app.js),
-     so it has to track 1:1 with the gesture instead of easing toward a
-     target on its own timeline. */
+  --mascot-hop-ms: 380ms;
   filter: drop-shadow(0 10px 14px rgba(124, 92, 255, 0.22));
 }
 
+.mascot-wrap.mascot-at-can {
+  width: 190px;
+}
+
+.mascot-hop {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  transition: transform var(--mascot-hop-ms) cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Taller than it is wide (330:545, not square) — the trash-can frames need
+   that much vertical room to show the can at a real, solid size AND the
+   full raccoon above it without cropping either. */
+.mascot-wrap.mascot-at-can .mascot-hop {
+  aspect-ratio: 330 / 545;
+}
+
+/* Jump arc: while a hop is in flight, .mascot-hopping (toggled in
+   mascotStartHop) swaps in a rise-then-fall bump on TOP of whatever pose
+   animation is already running, so the side-to-side hop reads as an actual
+   leap rather than a flat slide — without touching the wrap's real Y
+   (which has to stay exact for the trash-can landing; see above). Duration
+   matches the hop's own transition via the same custom property, so
+   slowing MASCOT_HOP_MS down slows the arc down too, automatically. */
+.mascot-wrap.mascot-hopping .mascot-img {
+  animation: mascotJumpArc var(--mascot-hop-ms) ease-out;
+}
+
+@keyframes mascotJumpArc {
+  0% { transform: translateY(0); }
+  45% { transform: translateY(-24px); }
+  100% { transform: translateY(0); }
+}
+
+/* Two stacked layers, always the same size/position, so swapping poses
+   crossfades one into the other — at every instant during the swap at
+   least one layer is opaque, so the mascot never actually disappears.
+   (The old approach used a single <img> faded to opacity:0 and back,
+   which for a moment showed NOTHING — that's what read as a "flash," not
+   a smooth fade, however short. See mascotSetImage in app.js.)
+   Bottom-anchored with height:auto rather than inset:0 + height:100% as a
+   safety net, not because it's normally doing any work: .mascot-hop's
+   aspect-ratio already matches whichever art is showing (1:1 normally,
+   330:545 under .mascot-at-can — see above), so in practice each image
+   already fills the box exactly either way. Anchoring at the bottom just
+   means that IF those two ever drift out of sync again, images shrink
+   into the bottom of the box instead of stretching to fill it. */
 .mascot-img {
-  /* Crossfades pose changes instead of hard-swapping src (see
-     mascotSetImage) so the idle show reads as one continuous bit rather
-     than a slideshow of unrelated illustrations. Every pose change uses
-     this, including the rapid alternation beats — a hard instant swap is
-     what reads as a "flash," so nothing skips the fade anymore. Must match
-     the 130ms timeout in mascotSetImage exactly, or the JS would swap the
-     src before the CSS fade-out has actually finished animating to 0. */
-  transition: opacity 0.13s ease;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  transition: opacity 0.2s ease;
   display: block;
   width: 100%;
   height: auto;
   transform-origin: 50% 85%;
   animation: mascotBob 3.2s ease-in-out infinite;
+}
+
+.mascot-img.mascot-img-hidden {
+  opacity: 0;
 }
 
 .mascot-wrap.mascot-thinking .mascot-img {
@@ -847,6 +937,14 @@ body {
 
 .mascot-wrap.mascot-licking .mascot-img {
   animation: mascotLick 1.1s ease-in-out infinite;
+}
+
+/* Pivoted near the chest rather than the default 50%/85% base so the tail
+   — the farthest thing from that point — is what visibly swings, instead of
+   the whole raccoon rocking side to side around its own middle. */
+.mascot-wrap.mascot-tailwag .mascot-img {
+  animation: mascotTailWag 0.45s ease-in-out infinite;
+  transform-origin: 38% 62%;
 }
 
 /* The trash-can idle show (mascotBottomLoopStep in app.js drives the
@@ -862,9 +960,17 @@ body {
   animation: mascotWiggle 0.9s ease-in-out;
 }
 
+/* Pivots from the bottom-RIGHT and rotates negative (counter-clockwise) so
+   the can's top swings down toward the LEFT — matching the direction the
+   hand-drawn "fallen" art (mascot-trashcan-fallen.png, next in the loop)
+   actually shows it landed: opening facing left, raccoon spilling out that
+   side. The two used to disagree (this rotated the opening toward the
+   right), so the cut from "tipped right" to "landed facing left" read as
+   the can spinning past a flat fall — on flat ground it only ever tips one
+   way and stops. */
 .mascot-wrap.mascot-toppled .mascot-img {
   animation: mascotTopple 0.4s ease-in forwards;
-  transform-origin: 18% 92%;
+  transform-origin: 82% 92%;
 }
 
 /* Reused for the "dives back in" beat of the idle show — same jump-in
@@ -889,6 +995,12 @@ body {
   50% { transform: scale(1.05) rotate(-2deg); }
 }
 
+@keyframes mascotTailWag {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(7deg); }
+  75% { transform: rotate(-7deg); }
+}
+
 @keyframes mascotWiggle {
   0%, 100% { transform: rotate(0deg); }
   20% { transform: rotate(-8deg); }
@@ -899,7 +1011,121 @@ body {
 
 @keyframes mascotTopple {
   0% { transform: rotate(0deg); }
-  100% { transform: rotate(78deg); }
+  100% { transform: rotate(-78deg); }
+}
+
+/* A little scrap tossed from the mic toward the trash can each time
+   something gets added (see mascotTossIntoCan in app.js) — the actual
+   travel distance is set per-toss via --toss-dx/--toss-dy since it depends
+   on live layout (where the mic is, whether the can happens to be in
+   view), not something fixed enough to bake into the keyframe itself. */
+.mascot-toss-scrap {
+  position: fixed;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  pointer-events: none;
+  z-index: 600;
+  animation: mascotToss 0.7s cubic-bezier(0.5, -0.2, 0.7, 1) forwards;
+}
+
+/* Stays fully opaque the whole way — it isn't dissolving into nothing, it's
+   landing in the can, so it should read as a solid piece of trash right up
+   until it's out of view (removed once the animation ends), not fade like a
+   ghost. */
+@keyframes mascotToss {
+  0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+  100% {
+    transform: translate(calc(-50% + var(--toss-dx)), calc(-50% + var(--toss-dy))) scale(0.3) rotate(200deg);
+    opacity: 1;
+  }
+}
+
+/* The straight-down drop (see mascotTossIntoCan's straightDown param in
+   app.js, used once the mascot has actually walked to stand right above the
+   can) needs its own animation, not just mascotToss with dx forced to 0 —
+   mascotToss's cubic-bezier has a deliberate upward anticipation dip (the
+   negative Y control point) before flinging across, which reads fine for a
+   toss thrown sideways from a distance but looks like it hops UP first for
+   something that's supposed to just fall out of the mascot's hands. A
+   plain accelerating ease-in, with no dx term at all, is what actually
+   reads as gravity instead of a fling. */
+.mascot-toss-scrap.mascot-toss-drop {
+  animation: mascotDrop 0.5s cubic-bezier(0.55, 0, 0.85, 0.4) forwards;
+}
+
+@keyframes mascotDrop {
+  0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+  100% {
+    transform: translate(-50%, calc(-50% + var(--toss-dy))) scale(0.6) rotate(8deg);
+    opacity: 1;
+  }
+}
+
+/* The freehand line drawn by pressing and dragging the mouse (see
+   mousedown/mousemove handlers in app.js) — a full-viewport SVG overlay so
+   the stroke can follow the cursor anywhere on the page regardless of what's
+   underneath. pointer-events: none throughout so it never itself becomes
+   the thing a click lands on. */
+.mascot-line-svg {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 550;
+}
+
+.mascot-line-path {
+  fill: none;
+  stroke: url(#mascotLineGradient);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 2px 4px rgba(90, 60, 150, 0.45));
+  transition: opacity 0.5s ease;
+}
+
+.mascot-line-path.mascot-line-fading {
+  opacity: 0;
+}
+
+/* While the mascot is tracing a hand-drawn line (mascotStartTrace in
+   app.js), position is recomputed and set directly every animation frame
+   — both axes, not just Y — so BOTH need their transition switched off
+   here, overriding .mascot-hop's normally-always-on bouncy one. That
+   transition (and its overshoot easing) is tuned for discrete hops that
+   each fully finish before the next starts; applying it to a target that
+   moves every ~16ms just made the overshoot fight itself and read as
+   shaking instead of a hop. */
+.mascot-wrap.mascot-tracing,
+.mascot-wrap.mascot-tracing .mascot-hop {
+  transition: none !important;
+}
+
+/* The "walk over, collect the trash, carry it to the can, walk back"
+   performance (see mascotStartFetchTrash in app.js) needs a plain smooth
+   walk, not .mascot-hop's normally-always-on bouncy overshoot easing meant
+   for a scroll-driven hop — a raccoon carrying trash shouldn't spring like
+   it's jumping. Duration is intentionally NOT set here: each leg covers a
+   different distance (a short hop to the trash vs. a much longer carry
+   over to the can), so app.js sets transitionDuration inline per leg —
+   see mascotSetHopX — and leaves only the easing curve to this class.
+   app.js also uses transition:none (also inline, also via mascotSetHopX)
+   to snap the left/right flip in place between legs without animating it. */
+.mascot-wrap.mascot-walking .mascot-hop {
+  transition-property: transform;
+  transition-timing-function: ease-in-out;
+}
+
+/* Suppresses the browser's own text-selection highlight while a line is
+   being drawn (see the mousedown handler in app.js) — belt-and-suspenders
+   alongside preventDefault there, since that highlight sweeping across
+   the page is what made the drawn line hard to notice in the first
+   place. */
+.mascot-drawing-active {
+  user-select: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -907,13 +1133,18 @@ body {
     animation: none !important;
     transition: none !important;
   }
+  .mascot-hop {
+    transition: none !important;
+  }
 }
 
 @media (max-width: 420px) {
-  .app { padding: 36px 16px 64px; }
+  .app { padding: 36px 16px 290px; }
   .mic-btn { width: 116px; height: 116px; }
   .mic-icon { width: 40px; height: 40px; }
   .calendar-cell { min-height: 42px; }
   .calendar-day-mood { font-size: 15px; }
   .mascot-wrap { width: 92px; }
+  .mascot-wrap.mascot-at-can { width: 150px; }
+  .mascot-waiting-can { width: 140px; }
 }
