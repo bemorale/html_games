@@ -69,6 +69,15 @@
     <p class="mic-note">If the mic doesn't respond, allow microphone access for this page — you can always type instead.</p>
   </main>
 
+  <section class="search-card">
+    <form id="searchForm" class="search-form" role="search">
+      <span class="search-icon" aria-hidden="true">🔎</span>
+      <input id="searchInput" class="search-input" type="search" placeholder="Search your stuff… (e.g. keys)" autocomplete="off" aria-label="Search your stashed items">
+      <button type="submit" class="search-submit">Go</button>
+    </form>
+    <p id="searchStatus" class="search-status hidden" role="status" aria-live="polite"></p>
+  </section>
+
   <section class="rows">
     <section class="category-row" data-category="done">
       <div class="row-header">

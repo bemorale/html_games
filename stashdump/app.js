@@ -20,6 +20,9 @@
   const fallbackForm = document.getElementById("fallbackForm");
   const fallbackInput = document.getElementById("fallbackInput");
   const waveBars = waveform.querySelectorAll("span");
+  const searchForm = document.getElementById("searchForm");
+  const searchInput = document.getElementById("searchInput");
+  const searchStatus = document.getElementById("searchStatus");
 
   const calPrev = document.getElementById("calPrev");
   const calNext = document.getElementById("calNext");
@@ -302,6 +305,7 @@
   // the trash-can idle show at the bottom.
   const MASCOT_SRC = {
     idle: "mascot/mascot-idle.png",
+    idleBlinking: "mascot/mascot-idle-blinking.png",
     thinking: "mascot/mascot-thinking.png",
     licking: "mascot/mascot-licking.png",
     licking2: "mascot/mascot-licking2.png",
@@ -449,6 +453,36 @@
     mascotImgBack = swap;
   }
 
+  // A periodic blink layered on top of whichever state happens to be
+  // showing the plain "idle" pose at the moment — resting at the mic,
+  // mid-scroll between hops, anywhere — rather than something each of
+  // those states has to individually remember to trigger. Checking
+  // mascotCurrentTarget right when the timer fires (not scheduling a blink
+  // the instant idle starts) is what keeps this from fighting a state
+  // change that happens to land in the same window: if something else is
+  // showing by then, this just reschedules and quietly skips that cycle.
+  // Steady one-second cadence, quick blink — deliberately NOT randomized;
+  // a steady beat is what reads as "blinking," a randomized 3-5s gap just
+  // read as arbitrary.
+  const MASCOT_BLINK_INTERVAL_MS = 1000;
+  const MASCOT_BLINK_HOLD_MS = 130;
+
+  function mascotScheduleBlink() {
+    setTimeout(mascotMaybeBlink, MASCOT_BLINK_INTERVAL_MS);
+  }
+
+  function mascotMaybeBlink() {
+    if (mascotCurrentTarget !== MASCOT_SRC.idle) {
+      mascotScheduleBlink();
+      return;
+    }
+    mascotSetImage("idleBlinking");
+    setTimeout(() => {
+      if (mascotCurrentTarget === MASCOT_SRC.idleBlinking) mascotSetImage("idle");
+      mascotScheduleBlink();
+    }, MASCOT_BLINK_HOLD_MS);
+  }
+
   // Y is written to mascotWrap (instant, no transition) and X to the inner
   // mascotHop (which carries its own CSS transition) — see the comment on
   // .mascot-wrap in style.css for why they're split across two elements.
@@ -571,7 +605,6 @@
     if (mascotLoopTimer) clearTimeout(mascotLoopTimer);
     mascotLoopTimer = null;
     mascotLoopToken++;
-    mascotWrap.classList.remove("mascot-wiggle", "mascot-toppled", "mascot-sideways");
   }
 
   // The idle show that plays once the mascot settles at the bottom, in two
@@ -581,17 +614,17 @@
   //     1. settled in the can, just its rear + tail sticking out
   //     2-4. rummaging around inside (paws flailing — real motion between
   //          two different poses, not a CSS shake of one static image)
-  //     5. the can visibly shaking from all the commotion (CSS wiggle)
-  //     6. rim gone askew, right on the verge (real art — trashcanTipping —
-  //        not a CSS fake; a flat rotation can't reproduce how the rim
-  //        ellipse and base actually foreshorten mid-tip, which is exactly
-  //        what made the old CSS-only topple look like it span past a
-  //        believable fall)
-  //     7. it goes all the way over (CSS rotate, bridging the gap between
-  //        the tipping art above and the fallen art below — direction
-  //        matters here, see .mascot-toppled in style.css)
-  //     8. climbing out into the mess it made — held long, since it's the
-  //        busiest, most detail-rich frame and needs time to actually read
+  //     5. rim gone askew, right on the verge (real art — trashcanTipping)
+  //     6. it's gone all the way over, raccoon climbing out into the mess
+  //        it made (trashcanFallen — held long since it's the busiest,
+  //        most detail-rich frame and needs time to actually read)
+  //   Deliberately NO CSS rotation bridging tipping -> fallen (there used
+  //   to be a step here showing the plain upright "trashcan" art rotated
+  //   via a CSS transform to fake a topple) — that upright art was never
+  //   drawn to be looked at sideways, so spinning it just read as an
+  //   unrelated frame rotating in and out for no reason. Cutting straight
+  //   from the tipping art to the dedicated fallen art (both drawn at the
+  //   correct angle for their own moment) reads as one continuous fall.
   //   It does NOT loop back around to beat 1. There's no artwork showing
   //   the raccoon climbing back INTO a can that's now lying tipped over on
   //   the ground, so the only way to repeat the intro would be to cut
@@ -599,43 +632,56 @@
   //   upright again" — which is exactly the "in, out, in, out, doesn't
   //   connect" jump this used to make, once every ~10 seconds.
   //
-  //   STEADY is what plays forever after the intro finishes: the raccoon
-  //   sitting by the fallen can licking its paws clean. This one genuinely
-  //   IS a loop, because licking and licking2 are two frames of the SAME
-  //   continuous action, not two different scenes standing in for each
-  //   other.
+  //   STEADY plays next: the raccoon sitting by the fallen can licking its
+  //   paws clean — capped to a handful of repeats (~5s total), not
+  //   forever, then it settles into the plain idle pose. The periodic
+  //   blink (see mascotScheduleBlink) already covers "idle, and blink" for
+  //   ANY pose that happens to be showing plain idle, so there's nothing
+  //   further to schedule here once it stops licking.
   //
-  // Every frame is padded to the same 320x320 canvas (see pad_canvas.py) so
-  // the mascot's on-screen size never jumps between beats. Each step only
-  // schedules the next one if we're still resting at the bottom, so
-  // scrolling away at any point cuts the show off cleanly instead of a
-  // stray step firing later.
+  // Every frame is composited onto the same 330x545 canvas at the same
+  // scale so the mascot's on-screen size never jumps between beats. Each
+  // step only schedules the next one if we're still resting at the
+  // bottom, so scrolling away at any point cuts the show off cleanly
+  // instead of a stray step firing later.
+  // Deliberately linear, and trashcan/trashcanDigging never BOTH appear in
+  // the same show — once it's settled on "trashcan" (upright, resting),
+  // "trashcanDigging" never shows up after it. They used to alternate back
+  // and forth, which read as the can flickering between two random frames
+  // instead of anything happening; cutting one of the two out entirely
+  // (rather than just de-duplicating the back-and-forth) is what actually
+  // guarantees that.
   const MASCOT_BOTTOM_INTRO = [
-    { img: "trashcan", cls: [], hold: () => 2800 + Math.random() * 1200 },
-    { img: "trashcanDigging", cls: [], hold: 550 },
-    { img: "trashcan", cls: [], hold: 450 },
-    { img: "trashcanDigging", cls: [], hold: 550 },
-    { img: "trashcan", cls: ["mascot-wiggle"], hold: 900 },
-    { img: "trashcanTipping", cls: [], hold: 550 },
-    { img: "trashcan", cls: ["mascot-toppled"], hold: 450 },
-    { img: "trashcanFallen", cls: [], hold: 2600 },
+    { img: "trashcan", hold: () => 2800 + Math.random() * 1200 },
+    { img: "trashcanTipping", hold: 550 },
+    { img: "trashcanFallen", hold: 2600 },
   ];
 
   const MASCOT_BOTTOM_STEADY = [
-    { img: "licking", cls: [], hold: 500 },
-    { img: "licking2", cls: [], hold: 500 },
+    { img: "licking", hold: 500 },
+    { img: "licking2", hold: 500 },
   ];
+  // 5 repeats x 2 frames x 500ms = 5s of licking, "at most" per the ask —
+  // after that it just idles (and blinks) instead of licking forever.
+  const MASCOT_BOTTOM_STEADY_REPEATS = 5;
 
   function mascotBottomLoopStep(i, token) {
     if (mascotRestingWhere !== "bottom" || token !== mascotLoopToken) return;
-    const step = i < MASCOT_BOTTOM_INTRO.length
-      ? MASCOT_BOTTOM_INTRO[i]
-      : MASCOT_BOTTOM_STEADY[(i - MASCOT_BOTTOM_INTRO.length) % MASCOT_BOTTOM_STEADY.length];
-    mascotWrap.classList.remove("mascot-wiggle", "mascot-toppled", "mascot-sideways");
-    step.cls.forEach((c) => mascotWrap.classList.add(c));
+    if (i < MASCOT_BOTTOM_INTRO.length) {
+      const step = MASCOT_BOTTOM_INTRO[i];
+      mascotSetImage(step.img);
+      const hold = typeof step.hold === "function" ? step.hold() : step.hold;
+      mascotLoopTimer = setTimeout(() => mascotBottomLoopStep(i + 1, token), hold);
+      return;
+    }
+    const steadyIndex = i - MASCOT_BOTTOM_INTRO.length;
+    if (steadyIndex >= MASCOT_BOTTOM_STEADY.length * MASCOT_BOTTOM_STEADY_REPEATS) {
+      mascotSetImage("idle");
+      return; // no further step scheduled — stays idle (and blinks) until resting-state changes
+    }
+    const step = MASCOT_BOTTOM_STEADY[steadyIndex % MASCOT_BOTTOM_STEADY.length];
     mascotSetImage(step.img);
-    const hold = typeof step.hold === "function" ? step.hold() : step.hold;
-    mascotLoopTimer = setTimeout(() => mascotBottomLoopStep(i + 1, token), hold);
+    mascotLoopTimer = setTimeout(() => mascotBottomLoopStep(i + 1, token), step.hold);
   }
 
   // The initial dive in, upright — after this the repeating show above
@@ -1145,6 +1191,7 @@
   mascotWrap.style.setProperty("--mascot-hop-ms", `${MASCOT_HOP_MS}ms`);
   mascotSetImage("idle");
   mascotUpdateFromScroll();
+  mascotScheduleBlink();
 
   // A quick visual acknowledgment that something actually got stashed: a
   // little scrap flies from (startX, startY) — defaulting to the mic, since
@@ -2280,6 +2327,147 @@
     updateEmptyState(categoryId);
   }
 
+  // ---------- Search ----------
+  // "Where are my keys?" shouldn't mean scrolling through a long list by
+  // eye — type (or paste) roughly what was said, hit enter, and whichever
+  // row it actually landed under scrolls into view and glows. Matching is
+  // deliberately forgiving: case doesn't matter, a plain substring ("key"
+  // finding "Keys: on the table") is the common case, and a small edit
+  // distance covers minor typos ("kys", "recieve") — all of it works the
+  // same way for Chinese, since edit distance operates per-character
+  // regardless of script and Chinese text has no casing to worry about.
+  let searchGlowTimer = null;
+
+  // Minimum edit distance between `query` and ANY substring of `text` (not
+  // just same-length windows) — the standard "approximate substring search"
+  // DP: free to start matching anywhere in text (curr[0] = 0 each row) and
+  // free to end anywhere (answer is the min over the whole last column).
+  // This is what makes "kys" find "...my keys are..." — a plain Levenshtein
+  // between the two full strings would be dominated by the length
+  // difference and never come out small enough to count as a typo.
+  function fuzzySubstringDistance(text, query) {
+    const n = text.length, m = query.length;
+    if (m === 0) return 0;
+    let prev = new Array(m + 1);
+    for (let j = 0; j <= m; j++) prev[j] = j;
+    let best = Infinity;
+    for (let i = 1; i <= n; i++) {
+      const curr = new Array(m + 1);
+      curr[0] = 0;
+      for (let j = 1; j <= m; j++) {
+        const cost = text[i - 1] === query[j - 1] ? 0 : 1;
+        curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+      }
+      if (curr[m] < best) best = curr[m];
+      prev = curr;
+    }
+    return best;
+  }
+
+  // How many typos a query of this length is allowed to have and still
+  // count as a match. Very short queries (1-2 chars) stay exact-only —
+  // otherwise something like "a" would fuzzily match nearly everything.
+  function typoBudget(len) {
+    if (len <= 2) return 0;
+    if (len <= 5) return 1;
+    return Math.floor(len / 4) + 1;
+  }
+
+  function normalizeForSearch(s) {
+    return s.toLowerCase().trim().replace(/\s+/g, " ");
+  }
+
+  // Scores one item against the query — lower is better, Infinity means no
+  // match at all. A direct substring hit always outranks a fuzzy one, even
+  // a distance-1 fuzzy hit, since it's unambiguous.
+  function scoreItemMatch(itemText, query) {
+    const text = normalizeForSearch(itemText);
+    if (text.includes(query)) return 0;
+    const budget = typoBudget(query.length);
+    if (budget === 0) return Infinity;
+    const dist = fuzzySubstringDistance(text, query);
+    return dist <= budget ? 10 + dist : Infinity; // +10 keeps every fuzzy hit ranked below every substring hit
+  }
+
+  // Checks the three lists AND every calendar event ever logged (not just
+  // whichever month happens to be on screen) — calendar events live inside
+  // a specific day's detail view, which normally only renders once that
+  // day is selected, so a match there needs the search to pick the day for
+  // you, not just scroll to something already on the page.
+  function findBestSearchMatch(query) {
+    let best = null;
+    const store = loadStore();
+    Object.keys(CATEGORIES).forEach((categoryId) => {
+      store[categoryId].forEach((item) => {
+        const score = scoreItemMatch(item.text, query);
+        if (score === Infinity) return;
+        if (!best || score < best.score) best = { kind: "item", categoryId, item, score };
+      });
+    });
+    Object.keys(store.calendar.events).forEach((dayKey) => {
+      store.calendar.events[dayKey].forEach((event) => {
+        const score = scoreItemMatch(event.text, query);
+        if (score === Infinity) return;
+        if (!best || score < best.score) best = { kind: "event", dayKey, event, score };
+      });
+    });
+    return best;
+  }
+
+  function clearSearchStatus() {
+    searchStatus.classList.add("hidden");
+    searchStatus.textContent = "";
+  }
+
+  function showSearchStatus(text) {
+    searchStatus.textContent = text;
+    searchStatus.classList.remove("hidden");
+  }
+
+  function glowAndScrollTo(li) {
+    li.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (searchGlowTimer) clearTimeout(searchGlowTimer);
+    document.querySelectorAll(".search-glow").forEach((el) => el.classList.remove("search-glow"));
+    // Force a reflow so re-adding the class restarts the animation even if
+    // the same row is searched for twice in a row back to back.
+    void li.offsetWidth;
+    li.classList.add("search-glow");
+    searchGlowTimer = setTimeout(() => li.classList.remove("search-glow"), 1800);
+  }
+
+  function runSearch(rawQuery) {
+    const query = normalizeForSearch(rawQuery);
+    if (!query) return;
+
+    const match = findBestSearchMatch(query);
+    if (!match) {
+      showSearchStatus(`Didn't find anything for "${rawQuery.trim()}".`);
+      return;
+    }
+    clearSearchStatus();
+
+    if (match.kind === "item") {
+      const li = document.querySelector(`#list-${match.categoryId} li[data-id="${match.item.id}"]`);
+      if (li) glowAndScrollTo(li); // the store and the DOM should always agree, but don't crash if they ever don't
+      return;
+    }
+
+    // A calendar event: jump the mini-calendar to that event's month and
+    // open that day's detail (renderDayDetail below is what actually builds
+    // the event's <li>) BEFORE trying to find and scroll to it — it isn't
+    // in the DOM at all until the day is selected.
+    const eventDate = dateFromKey(match.dayKey);
+    calendarViewDate = new Date(eventDate.getFullYear(), eventDate.getMonth(), 1);
+    selectDay(match.dayKey);
+    const li = document.querySelector(`#calendarEventList li[data-id="${match.event.id}"]`);
+    if (li) glowAndScrollTo(li);
+  }
+
+  searchForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    runSearch(searchInput.value);
+  });
+
   // ---------- Calendar ----------
   const MOODS = ["😄", "🙂", "😐", "😠", "🙁", "😢"];
 
@@ -2449,6 +2637,7 @@
     calendarEventList.innerHTML = "";
     events.forEach((ev) => {
       const li = document.createElement("li");
+      li.dataset.id = ev.id;
       const span = document.createElement("span");
       span.className = "item-text";
       span.textContent = ev.text;
