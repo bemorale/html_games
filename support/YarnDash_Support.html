@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YarnDash Support</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f0f1a;
+      color: #f0f0f0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+    }
+
+    main {
+      max-width: 640px;
+      width: 100%;
+      padding: 64px 24px 80px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #a78bfa, #60a5fa);
+      color: #0f0f1a;
+      font-weight: 700;
+      font-size: 0.8rem;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 6vw, 2.75rem);
+      font-weight: 800;
+      background: linear-gradient(90deg, #a78bfa, #60a5fa, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    .tagline {
+      color: #94a3b8;
+      font-size: 1.05rem;
+      margin-bottom: 40px;
+    }
+
+    section {
+      background: #1e1e30;
+      border: 1px solid #ffffff14;
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+
+    section h2 {
+      font-size: 1.15rem;
+      margin-bottom: 12px;
+      color: #f0f0f0;
+    }
+
+    section p {
+      color: #cbd5e1;
+      line-height: 1.6;
+    }
+
+    a {
+      color: #60a5fa;
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+
+    .email-btn {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 12px 22px;
+      border-radius: 10px;
+      background: linear-gradient(90deg, #34d399, #60a5fa);
+      color: #0f0f1a;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    footer {
+      margin-top: 40px;
+      color: #64748b;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    footer a { color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="badge">Support</span>
+    <h1>YarnDash</h1>
+    <p class="tagline">Roll. Dodge. Collect.</p>
+
+    <section>
+      <h2>Need help?</h2>
+      <p>
+        Having trouble with YarnDash, found a bug, or just want to say hi?
+        We'd love to hear from you.
+      </p>
+      <a class="email-btn" href="mailto:amoralebemorale@googlegroups.com">Email amoralebemorale@googlegroups.com</a>
+    </section>
+
+    <section>
+      <h2>Frequently asked</h2>
+      <p><strong>Does YarnDash need an internet connection?</strong><br>
+      No — it works completely offline. Nothing is ever uploaded anywhere.</p>
+      <br>
+      <p><strong>Do I need an account?</strong><br>
+      No accounts, no sign-in. Your high scores are saved only on your own device.</p>
+      <br>
+      <p><strong>Why did my controls reverse?</strong><br>
+      That's the yellow gem's "dizzy" effect — it wears off on its own after
+      a few seconds.</p>
+    </section>
+
+    <footer>
+      <a href="../privacy_policy/YarnDash_Privacy_Policy.html">Privacy Policy</a>
+    </footer>
+  </main>
+</body>
+</html>
