@@ -406,8 +406,8 @@
     <div class="live-board hidden" id="liveBoard"></div>
     <div class="overlay" id="overlay">
       <div class="card">
-        <p class="eyebrow" id="overlayEyebrow">A theme-park-sized appetite</p>
-        <h2 id="overlayTitle">A sinkhole got loose in the park</h2>
+        <p class="eyebrow" id="overlayEyebrow">A bottomless appetite</p>
+        <h2 id="overlayTitle">A sinkhole got loose</h2>
         <p class="sub" id="overlaySub">Steer the hole through the midway and swallow anything smaller than it — cones, benches, trees, whole roller coasters, even rival holes. Bigger holes can swallow you too: get eaten and you respawn in five seconds. Grow the biggest and swallow the whole theme park before time runs out.</p>
         <div class="name-field">
           <label for="nameInput">Your name</label>
@@ -473,9 +473,10 @@
   // fixed-world-size ruler. Roughly road-width-sized at the start, then
   // visibly dwarfed by the hole later, makes growth actually read on screen.
   var ROAD_W = 70;
-  // 40x28 blocks — another ~1.64x area on top of the previous 31x22 (itself
-  // ~4.9x the original 14x10), so ~8x the original play area overall.
-  var WORLD = { w: BLOCK*40, h: BLOCK*28 };
+  // 52x36 blocks — another ~1.67x area on top of the previous 40x28 (itself
+  // ~1.64x the 31x22 before it, ~4.9x the original 14x10), so ~13.4x the
+  // original play area overall.
+  var WORLD = { w: BLOCK*52, h: BLOCK*36 };
   // Straight-down bird's-eye view isn't actually what reads as "3D" here —
   // a slightly oblique camera does, the way hole.io's does: the hole reads
   // as an oval instead of a perfect circle, and buildings show a real
@@ -506,6 +507,16 @@
   // for) is enough, so two blots are never permanently deadlocked at "the
   // same size."
   var SWALLOW_MARGIN = 1.01;
+  // Whether two blots physically collide (bounce apart) instead of letting
+  // one overlap into the other for a swallow attempt. This needs to be a
+  // much wider gap than SWALLOW_MARGIN: at 1.01, almost any two blots of
+  // slightly different size counted as "one can eventually eat the other"
+  // and so passed straight through each other, never actually reaching the
+  // deep overlap a kill requires — they just ghosted through with no
+  // collision at all. Only a blot at least 15% bigger skips the bounce to
+  // chase a swallow; anything closer in size (including true ties) crashes
+  // and bounces off instead, same as two cars that can't fit past each other.
+  var BOUNCE_MARGIN = 1.15;
   // Requiring literal 100% containment (the object's far edge fully inside
   // the hole's circle) reads as "I'm completely over this, why isn't it
   // going in" — the visual wobble on the hole's drawn outline (see
@@ -518,6 +529,9 @@
   // there. Paired with more small-tier objects below so there's still
   // enough to eat to sustain that slower climb over the match.
   var GROWTH_COEF = 0.09;
+  // How much faster or slower the player grows compared to bots (bots
+  // always grow at the normal 1x pace — see GROWTH_COEF above).
+  var PLAYER_GROWTH_MULT = 1.35;
   var SWALLOW_DURATION = 0.4;
   var RESPAWN_DELAY = 5;
   // How far a blot's own radius must stay from a wall/corner at all times
@@ -570,27 +584,39 @@
   // more headroom through the middle tiers to sustain growth, tapering to a
   // scarce, climactic boss at the very top.
   var TIERS = [
-    { name:'boss',        r:1560, color:COLOR.boss,   count:10,  draw:'castle',          zone:'block' }, // the park's fantasy castle centerpiece
-    { name:'coasterClassic', r:340, color:COLOR.violet, count:7, draw:'coaster_classic', zone:'block' },
-    { name:'coasterLoop', r:320, color:COLOR.red,     count:8,  draw:'coaster_loop',     zone:'block' },
-    { name:'ferriswheel', r:280, color:COLOR.violet,  count:16, draw:'ferriswheel',      zone:'block' },
-    { name:'lake',        r:190, color:COLOR.blue,    count:20, draw:'lake',             zone:'block' },
-    { name:'viking',      r:200, color:COLOR.wood,    count:15, draw:'viking',           zone:'block' },
-    { name:'windmill',    r:95,  color:COLOR.red,     count:45, draw:'windmill',         zone:'block' },
-    { name:'restaurant',  r:75,  color:COLOR.red,     count:90, draw:'restaurant',       zone:'block' },
-    { name:'watertower',  r:85,  color:COLOR.inkSoft, count:40, draw:'watertower',       zone:'block' },
-    { name:'archgate',    r:70,  color:COLOR.gold,    count:60, draw:'archgate',         zone:'roadside' },
-    { name:'queueline',   r:90,  color:COLOR.ink,     count:75, draw:'queue',            zone:'block' },
+    // A real theme park has ONE flagship castle you can see from
+    // everywhere, not a dozen of them — two lets a giant map still have a
+    // second landmark without it reading as "castle spam."
+    { name:'boss',        r:1750, color:COLOR.boss,   count:2,  draw:'castle',          zone:'block' },
+    { name:'coasterLoop',       r:380, color:COLOR.red,    count:20,  draw:'coaster_loop',       zone:'block' },
+    { name:'coasterClassic',    r:400, color:COLOR.violet, count:20,  draw:'coaster_classic',    zone:'block' },
+    { name:'coasterCorkscrew',  r:360, color:COLOR.gold,   count:20,  draw:'coaster_corkscrew',  zone:'block' },
+    { name:'ferriswheel', r:280, color:COLOR.violet,  count:22, draw:'ferriswheel',      zone:'block' },
+    { name:'carousel',    r:170, color:COLOR.red,     count:32, draw:'carousel',         zone:'block' },
+    { name:'teacups',     r:150, color:COLOR.violet,  count:32, draw:'teacups',          zone:'block' },
+    { name:'droptower',   r:90,  color:COLOR.red,     count:26, draw:'droptower',        zone:'block' },
+    { name:'bumpercars',  r:180, color:COLOR.blue,    count:26, draw:'bumpercars',       zone:'block' },
+    { name:'lake',        r:190, color:COLOR.blue,    count:33, draw:'lake',             zone:'block' },
+    { name:'viking',      r:200, color:COLOR.wood,    count:25, draw:'viking',           zone:'block' },
+    { name:'windmill',    r:95,  color:COLOR.red,     count:74, draw:'windmill',         zone:'block' },
+    { name:'restaurant',  r:85,  color:COLOR.red,     count:150, draw:'restaurant',       zone:'block' },
+    { name:'watertower',  r:95,  color:COLOR.inkSoft, count:66, draw:'watertower',       zone:'block' },
+    // queueline/archgate are no longer independently scattered — placeRideQueues()
+    // (called from generateWorld right after this loop) attaches one of each
+    // directly to every ride's own entrance instead, so lines actually lead
+    // somewhere. Metadata (r/color) is still read from these two entries.
+    { name:'archgate',    r:70,  color:COLOR.gold,    count:0, draw:'archgate',         zone:'roadside' },
+    { name:'queueline',   r:90,  color:COLOR.ink,     count:0, draw:'queue',            zone:'block' },
     { name:'gate',        r:46,  color:COLOR.wood,    count:0,   draw:'fence',      zone:'roadside' }, // count is unused for fences — see generateWorld, which fills every valid roadside slot instead
-    { name:'fountain',    r:35,  color:COLOR.blue,    count:85, draw:'fountain',    zone:'block' },
-    { name:'tree',        r:22,  color:COLOR.green,   count:820, draw:'tree',       zone:'block' },
-    { name:'person',      r:15,  color:COLOR.inkSoft, count:700, draw:'person',     zone:'roadside' },
-    { name:'picnictable', r:14, color:COLOR.wood,    count:260, draw:'picnictable', zone:'roadside' },
-    { name:'bench',      r:12,  color:COLOR.wood,    count:440, draw:'bench',      zone:'roadside' },
-    { name:'sign',       r:10,  color:COLOR.blue,    count:480, draw:'sign',       zone:'roadside' },
-    { name:'cone',       r:9,   color:COLOR.gold,    count:800, draw:'cone',       zone:'road' },
-    { name:'flower',     r:8,   color:COLOR.green,   count:950, draw:'flower',     zone:'block' },
-    { name:'grass',      r:7,   color:COLOR.green,   count:1300, draw:'grass',      zone:'block' }
+    { name:'fountain',    r:35,  color:COLOR.blue,    count:140, draw:'fountain',    zone:'block' },
+    { name:'tree',        r:22,  color:COLOR.green,   count:1350, draw:'tree',       zone:'block' },
+    { name:'person',      r:15,  color:COLOR.inkSoft, count:1155, draw:'person',     zone:'roadside' },
+    { name:'picnictable', r:14, color:COLOR.wood,    count:430, draw:'picnictable', zone:'roadside' },
+    { name:'bench',      r:12,  color:COLOR.wood,    count:725, draw:'bench',      zone:'roadside' },
+    { name:'sign',       r:10,  color:COLOR.blue,    count:790, draw:'sign',       zone:'roadside' },
+    { name:'cone',       r:9,   color:COLOR.gold,    count:1320, draw:'cone',       zone:'road' },
+    { name:'flower',     r:8,   color:COLOR.green,   count:1570, draw:'flower',     zone:'block' },
+    { name:'grass',      r:7,   color:COLOR.green,   count:2150, draw:'grass',      zone:'block' }
   ];
 
   // A block of rides (or trees, or people) that are all one stamped color
@@ -611,12 +637,16 @@
   var RESTAURANT_COLORS = ['#D64550','#E8A63C','#3E7DBB','#4C9A63','#8B5E9E','#E0752E'];
   var VIKING_COLORS = ['#8B6B4A','#6E5A48','#A85C3E','#7C5A3E'];
   var GATE_COLORS = ['#D89A2E','#C0453D','#3E7DBB','#4C9A63'];
+  var CAROUSEL_COLORS = ['#D64550','#E8A63C','#3E7DBB','#D65FA8'];
+  var TEACUP_COLORS = ['#D65FA8','#3E7DBB','#E8A63C','#4C9A63','#8B5E9E'];
+  var DROPTOWER_COLORS = ['#C0453D','#3E7DBB','#4A4A52'];
+  var BUMPERCAR_COLORS = ['#D64550','#3E7DBB','#E8A63C','#4C9A63','#D65FA8','#8B5E9E'];
   // Instance size and height ranges, per draw type — a fleet of
   // identically-sized coasters reads as flat no matter the palette; real
   // variety needs some genuinely bigger/taller than others. Same idea for
   // trees: a park full of identical-height trees looks planted by machine,
   // not grown.
-  var SIZE_RANGE = { tree: [0.7, 1.9], lake: [0.7, 1.6], coaster_loop: [0.85, 1.2], coaster_classic: [0.85, 1.2], ferriswheel: [0.8, 1.3], viking: [0.8, 1.25] };
+  var SIZE_RANGE = { tree: [0.7, 1.9], lake: [0.7, 1.6], coaster_loop: [0.85, 1.3], coaster_classic: [0.85, 1.3], coaster_corkscrew: [0.85, 1.3], ferriswheel: [0.8, 1.3], viking: [0.8, 1.25], carousel: [0.8, 1.25], teacups: [0.8, 1.2], droptower: [0.85, 1.3], bumpercars: [0.8, 1.25] };
   var HEIGHT_RANGE = { tree: [0.7, 1.7] };
 
   var blots, player, objects, particles, fountains, totalCount, timeLeft;
@@ -632,6 +662,20 @@
   function rand(a,b){ return a + Math.random()*(b-a); }
   function dist(ax,ay,bx,by){ var dx=ax-bx, dy=ay-by; return Math.sqrt(dx*dx+dy*dy); }
   function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+  // A deterministic per-instance RNG (mulberry32) — every ride gets a
+  // fixed seed at placement time (see generateWorld) so its procedural
+  // shape (coaster track layout, teacup phase, etc.) comes out the same
+  // every frame instead of reshuffling itself each time it's drawn, while
+  // still giving every individual instance its own unique layout.
+  function makeRng(seed){
+    var s = seed >>> 0;
+    return function(){
+      s = (s + 0x6D2B79F5) | 0;
+      var v = Math.imul(s ^ (s >>> 15), 1 | s);
+      v = (v + Math.imul(v ^ (v >>> 7), 61 | v)) ^ v;
+      return ((v ^ (v >>> 14)) >>> 0) / 4294967296;
+    };
+  }
   // What fraction of the smaller circle's (r's) area is covered by the
   // bigger one (R), given the distance between their centers — the actual
   // lens-overlap area of two circles, not a distance-only approximation.
@@ -898,8 +942,10 @@
           } else if (tier.draw==='fence'){
             rot = p.vertical ? Math.PI/2 : 0;
           } else if (tier.draw==='castle' || tier.draw==='coaster_loop' || tier.draw==='coaster_classic'
-              || tier.draw==='ferriswheel' || tier.draw==='viking' || tier.draw==='restaurant'
-              || tier.draw==='archgate' || tier.draw==='queue' || tier.draw==='watertower'){
+              || tier.draw==='coaster_corkscrew' || tier.draw==='ferriswheel' || tier.draw==='viking'
+              || tier.draw==='restaurant' || tier.draw==='archgate' || tier.draw==='queue'
+              || tier.draw==='watertower' || tier.draw==='carousel' || tier.draw==='teacups'
+              || tier.draw==='droptower' || tier.draw==='bumpercars'){
             // Big fixed installations sit grid-aligned — a real midway is
             // laid out on purpose, not scattered at random angles.
             rot = 0;
@@ -913,10 +959,14 @@
           var basePalette = tier.draw==='lake' ? LAKE_COLORS
             : tier.draw==='windmill' ? WINDMILL_COLORS
             : tier.draw==='watertower' ? WATERTOWER_COLORS
-            : (tier.draw==='coaster_loop' || tier.draw==='coaster_classic') ? COASTER_COLORS
+            : (tier.draw==='coaster_loop' || tier.draw==='coaster_classic' || tier.draw==='coaster_corkscrew') ? COASTER_COLORS
             : tier.draw==='restaurant' ? RESTAURANT_COLORS
             : tier.draw==='viking' ? VIKING_COLORS
             : tier.draw==='archgate' ? GATE_COLORS
+            : tier.draw==='carousel' ? CAROUSEL_COLORS
+            : tier.draw==='teacups' ? TEACUP_COLORS
+            : tier.draw==='droptower' ? DROPTOWER_COLORS
+            : tier.draw==='bumpercars' ? BUMPERCAR_COLORS
             : tier.draw==='flower' ? FLOWER_COLORS : null;
           var baseColor = basePalette ? basePalette[Math.floor(Math.random()*basePalette.length)] : tier.color;
           var instanceColor = shadeColor(baseColor, rand(-0.1, 0.08));
@@ -924,7 +974,7 @@
           var heightMul = rand(heightRange[0], heightRange[1]);
           objects.push({
             kind:'food', tier: tierIdx, r: instanceR, color: instanceColor, shirtColor: shirtColor, draw: tier.draw,
-            x:x, y:y, rot: rot, heightMul: heightMul,
+            x:x, y:y, rot: rot, heightMul: heightMul, seed: Math.floor(rand(1,999999)),
             alive:true, swallowing:false, swallowT:0, swallower:null
           });
           placed = true;
@@ -933,6 +983,7 @@
       }
     });
 
+    placeRideQueues();
     buildObjectGrid();
     // A small dedicated list so the periodic water-spray update (see
     // update()) only ever has to look at actual fountains — not scan the
@@ -941,6 +992,70 @@
     fountains = objects.filter(function(o){ return o.draw==='fountain'; });
     fountains.forEach(function(f){ f.spoutTimer = rand(0, 0.6); });
     timeLeft = GAME_LENGTH;
+  }
+
+  // Every actual ride — not the castle, not scenery — gets exactly one
+  // queue line attached directly to its own edge, with a gate at the far
+  // end of that line. Queues used to be scattered across the map with no
+  // relation to any ride at all, which is why they were so easy to miss:
+  // a line that doesn't lead anywhere doesn't read as a line. This runs
+  // once per game, right after every ride has its final placed position,
+  // and reuses the exact same clearance check the main placement loop
+  // uses so an attached queue/gate can never land on top of something
+  // already there.
+  var RIDE_ENTRANCE_DRAWS = ['coaster_loop','coaster_classic','coaster_corkscrew','ferriswheel','viking','carousel','teacups','droptower','bumpercars'];
+  function placeRideQueues(){
+    var queueTier = TIERS.filter(function(tr){ return tr.name==='queueline'; })[0];
+    var gateTier = TIERS.filter(function(tr){ return tr.name==='archgate'; })[0];
+    var rides = objects.filter(function(o){ return RIDE_ENTRANCE_DRAWS.indexOf(o.draw) !== -1; });
+    var DIRS = [[0,1],[0,-1],[1,0],[-1,0]];
+    function clearOf(x, y, vr, skip){
+      for (var ci=0; ci<CORNERS.length; ci++){
+        if (dist(x,y,CORNERS[ci][0],CORNERS[ci][1]) < CORNER_CLEAR) return false;
+      }
+      if (x < vr+30 || x > WORLD.w-vr-30 || y < vr+30 || y > WORLD.h-vr-30) return false;
+      for (var j=0;j<objects.length;j++){
+        var o = objects[j];
+        if (o === skip) continue;
+        var vr2 = o.r * (SHAPE_WIDTH[o.draw]||1.2) / 2;
+        if (dist(x,y,o.x,o.y) < (vr+vr2)*1.05 + 10) return false;
+      }
+      return true;
+    }
+    rides.forEach(function(ride){
+      var rideVR = ride.r * (SHAPE_WIDTH[ride.draw]||1.2) / 2;
+      var dirsShuffled = shuffled(DIRS);
+      for (var di=0; di<dirsShuffled.length; di++){
+        var dir = dirsShuffled[di];
+        var gap = 20;
+        var queueR = queueTier.r * rand(0.9,1.15);
+        var queueVR = queueR * (SHAPE_WIDTH['queue']||1.7) / 2;
+        var qx = ride.x + dir[0]*(rideVR + queueVR + gap);
+        var qy = ride.y + dir[1]*(rideVR + queueVR + gap);
+        if (!clearOf(qx, qy, queueVR, ride)) continue;
+
+        objects.push({
+          kind:'food', tier:-1, r: queueR, color: shadeColor(queueTier.color, rand(-0.1,0.08)),
+          shirtColor:null, draw:'queue', x:qx, y:qy, rot:0, heightMul:1, seed: Math.floor(rand(1,999999)),
+          alive:true, swallowing:false, swallowT:0, swallower:null
+        });
+
+        // The gate sits one step further out along the same line — the
+        // actual walk-up entrance, beyond the far end of the queue.
+        var gateR = gateTier.r * rand(0.9,1.1);
+        var gateVR = gateR * (SHAPE_WIDTH['archgate']||1.9) / 2;
+        var gx = qx + dir[0]*(queueVR + gateVR + gap);
+        var gy = qy + dir[1]*(queueVR + gateVR + gap);
+        if (clearOf(gx, gy, gateVR, ride)){
+          objects.push({
+            kind:'food', tier:-1, r: gateR, color: shadeColor(gateTier.color, rand(-0.1,0.08)),
+            shirtColor:null, draw:'archgate', x:gx, y:gy, rot:0, heightMul:1, seed: Math.floor(rand(1,999999)),
+            alive:true, swallowing:false, swallowT:0, swallower:null
+          });
+        }
+        break; // this ride has its queue — no need to try the other sides
+      }
+    });
   }
 
   // A brute-force "check every object" collision scan was fine at a couple
@@ -1205,7 +1320,8 @@
         o.toppleAngle = (Math.random()<0.5?-1:1) * rand(0.7, 1.6);
         o.swallower = blot;
         blot.eaten++;
-        blot.targetR = Math.min(MAX_R, blot.targetR + o.r * GROWTH_COEF);
+        var growMult = blot.isPlayer ? PLAYER_GROWTH_MULT : 1;
+        blot.targetR = Math.min(MAX_R, blot.targetR + o.r * GROWTH_COEF * growMult);
         spawnBurst(o.x, o.y, o.color, Math.round(6 + o.r*0.15));
       }
     });
@@ -1213,8 +1329,10 @@
 
   function killBlot(loser, winner){
     winner.kills++;
-    // Winner takes the loser's full size as a bonus — not a fraction of it.
-    winner.targetR = Math.min(MAX_R, winner.targetR + loser.targetR);
+    // Winner takes the loser's full size as a bonus — not a fraction of it
+    // (still slowed by the player's own growth multiplier when applicable).
+    var killGrowMult = winner.isPlayer ? PLAYER_GROWTH_MULT : 1;
+    winner.targetR = Math.min(MAX_R, winner.targetR + loser.targetR * killGrowMult);
     loser.alive = false;
     loser.deaths++;
     loser.respawnAt = t + RESPAWN_DELAY;
@@ -1242,8 +1360,11 @@
         // uses the true radii; only who-can-kill-whom is capped.
         if (aBigger && circleOverlapFraction(d, blotDrawR(a), b.r) >= SWALLOW_COVERAGE){ killBlot(b,a); continue; }
         if (bBigger && circleOverlapFraction(d, blotDrawR(b), a.r) >= SWALLOW_COVERAGE){ killBlot(a,b); continue; }
-        if (!aBigger && !bBigger){
-          // Too evenly matched for either to ever eat the other — bounce.
+        var aClearlyBigger = b.r*BOUNCE_MARGIN < a.r;
+        var bClearlyBigger = a.r*BOUNCE_MARGIN < b.r;
+        if (!aClearlyBigger && !bClearlyBigger){
+          // Close enough in size that neither can realistically corner and
+          // cover the other — a real physical collision, so bounce apart.
           var nx = d>0 ? (a.x-b.x)/d : 1;
           var ny = d>0 ? (a.y-b.y)/d : 0;
           var overlap = (combined-d)/2;
@@ -1430,6 +1551,94 @@
     return 'rgb(' + r + ',' + g + ',' + b + ')';
   }
 
+  // Shared roller-coaster track builder: a closed loop of control points
+  // with real hills and a drop (not a circle or an oval) — one point is
+  // always pulled way up into a lift-hill peak, the next pulled way down
+  // into the first drop, and the rest roll more gently. Point 0 always
+  // sits toward the ride's own south side and low ("the station") — that's
+  // where placeRideQueues attaches the queue line and where the train
+  // visibly stops (see drawCoasterTrain). Seeded per-instance (see
+  // generateWorld's o.seed) so this comes out the same shape every frame,
+  // but a genuinely different shape for every single coaster.
+  function coasterTrack(r, seed){
+    var rng = makeRng(seed);
+    var n = 10 + Math.floor(rng()*3);
+    var peakIdx = 2 + Math.floor(rng()*(n-4));
+    var pts = [];
+    for (var i=0;i<n;i++){
+      var ang = (i/n)*Math.PI*2 + Math.PI/2;
+      var radial = 0.55 + rng()*0.55;
+      var heightBias;
+      if (i === peakIdx) heightBias = -0.6;
+      else if (i === (peakIdx+1)%n) heightBias = 0.4;
+      else if (i === 0) heightBias = 0.15;
+      else heightBias = (rng()-0.5)*0.3;
+      pts.push({ x: Math.cos(ang)*r*radial, y: Math.sin(ang)*r*radial*0.8 + r*heightBias });
+    }
+    return pts;
+  }
+
+  function strokeSmoothClosed(pts){
+    var n = pts.length;
+    ctx.beginPath();
+    ctx.moveTo((pts[0].x+pts[n-1].x)/2, (pts[0].y+pts[n-1].y)/2);
+    for (var i=0;i<n;i++){
+      var p0 = pts[i], p1 = pts[(i+1)%n];
+      ctx.quadraticCurveTo(p0.x, p0.y, (p0.x+p1.x)/2, (p0.y+p1.y)/2);
+    }
+  }
+
+  function drawCoasterStation(p0, r, fillColor){
+    ctx.save();
+    ctx.translate(p0.x, p0.y);
+    ctx.fillStyle = shadeColor(fillColor, 0.25);
+    roundRect(ctx, -r*0.32, -r*0.14, r*0.64, r*0.22, r*0.04);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = shadeColor(fillColor, -0.2);
+    ctx.beginPath();
+    ctx.moveTo(-r*0.38,-r*0.14); ctx.lineTo(0,-r*0.34); ctx.lineTo(r*0.38,-r*0.14);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+
+  // Three cars, two seated riders each (some with their hands up),
+  // running along the track — and actually stopping at the station for a
+  // beat each lap instead of circling forever with nowhere to load.
+  function drawCoasterTrain(pts, r, fillColor, seed){
+    var rng = makeRng(seed+7);
+    var n = pts.length;
+    var cycle = 7, dwell = 0.22;
+    var phase = (t/cycle + rng()) % 1;
+    var u = phase < dwell ? 0 : (phase-dwell)/(1-dwell);
+    var riderShirts = ['#C0453D','#3E7DBB','#4C9A63','#D6A82A','#8B5E9E'];
+    for (var ci=0; ci<3; ci++){
+      var cu = phase < dwell ? 0 : (u + ci*0.09) % 1;
+      var fp = cu * n;
+      var i0 = Math.floor(fp) % n, i1 = (i0+1) % n;
+      var lt = fp - Math.floor(fp);
+      var p0 = pts[i0], p1 = pts[i1];
+      var cx = p0.x + (p1.x-p0.x)*lt, cy = p0.y + (p1.y-p0.y)*lt;
+      var ang = Math.atan2(p1.y-p0.y, p1.x-p0.x);
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate(ang);
+      ctx.fillStyle = shadeColor(fillColor, -0.1);
+      roundRect(ctx, -r*0.13,-r*0.09, r*0.26, r*0.18, r*0.035);
+      ctx.fill(); ctx.stroke();
+      for (var seat=-1; seat<=1; seat+=2){
+        ctx.fillStyle = '#F0DCC0';
+        ctx.beginPath(); ctx.arc(seat*r*0.07, 0, r*0.045, 0, Math.PI*2); ctx.fill();
+        if (rng() < 0.5){
+          ctx.strokeStyle = riderShirts[Math.floor(rng()*riderShirts.length)];
+          ctx.lineWidth = Math.max(1, r*0.025);
+          ctx.beginPath(); ctx.moveTo(seat*r*0.07-r*0.03,-r*0.02); ctx.lineTo(seat*r*0.07-r*0.06,-r*0.14); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(seat*r*0.07+r*0.03,-r*0.02); ctx.lineTo(seat*r*0.07+r*0.06,-r*0.14); ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+  }
+
   function drawShapePath(o, r, fillColor, shirtFill){
     ctx.fillStyle = fillColor;
     ctx.strokeStyle = COLOR.ink;
@@ -1603,19 +1812,25 @@
         ctx.beginPath(); ctx.moveTo(-r*0.55,-r*0.05); ctx.lineTo(r*0.55,-r*0.05); ctx.stroke();
         break;
       case 'ferriswheel':
-        // A rare, giant, genuinely-moving landmark — the wheel and every
-        // spoke slowly spin off the game clock, while each gondola
-        // counter-rotates to stay level, the way a real one holds its cars
-        // upright no matter where they are on the wheel.
+        // The gantry legs and hub bolt are fixed in place; only the rim,
+        // spokes, and gondolas spin — rotated around the wheel's own hub
+        // center via a local translate, not the ride's ground-level base,
+        // so the wheel spins in place instead of orbiting around its base.
+        ctx.strokeStyle = shadeColor(fillColor,-0.3);
+        ctx.lineWidth = Math.max(2, r*0.06);
+        ctx.beginPath(); ctx.moveTo(-r*0.5,0); ctx.lineTo(0,-r*0.85); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(r*0.5,0); ctx.lineTo(0,-r*0.85); ctx.stroke();
+
         ctx.save();
+        ctx.translate(0,-r*0.85);
         ctx.rotate(t*0.3);
         ctx.strokeStyle = fillColor;
         ctx.lineWidth = Math.max(2, r*0.05);
-        ctx.beginPath(); ctx.arc(0,-r*0.85,r*0.85,0,Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0,0,r*0.85,0,Math.PI*2); ctx.stroke();
         for (var fwi=0; fwi<8; fwi++){
           var fang = fwi*Math.PI/4;
-          var fx = Math.cos(fang)*r*0.85, fy = -r*0.85+Math.sin(fang)*r*0.85;
-          ctx.beginPath(); ctx.moveTo(0,-r*0.85); ctx.lineTo(fx,fy); ctx.stroke();
+          var fx = Math.cos(fang)*r*0.85, fy = Math.sin(fang)*r*0.85;
+          ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(fx,fy); ctx.stroke();
           ctx.save();
           ctx.translate(fx,fy);
           ctx.rotate(-t*0.3);
@@ -1625,12 +1840,9 @@
           ctx.restore();
         }
         ctx.restore();
+
         ctx.fillStyle = COLOR.ink;
         ctx.beginPath(); ctx.arc(0,-r*0.85,r*0.1,0,Math.PI*2); ctx.fill();
-        ctx.strokeStyle = shadeColor(fillColor,-0.3);
-        ctx.lineWidth = Math.max(2, r*0.06);
-        ctx.beginPath(); ctx.moveTo(-r*0.5,0); ctx.lineTo(0,-r*0.85); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(r*0.5,0); ctx.lineTo(0,-r*0.85); ctx.stroke();
         break;
       case 'fountain':
         ctx.fillStyle = shadeColor(fillColor, -0.1);
@@ -1649,55 +1861,163 @@
         roundRect(ctx, r*0.57, -r*0.35, r*0.28, r*0.7, r*0.05); ctx.fill(); ctx.stroke();
         break;
       case 'coaster_loop':
-        // A vertical loop coaster: one big loop track with two support legs,
-        // three cars actually orbiting it (driven by the game clock).
-        ctx.strokeStyle = shadeColor(fillColor, -0.1);
-        ctx.lineWidth = Math.max(3, r*0.08);
-        ctx.beginPath(); ctx.arc(0,-r*0.55, r*0.55, 0, Math.PI*2); ctx.stroke();
-        ctx.strokeStyle = shadeColor(fillColor, -0.35);
+        // Signature feature: a vertical loop dropped right at the bottom
+        // of the first drop.
+        var ptsL = coasterTrack(r, o.seed);
+        ctx.strokeStyle = shadeColor(fillColor,-0.4);
+        ctx.lineWidth = Math.max(2, r*0.04);
+        ptsL.forEach(function(p){
+          if (p.y < -r*0.15){ ctx.beginPath(); ctx.moveTo(p.x,0); ctx.lineTo(p.x,p.y); ctx.stroke(); }
+        });
+        ctx.strokeStyle = shadeColor(fillColor,-0.1);
+        ctx.lineWidth = Math.max(3, r*0.075);
+        strokeSmoothClosed(ptsL);
+        ctx.stroke();
+        var loopAt = ptsL[1];
+        ctx.strokeStyle = shadeColor(fillColor, 0.05);
         ctx.lineWidth = Math.max(2, r*0.05);
-        ctx.beginPath(); ctx.moveTo(-r*0.3,0); ctx.lineTo(-r*0.3,-r*0.55); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(r*0.3,0); ctx.lineTo(r*0.3,-r*0.55); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-r*1.1); ctx.stroke();
-        var trainSpeed = 1.8;
-        for (var tci=0; tci<3; tci++){
-          var tcang = t*trainSpeed - tci*0.35;
-          var tcx = Math.cos(tcang)*r*0.55, tcy = -r*0.55+Math.sin(tcang)*r*0.55;
+        ctx.beginPath(); ctx.arc(loopAt.x, loopAt.y - r*0.22, r*0.22, 0, Math.PI*2); ctx.stroke();
+        drawCoasterStation(ptsL[0], r, fillColor);
+        drawCoasterTrain(ptsL, r, fillColor, o.seed);
+        break;
+      case 'coaster_classic':
+        // Signature feature: a real wooden lattice — crisscrossed support
+        // beams from the ground up to every point on the track.
+        var ptsC = coasterTrack(r, o.seed);
+        ctx.strokeStyle = shadeColor(fillColor,-0.35);
+        ctx.lineWidth = Math.max(1, r*0.025);
+        ptsC.forEach(function(p){
+          if (p.y > -r*0.1) return;
+          ctx.beginPath(); ctx.moveTo(p.x-r*0.06, 0); ctx.lineTo(p.x+r*0.06, p.y); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(p.x+r*0.06, 0); ctx.lineTo(p.x-r*0.06, p.y); ctx.stroke();
+        });
+        ctx.strokeStyle = shadeColor(fillColor,-0.05);
+        ctx.lineWidth = Math.max(3, r*0.075);
+        strokeSmoothClosed(ptsC);
+        ctx.stroke();
+        drawCoasterStation(ptsC[0], r, fillColor);
+        drawCoasterTrain(ptsC, r, fillColor, o.seed);
+        break;
+      case 'coaster_corkscrew':
+        // Signature feature: a tight double-helix corkscrew twist dropped
+        // into the middle of the run.
+        var ptsS = coasterTrack(r, o.seed);
+        ctx.strokeStyle = shadeColor(fillColor,-0.4);
+        ctx.lineWidth = Math.max(2, r*0.04);
+        ptsS.forEach(function(p){
+          if (p.y < -r*0.15){ ctx.beginPath(); ctx.moveTo(p.x,0); ctx.lineTo(p.x,p.y); ctx.stroke(); }
+        });
+        ctx.strokeStyle = shadeColor(fillColor,-0.1);
+        ctx.lineWidth = Math.max(3, r*0.07);
+        strokeSmoothClosed(ptsS);
+        ctx.stroke();
+        var csAt = ptsS[Math.floor(ptsS.length/2)];
+        ctx.strokeStyle = shadeColor(fillColor, 0.1);
+        ctx.lineWidth = Math.max(2, r*0.045);
+        ctx.beginPath();
+        for (var csi=0; csi<=24; csi++){
+          var csu = csi/24;
+          var cx2 = csAt.x + (csu-0.5)*r*0.5;
+          var cy2 = csAt.y - r*0.15 + Math.sin(csu*Math.PI*3)*r*0.18;
+          if (csi===0) ctx.moveTo(cx2,cy2); else ctx.lineTo(cx2,cy2);
+        }
+        ctx.stroke();
+        drawCoasterStation(ptsS[0], r, fillColor);
+        drawCoasterTrain(ptsS, r, fillColor, o.seed);
+        break;
+      case 'carousel':
+        ctx.fillStyle = shadeColor(fillColor, -0.15);
+        ctx.beginPath(); ctx.ellipse(0,0, r*0.95, r*0.5, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.save();
+        ctx.rotate(t*0.25);
+        var horseColors = ['#F0EFE8','#E8A63C','#D64550','#3E7DBB'];
+        for (var hi=0; hi<6; hi++){
+          var hang = hi/6*Math.PI*2;
+          var hx = Math.cos(hang)*r*0.6, hy = Math.sin(hang)*r*0.32;
+          var bob = Math.sin(t*2.4 + hi*1.4)*r*0.08;
           ctx.save();
-          ctx.translate(tcx,tcy);
-          ctx.rotate(tcang+Math.PI/2);
-          ctx.fillStyle = shadeColor(fillColor, -0.15);
-          roundRect(ctx, -r*0.12,-r*0.08, r*0.24, r*0.16, r*0.03);
+          ctx.translate(hx, hy - r*0.15 + bob);
+          ctx.fillStyle = horseColors[hi % horseColors.length];
+          roundRect(ctx, -r*0.09, -r*0.22, r*0.18, r*0.26, r*0.05);
           ctx.fill(); ctx.stroke();
+          ctx.beginPath(); ctx.arc(0, -r*0.26, r*0.08, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+          ctx.restore();
+        }
+        ctx.restore();
+        ctx.strokeStyle = shadeColor(fillColor,-0.3);
+        ctx.lineWidth = Math.max(2, r*0.05);
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-r*1.1); ctx.stroke();
+        for (var ci3=0;ci3<8;ci3++){
+          var cang = ci3/8*Math.PI*2;
+          ctx.strokeStyle = ci3%2===0 ? fillColor : '#F0EFE8';
+          ctx.lineWidth = Math.max(2, r*0.06);
+          ctx.beginPath();
+          ctx.moveTo(0,-r*1.1);
+          ctx.lineTo(Math.cos(cang)*r*0.95, -r*0.85+Math.sin(cang)*r*0.3);
+          ctx.stroke();
+        }
+        ctx.fillStyle = fillColor;
+        ctx.beginPath(); ctx.arc(0,-r*1.1, r*0.5, Math.PI, Math.PI*2); ctx.fill(); ctx.stroke();
+        break;
+      case 'teacups':
+        ctx.fillStyle = shadeColor(fillColor,-0.1);
+        ctx.beginPath(); ctx.ellipse(0,0, r*0.95, r*0.55, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        var cupRng = makeRng(o.seed);
+        for (var tcp=0; tcp<5; tcp++){
+          var orbitAng = tcp/5*Math.PI*2 + t*0.22;
+          var ox = Math.cos(orbitAng)*r*0.58, oy = Math.sin(orbitAng)*r*0.32;
+          ctx.save();
+          ctx.translate(ox,oy);
+          ctx.rotate(t*(2.2 + cupRng()*1.4) * (tcp%2===0?1:-1));
+          ctx.fillStyle = TEACUP_COLORS[tcp % TEACUP_COLORS.length];
+          ctx.beginPath(); ctx.arc(0,0, r*0.24, 0, Math.PI*2); ctx.fill(); ctx.stroke();
           ctx.fillStyle = '#F0EFE8';
-          ctx.beginPath(); ctx.arc(0,-r*0.02, r*0.05,0,Math.PI*2); ctx.fill();
+          ctx.beginPath(); ctx.arc(0,0, r*0.15, 0, Math.PI*2); ctx.fill();
+          ctx.fillStyle = '#F0DCC0';
+          ctx.beginPath(); ctx.arc(0,-r*0.03, r*0.06, 0, Math.PI*2); ctx.fill();
           ctx.restore();
         }
         break;
-      case 'coaster_classic':
-        // A wooden-style out-and-back coaster: crisscrossed lattice support
-        // under a big banked oval, with cars chasing each other around it.
+      case 'droptower':
         ctx.strokeStyle = shadeColor(fillColor,-0.3);
+        ctx.lineWidth = Math.max(2, r*0.09);
+        ctx.beginPath(); ctx.moveTo(-r*0.12,0); ctx.lineTo(-r*0.12,-r*2.1); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(r*0.12,0); ctx.lineTo(r*0.12,-r*2.1); ctx.stroke();
         ctx.lineWidth = Math.max(1, r*0.03);
-        for (var lx=-0.8; lx<=0.8; lx+=0.35){
-          ctx.beginPath(); ctx.moveTo(lx*r,-r*0.9); ctx.lineTo((lx+0.3)*r, r*0.1); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo((lx+0.3)*r,-r*0.9); ctx.lineTo(lx*r, r*0.1); ctx.stroke();
+        for (var rung=0; rung<7; rung++){
+          ctx.beginPath(); ctx.moveTo(-r*0.12, -rung*r*0.3); ctx.lineTo(r*0.12, -rung*r*0.3 - r*0.15); ctx.stroke();
         }
-        ctx.strokeStyle = shadeColor(fillColor,-0.05);
-        ctx.lineWidth = Math.max(3, r*0.07);
-        ctx.beginPath(); ctx.ellipse(0,-r*0.45, r*0.85, r*0.42, 0, 0, Math.PI*2); ctx.stroke();
-        var speed2 = 1.1;
-        for (var tci2=0; tci2<4; tci2++){
-          var tcang2 = t*speed2 - tci2*0.28;
-          var tcx2 = Math.cos(tcang2)*r*0.85, tcy2 = -r*0.45+Math.sin(tcang2)*r*0.42;
+        var dtCycle = 5.5, dtRiseFrac = 0.62;
+        var dtPhase = (t/dtCycle + makeRng(o.seed)()) % 1;
+        var dtLift = dtPhase < dtRiseFrac ? dtPhase/dtRiseFrac : 1 - Math.pow((dtPhase-dtRiseFrac)/(1-dtRiseFrac), 0.4);
+        var gy = -r*0.3 - dtLift*r*1.6;
+        ctx.fillStyle = fillColor;
+        roundRect(ctx, -r*0.4, gy-r*0.14, r*0.8, r*0.22, r*0.05);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#F0DCC0';
+        for (var dseat=-1; dseat<=1; dseat++){
+          ctx.beginPath(); ctx.arc(dseat*r*0.26, gy+r*0.06, r*0.06, 0, Math.PI*2); ctx.fill();
+        }
+        break;
+      case 'bumpercars':
+        ctx.fillStyle = shadeColor(fillColor,-0.15);
+        roundRect(ctx, -r*0.95,-r*0.55, r*1.9, r*1.1, r*0.14);
+        ctx.fill(); ctx.stroke();
+        var bcRng = makeRng(o.seed);
+        for (var bci=0; bci<6; bci++){
+          var ph = bcRng()*Math.PI*2;
+          var fx = 0.5 + bcRng()*0.7, fy = 0.6 + bcRng()*0.6;
+          var bx = Math.sin(t*fx + ph) * r*0.62;
+          var by = Math.sin(t*fy + ph*1.7) * r*0.32;
+          var bang = Math.atan2(Math.cos(t*fy+ph*1.7)*fy, Math.cos(t*fx+ph)*fx);
           ctx.save();
-          ctx.translate(tcx2,tcy2);
-          ctx.rotate(tcang2);
-          ctx.fillStyle = shadeColor(fillColor,0.1);
-          roundRect(ctx, -r*0.11,-r*0.07, r*0.22, r*0.14, r*0.03);
+          ctx.translate(bx,by);
+          ctx.rotate(bang);
+          ctx.fillStyle = BUMPERCAR_COLORS[bci % BUMPERCAR_COLORS.length];
+          roundRect(ctx, -r*0.14,-r*0.11, r*0.28, r*0.22, r*0.06);
           ctx.fill(); ctx.stroke();
-          ctx.fillStyle = '#F0EFE8';
-          ctx.beginPath(); ctx.arc(0,0, r*0.045,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle = '#F0DCC0';
+          ctx.beginPath(); ctx.arc(0,0, r*0.06, 0, Math.PI*2); ctx.fill();
           ctx.restore();
         }
         break;
@@ -1727,9 +2047,11 @@
         ctx.restore();
         break;
       case 'queue':
-        // A wiggly switchback line: zigzag rope-and-post barrier with a
-        // handful of people standing and waiting along it.
-        var qRows = 4, qHalf = r*0.75;
+        // A wiggly switchback line: several zigzag rope-and-post rows,
+        // and now an actual crowd waiting along them — this connects
+        // directly to a ride's own entrance (see placeRideQueues), so it
+        // needs to read as a real line of people, not a token prop.
+        var qRows = 6, qHalf = r*0.8;
         ctx.strokeStyle = shadeColor(fillColor, 0.15);
         ctx.lineWidth = Math.max(1.5, r*0.045);
         ctx.beginPath();
@@ -1747,14 +2069,19 @@
           ctx.beginPath(); ctx.arc(-qHalf, qy2, r*0.06, 0, Math.PI*2); ctx.fill();
           ctx.beginPath(); ctx.arc(qHalf, qy2, r*0.06, 0, Math.PI*2); ctx.fill();
         }
-        var qPeople = [[-0.3,-0.55,'#D64550'],[0.15,-0.15,'#3E7DBB'],[-0.45,0.3,'#E8A63C'],[0.4,0.6,'#4C9A63']];
-        for (var qpi=0; qpi<qPeople.length; qpi++){
-          var qp = qPeople[qpi];
-          ctx.fillStyle = '#F0DCC0';
-          ctx.beginPath(); ctx.arc(qp[0]*r, qp[1]*r - r*0.14, r*0.07, 0, Math.PI*2); ctx.fill();
-          ctx.fillStyle = qp[2];
-          roundRect(ctx, qp[0]*r - r*0.08, qp[1]*r - r*0.06, r*0.16, r*0.2, r*0.04);
-          ctx.fill();
+        var qRng = makeRng(o.seed);
+        for (var qr3=0; qr3<qRows; qr3++){
+          var rowY = -qHalf + (qr3/(qRows-1))*qHalf*2;
+          var peopleInRow = 2 + Math.floor(qRng()*2);
+          for (var pp=0; pp<peopleInRow; pp++){
+            var along = -qHalf*0.75 + (pp/(peopleInRow-1||1)) * qHalf*1.5;
+            var jitter = (qRng()-0.5)*r*0.08;
+            ctx.fillStyle = '#F0DCC0';
+            ctx.beginPath(); ctx.arc(along, rowY+jitter - r*0.14, r*0.065, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = SHIRT_COLORS[Math.floor(qRng()*SHIRT_COLORS.length)];
+            roundRect(ctx, along - r*0.07, rowY+jitter - r*0.05, r*0.14, r*0.18, r*0.035);
+            ctx.fill();
+          }
         }
         break;
       case 'archgate':
@@ -1806,8 +2133,8 @@
   // sorting to correctly layer it behind/in front of whatever it passes
   // near, it just looked like it was growing out of the nearest neighbor.
   // Kept modest instead; draw-order sorting below does the rest of the work.
-  var SHAPE_HEIGHT = { cone:0.6, person:1.1, tree:1.0, fence:0.65, castle:1.4, flower:0.35, grass:0.3, lake:0.05, sign:0.55, bench:0.32, windmill:2.0, watertower:1.7, ferriswheel:1.3, fountain:0.25, picnictable:0.3, coaster_loop:1.6, coaster_classic:1.4, viking:1.6, queue:0.35, archgate:1.3, restaurant:0.9 };
-  var SHAPE_WIDTH  = { cone:1.05, person:0.5, tree:0.24, fence:1.7, castle:2.5, flower:0.55, grass:0.75, lake:2.2, sign:0.5, bench:1.9, windmill:0.5, watertower:0.5, ferriswheel:1.9, fountain:1.8, picnictable:1.85, coaster_loop:1.3, coaster_classic:1.9, viking:1.5, queue:1.7, archgate:1.9, restaurant:1.9 };
+  var SHAPE_HEIGHT = { cone:0.6, person:1.1, tree:1.0, fence:0.65, castle:1.4, flower:0.35, grass:0.3, lake:0.05, sign:0.55, bench:0.32, windmill:2.0, watertower:1.7, ferriswheel:1.3, fountain:0.25, picnictable:0.3, coaster_loop:2.1, coaster_classic:1.9, coaster_corkscrew:2.1, viking:1.6, queue:0.35, archgate:1.3, restaurant:0.9, carousel:1.3, teacups:0.7, droptower:2.6, bumpercars:0.5 };
+  var SHAPE_WIDTH  = { cone:1.05, person:0.5, tree:0.24, fence:1.7, castle:2.5, flower:0.55, grass:0.75, lake:2.2, sign:0.5, bench:1.9, windmill:0.5, watertower:0.5, ferriswheel:1.9, fountain:1.8, picnictable:1.85, coaster_loop:2.5, coaster_classic:2.5, coaster_corkscrew:2.5, viking:1.5, queue:1.7, archgate:1.9, restaurant:1.9, carousel:2.0, teacups:2.0, droptower:0.5, bumpercars:2.0 };
   // Trees get a real wood trunk instead of a shaded copy of their (green)
   // canopy color; flowers get a real green stem the same way.
   var SHAPE_WALL_COLOR = { tree: 'wood', flower: 'green' };
@@ -2009,56 +2336,25 @@
     ctx.fill();
     ctx.restore();
 
-    // The hole reads as an actual sunken pit with a raised, spiked rim —
-    // not a flat wobbly blob — a jagged maw collar in the blot's own color
-    // around a dark, bottomless-looking interior, with a ring of teeth
-    // biting inward from the rim. Every hole shares the same dark pit
-    // color (what you fall into looks the same no matter whose hole it
-    // is); only the rim carries the player's own color.
-    var spikes = 13;
-    var rimOuter = dr * 1.15;
-    var rimBase = dr * 0.92;
+    // A plain wobbly ink blot — an actual hole is ink-black no matter
+    // whose it is; the soft glow above (in the blot's own color) is what
+    // tells whose hole is whose, not the blot itself.
+    var rimOuter = dr;
     ctx.beginPath();
-    for (var i=0;i<=spikes*2;i++){
-      var ang = (i/(spikes*2)) * Math.PI*2;
-      var wob = Math.sin(ang*3 + t*1.3 + b.wobbleSeed)*0.025;
-      var rr = (i%2===0 ? rimOuter : rimBase) * (1+wob);
+    var wobSteps = 20;
+    for (var i=0;i<=wobSteps;i++){
+      var ang = (i/wobSteps) * Math.PI*2;
+      var wob = Math.sin(ang*3 + t*1.3 + b.wobbleSeed)*0.06 + Math.sin(ang*5 - t*0.7 + b.wobbleSeed*1.7)*0.03;
+      var rr = rimOuter * (1+wob);
       var px = b.x + Math.cos(ang)*rr, py = b.y + Math.sin(ang)*rr;
       if (i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
     }
     ctx.closePath();
-    var rimGrad = ctx.createRadialGradient(b.x, b.y, rimBase*0.85, b.x, b.y, rimOuter);
-    rimGrad.addColorStop(0, shadeColor(b.color, -0.15));
-    rimGrad.addColorStop(1, shadeColor(b.color, 0.2));
-    ctx.fillStyle = rimGrad;
+    ctx.fillStyle = COLOR.ink;
     ctx.fill();
-    ctx.lineWidth = Math.max(1.5, dr*0.045);
-    ctx.strokeStyle = COLOR.ink;
+    ctx.lineWidth = Math.max(1.5, dr*0.06);
+    ctx.strokeStyle = shadeColor(COLOR.ink, 0.14);
     ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, rimBase, 0, Math.PI*2);
-    var pitGrad = ctx.createRadialGradient(b.x, b.y, rimBase*0.05, b.x, b.y, rimBase);
-    pitGrad.addColorStop(0, '#2E1212');
-    pitGrad.addColorStop(1, '#140707');
-    ctx.fillStyle = pitGrad;
-    ctx.fill();
-
-    var teeth = 11;
-    ctx.fillStyle = '#EEEAE0';
-    ctx.strokeStyle = COLOR.ink;
-    ctx.lineWidth = Math.max(1, dr*0.02);
-    for (var ti=0; ti<teeth; ti++){
-      var tang = (ti/teeth)*Math.PI*2 + b.wobbleSeed;
-      var half = (Math.PI/teeth)*0.4;
-      var lx = b.x+Math.cos(tang-half)*rimBase, ly = b.y+Math.sin(tang-half)*rimBase;
-      var rxp = b.x+Math.cos(tang+half)*rimBase, ryp = b.y+Math.sin(tang+half)*rimBase;
-      var tipR = rimBase*0.68;
-      var tx = b.x+Math.cos(tang)*tipR, ty = b.y+Math.sin(tang)*tipR;
-      ctx.beginPath();
-      ctx.moveTo(lx,ly); ctx.lineTo(tx,ty); ctx.lineTo(rxp,ryp);
-      ctx.closePath(); ctx.fill(); ctx.stroke();
-    }
 
     if (b.bump > 0){
       ctx.beginPath();
@@ -2200,14 +2496,24 @@
     // performance matters most. Fall back to zoom 1 whenever it isn't a
     // sane positive number.
     var safeZoom = camera.zoom > 0 && isFinite(camera.zoom) ? camera.zoom : 1;
-    var cullMargin = 500;
+    // A single flat margin used to work back when everything was a similar
+    // size, but once the castle (and now the sprawling coaster tracks) got
+    // big — a castle's silhouette alone reaches ~2000 units from its own
+    // center — a fixed 500-unit pad was nowhere near enough to cover it:
+    // its CENTER could sit just outside that pad while a huge chunk of its
+    // actual drawing was already on screen, so it would pop fully into
+    // view out of nowhere as the camera crossed that boundary instead of
+    // entering smoothly from offscreen. Each object now gets its own
+    // margin sized off its actual drawn footprint (see SHAPE_WIDTH/HEIGHT)
+    // instead of one constant that only fit the smallest things in the map.
     var viewWorldW2 = viewW / safeZoom, viewWorldH2 = viewH / (safeZoom*Y_SQUASH);
-    var vx0 = camera.x - cullMargin, vx1 = camera.x + viewWorldW2 + cullMargin;
-    var vy0 = camera.y - cullMargin, vy1 = camera.y + viewWorldH2 + cullMargin;
+    var vx0 = camera.x, vx1 = camera.x + viewWorldW2;
+    var vy0 = camera.y, vy1 = camera.y + viewWorldH2;
     var scene = [];
     objects.forEach(function(o){
       if (o.swallowing) return;
-      if (o.x < vx0 || o.x > vx1 || o.y < vy0 || o.y > vy1) return;
+      var margin = o.r * Math.max(SHAPE_WIDTH[o.draw]||1.2, (SHAPE_HEIGHT[o.draw]||0.5)*1.3) * 1.3 + 60;
+      if (o.x < vx0-margin || o.x > vx1+margin || o.y < vy0-margin || o.y > vy1+margin) return;
       scene.push(o);
     });
     blots.forEach(function(b){ if (b.alive) scene.push(b); });
