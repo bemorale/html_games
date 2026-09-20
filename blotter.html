@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <meta charset="UTF-8">
 <title>Blotter</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -486,17 +486,27 @@
   // drawn to the screen is compressed vertically.
   var Y_SQUASH = 0.72;
   var BASE_R = 22;
-  var MAX_R = 2000;
+  // No ceiling — growth used to hard-stop at 2000 (90.9x BASE_R), which in
+  // practice most of the field was reaching well before time ran out, so
+  // the whole back half of every match played out capped at the same size
+  // instead of the leaderboard still meaningfully separating. The render
+  // side already never assumed a bounded r: blotDrawR caps a blot's DRAWN
+  // size to fit the screen independently of its true r, and the camera's
+  // own zoom-out is clamped by fitZoom (the "whole map visible" level), so
+  // nothing here actually needed a hard cap to stay on-screen or sane.
+  var MAX_R = Infinity;
   // A blot's center can never get closer than its own radius to a wall, so a
   // corner squeezes reach from two sides at once (sqrt(2) worse than a flat
   // edge). Swallowing requires FULLY covering the object (see
   // processBlotObjectCollisions), not just touching it — which flips how the
   // object's own radius factors in: touching is *helped* by a bigger object
   // radius (it reaches back toward you), but covering is *hurt* by it (you
-  // have to reach past its far edge). Worst case is the boss tier at MAX_R:
-  // needs clearance >= MAX_R*(sqrt(2)-1) + r, so this keeps real margin
-  // above that for every object size — recomputed after the boss tier's r
-  // grew 6x (was 1088 needed at r=260; now needs ~2388 at r=1560).
+  // have to reach past its far edge). This was originally sized against a
+  // bounded MAX_R (2000); now that growth is uncapped, an extraordinarily
+  // grown blot could in theory still fall just short of fully reaching
+  // around a corner to cover the castle sitting there — a rare, cosmetic
+  // edge case (one specific object briefly uncoverable), not a stuck-game
+  // bug, so not worth chasing with a corresponding CORNER_CLEAR increase.
   var CORNER_CLEAR = 2450;
   var CORNERS = [[0,0],[WORLD.w,0],[0,WORLD.h],[WORLD.w,WORLD.h]];
   var GAME_LENGTH = 90;
@@ -530,8 +540,12 @@
   // enough to eat to sustain that slower climb over the match.
   var GROWTH_COEF = 0.09;
   // How much faster or slower the player grows compared to bots (bots
-  // always grow at the normal 1x pace — see GROWTH_COEF above).
-  var PLAYER_GROWTH_MULT = 1.35;
+  // always grow at the normal 1x pace — see GROWTH_COEF above). Was 1.35,
+  // but combined with bots being slower than the player too (see
+  // AI_SPEED_MIN/MAX above), that stacked into "too easy to win" — still
+  // a real edge, just not an overwhelming one now that bots can actually
+  // keep pace.
+  var PLAYER_GROWTH_MULT = 1.15;
   var SWALLOW_DURATION = 0.4;
   var RESPAWN_DELAY = 5;
   // How far a blot's own radius must stay from a wall/corner at all times
@@ -543,8 +557,12 @@
   var NAME_POOL = ['winner','davvy','tim','mario','DD','Yeah','kitty',"pls don't eat me",'diana','CCCP','flo','Poppy','best','annnnne','hi',':)))))','charlie','SPAIN','liv','stella',
     'qwerty','...','OKKKAy','BOB','becauz','banana','amazing fatty','bbB','LOTrerY','GEMMYY','100%','abrobaba','USSR','K?ller','Frankenstien','Blooooob',
     'orange','123','Dream','MINI','jelly','isa','mert','person','Jayden','kate'];
-  var BOT_COUNT = 5;
-  var AI_SPEED_MIN = 320, AI_SPEED_MAX = 380;
+  var BOT_COUNT = 8;
+  // Used to be slower than the player's fixed 420 across the board — a bot
+  // fleeing could never actually be caught, and a bot hunting could never
+  // actually catch up, which is a big part of why the game played so easy.
+  // Now centered right around the player's own speed, some faster.
+  var AI_SPEED_MIN = 390, AI_SPEED_MAX = 460;
   // Hunt/threat radii used to be much larger (1400/1600) to make sure bots
   // noticed each other across the big map. But combined with the swallow
   // rule requiring FULL coverage (not just touching), that backfired badly:
@@ -555,13 +573,13 @@
   // (which scales with the bigger world below) means a rival is only
   // "noticed" when actually nearby, so food-seeking stays the default and
   // PvP stays an opportunistic event, not a permanent trap.
-  var AI_FOOD_R = 850, AI_THREAT_R = 1200, AI_HUNT_R = 1000;
+  var AI_FOOD_R = 950, AI_THREAT_R = 1300, AI_HUNT_R = 1150;
   // Once a bot locks onto the PLAYER specifically, it stays committed to
   // that chase for this long instead of re-evaluating every 0.4-0.8s and
   // bailing the moment something else looks marginally closer — a real
   // hunt, not a flinch. Safety still overrides: a genuine threat is always
   // checked first and breaks the commitment immediately.
-  var HUNT_COMMIT = 6;
+  var HUNT_COMMIT = 8;
   // After a commitment window ends without a catch, how long the bot
   // won't re-target the player again — otherwise "giving up" is invisible,
   // since the player is almost always still the nearest prey right after.
@@ -588,16 +606,28 @@
     // everywhere, not a dozen of them — two lets a giant map still have a
     // second landmark without it reading as "castle spam."
     { name:'boss',        r:1750, color:COLOR.boss,   count:2,  draw:'castle',          zone:'block' },
-    { name:'coasterLoop',       r:380, color:COLOR.red,    count:20,  draw:'coaster_loop',       zone:'block' },
-    { name:'coasterClassic',    r:400, color:COLOR.violet, count:20,  draw:'coaster_classic',    zone:'block' },
-    { name:'coasterCorkscrew',  r:360, color:COLOR.gold,   count:20,  draw:'coaster_corkscrew',  zone:'block' },
-    { name:'ferriswheel', r:280, color:COLOR.violet,  count:22, draw:'ferriswheel',      zone:'block' },
-    { name:'carousel',    r:170, color:COLOR.red,     count:32, draw:'carousel',         zone:'block' },
-    { name:'teacups',     r:150, color:COLOR.violet,  count:32, draw:'teacups',          zone:'block' },
-    { name:'droptower',   r:90,  color:COLOR.red,     count:26, draw:'droptower',        zone:'block' },
-    { name:'bumpercars',  r:180, color:COLOR.blue,    count:26, draw:'bumpercars',       zone:'block' },
+    { name:'coasterLoop',       r:480, color:COLOR.red,    count:61,  draw:'coaster_loop',       zone:'block' },
+    { name:'coasterClassic',    r:500, color:COLOR.violet, count:61,  draw:'coaster_classic',    zone:'block' },
+    { name:'coasterCorkscrew',  r:460, color:COLOR.gold,   count:60,  draw:'coaster_corkscrew',  zone:'block' },
+    // Just two ferris wheels, like the castle — one landmark per corner of
+    // the map instead of dozens; the slots they used to fill went to the
+    // coasters above instead (see the tier.count<=3 landmark spacing rule
+    // in generateWorld, which also keeps these two from landing near
+    // each other).
+    { name:'ferriswheel', r:280, color:COLOR.violet,  count:2, draw:'ferriswheel',      zone:'block' },
+    { name:'carousel',    r:170, color:COLOR.red,     count:62, draw:'carousel',         zone:'block' },
+    { name:'teacups',     r:150, color:COLOR.violet,  count:62, draw:'teacups',          zone:'block' },
+    { name:'droptower',   r:90,  color:COLOR.red,     count:50, draw:'droptower',        zone:'block' },
+    { name:'bumpercars',  r:180, color:COLOR.blue,    count:50, draw:'bumpercars',       zone:'block' },
+    // Four more genuinely different attractions — not just more coasters —
+    // so the park reads unmistakably as a theme park at a glance instead
+    // of "rows of similar-looking rides."
+    { name:'swingride',   r:150, color:COLOR.violet,  count:40, draw:'swingride',        zone:'block' },
+    { name:'logflume',    r:340, color:COLOR.blue,    count:24, draw:'logflume',         zone:'block' },
+    { name:'hauntedhouse',r:95,  color:COLOR.violet,  count:55, draw:'hauntedhouse',     zone:'block' },
+    { name:'gamestall',   r:55,  color:COLOR.red,     count:110, draw:'gamestall',        zone:'roadside' },
     { name:'lake',        r:190, color:COLOR.blue,    count:33, draw:'lake',             zone:'block' },
-    { name:'viking',      r:200, color:COLOR.wood,    count:25, draw:'viking',           zone:'block' },
+    { name:'viking',      r:200, color:COLOR.wood,    count:46, draw:'viking',           zone:'block' },
     { name:'windmill',    r:95,  color:COLOR.red,     count:74, draw:'windmill',         zone:'block' },
     { name:'restaurant',  r:85,  color:COLOR.red,     count:150, draw:'restaurant',       zone:'block' },
     { name:'watertower',  r:95,  color:COLOR.inkSoft, count:66, draw:'watertower',       zone:'block' },
@@ -611,6 +641,10 @@
     { name:'fountain',    r:35,  color:COLOR.blue,    count:140, draw:'fountain',    zone:'block' },
     { name:'tree',        r:22,  color:COLOR.green,   count:1350, draw:'tree',       zone:'block' },
     { name:'person',      r:15,  color:COLOR.inkSoft, count:1155, draw:'person',     zone:'roadside' },
+    // A separate small tier, not a fraction of the one above — some
+    // people are actually out crossing/walking the road itself, not just
+    // always parked along the sidewalk.
+    { name:'personRoad',  r:15,  color:COLOR.inkSoft, count:220,  draw:'person',     zone:'road' },
     { name:'picnictable', r:14, color:COLOR.wood,    count:430, draw:'picnictable', zone:'roadside' },
     { name:'bench',      r:12,  color:COLOR.wood,    count:725, draw:'bench',      zone:'roadside' },
     { name:'sign',       r:10,  color:COLOR.blue,    count:790, draw:'sign',       zone:'roadside' },
@@ -641,12 +675,18 @@
   var TEACUP_COLORS = ['#D65FA8','#3E7DBB','#E8A63C','#4C9A63','#8B5E9E'];
   var DROPTOWER_COLORS = ['#C0453D','#3E7DBB','#4A4A52'];
   var BUMPERCAR_COLORS = ['#D64550','#3E7DBB','#E8A63C','#4C9A63','#D65FA8','#8B5E9E'];
+  var SWING_COLORS = ['#D64550','#3E7DBB','#E8A63C','#4C9A63','#D65FA8'];
+  var FLUME_COLORS = ['#3E7DBB','#4A8FC7','#2F8F8A','#4C9A63'];
+  // Deliberately out of step with the bright midway palette everywhere
+  // else — a haunted house should look like it doesn't belong.
+  var HAUNTED_COLORS = ['#3A2A45','#2E2338','#4A3355','#241A2E'];
+  var GAMESTALL_COLORS = ['#D64550','#E8A63C','#3E7DBB','#4C9A63','#D65FA8'];
   // Instance size and height ranges, per draw type — a fleet of
   // identically-sized coasters reads as flat no matter the palette; real
   // variety needs some genuinely bigger/taller than others. Same idea for
   // trees: a park full of identical-height trees looks planted by machine,
   // not grown.
-  var SIZE_RANGE = { tree: [0.7, 1.9], lake: [0.7, 1.6], coaster_loop: [0.85, 1.3], coaster_classic: [0.85, 1.3], coaster_corkscrew: [0.85, 1.3], ferriswheel: [0.8, 1.3], viking: [0.8, 1.25], carousel: [0.8, 1.25], teacups: [0.8, 1.2], droptower: [0.85, 1.3], bumpercars: [0.8, 1.25] };
+  var SIZE_RANGE = { tree: [0.7, 1.9], lake: [0.7, 1.6], coaster_loop: [0.85, 1.3], coaster_classic: [0.85, 1.3], coaster_corkscrew: [0.85, 1.3], ferriswheel: [0.8, 1.3], viking: [0.8, 1.25], carousel: [0.8, 1.25], teacups: [0.8, 1.2], droptower: [0.85, 1.3], bumpercars: [0.8, 1.25], swingride: [0.85, 1.2], logflume: [0.85, 1.25], hauntedhouse: [0.85, 1.2], gamestall: [0.85, 1.15] };
   var HEIGHT_RANGE = { tree: [0.7, 1.7] };
 
   var blots, player, objects, particles, fountains, totalCount, timeLeft;
@@ -863,6 +903,8 @@
     objects = [];
     particles = [];
     totalCount = 0;
+    objectGrid = {};
+    bigPlaced = [];
     buildRoadNetwork();
 
     blots = [];
@@ -915,21 +957,38 @@
             if (dist(x,y,blots[bi].x,blots[bi].y) < instanceR+140){ nearBlot=true; break; }
           }
           if (nearBlot) continue;
+          // A tier with only a couple of instances (the castle, the ferris
+          // wheel) is meant to read as scattered landmarks, not a pair that
+          // happened to land in the same corner of the map — so for those
+          // specifically, also require real distance from every earlier
+          // instance of the SAME tier, not just generic non-overlap. Must
+          // be an explicit list, not a "tier.count<=3" heuristic — fence/
+          // queue/archgate all declare count:0 as a sentinel (their real
+          // count comes from elsewhere), which that heuristic accidentally
+          // matched too: it required every single fence post to sit
+          // 9000+ units from every other fence post, collapsing thousands
+          // of them down to a small handful.
+          if (tier.draw==='castle' || tier.draw==='ferriswheel'){
+            var landmarkMinSep = Math.min(WORLD.w, WORLD.h) * 0.35;
+            var tooCloseToSibling = false;
+            for (var si=0; si<objects.length; si++){
+              if (objects[si].tier === tierIdx && dist(x,y,objects[si].x,objects[si].y) < landmarkMinSep){
+                tooCloseToSibling = true; break;
+              }
+            }
+            if (tooCloseToSibling) continue;
+          }
           // Clear separation, not just non-overlapping circles — several
           // shapes (the castle's twin towers, cars/buses' wide bodies)
           // draw MUCH wider than their own gameplay radius r (the castle
           // draws at 2.5x r — a 1.15x fudge on r never came close to
           // covering that), so a spacing check based on r alone still let
           // a house's drawn silhouette land right on top of a castle's.
-          // Use each shape's actual drawn half-width instead.
+          // Use each shape's actual drawn half-width instead. Packed a
+          // little tighter than a full 1.1x pad — rides especially read
+          // better clustered into a real midway than evenly spaced out.
           var vr1 = instanceR * (SHAPE_WIDTH[tier.draw] || 1.2) / 2;
-          var ok = true;
-          for(var j=0;j<objects.length;j++){
-            var o = objects[j];
-            var vr2 = o.r * (SHAPE_WIDTH[o.draw] || 1.2) / 2;
-            if (dist(x,y,o.x,o.y) < (vr1+vr2)*1.1 + 12){ ok=false; break; }
-          }
-          if (!ok) continue;
+          if (!hasClearance(x, y, vr1, null, 1.0, 6)) continue;
           // Vehicles align with their lane; fences run parallel to the road
           // they line, not at a random angle; buildings sit grid-aligned
           // (a real city skyline doesn't have each tower tilted its own
@@ -945,7 +1004,8 @@
               || tier.draw==='coaster_corkscrew' || tier.draw==='ferriswheel' || tier.draw==='viking'
               || tier.draw==='restaurant' || tier.draw==='archgate' || tier.draw==='queue'
               || tier.draw==='watertower' || tier.draw==='carousel' || tier.draw==='teacups'
-              || tier.draw==='droptower' || tier.draw==='bumpercars'){
+              || tier.draw==='droptower' || tier.draw==='bumpercars' || tier.draw==='swingride'
+              || tier.draw==='logflume' || tier.draw==='hauntedhouse' || tier.draw==='gamestall'){
             // Big fixed installations sit grid-aligned — a real midway is
             // laid out on purpose, not scattered at random angles.
             rot = 0;
@@ -967,16 +1027,22 @@
             : tier.draw==='teacups' ? TEACUP_COLORS
             : tier.draw==='droptower' ? DROPTOWER_COLORS
             : tier.draw==='bumpercars' ? BUMPERCAR_COLORS
+            : tier.draw==='swingride' ? SWING_COLORS
+            : tier.draw==='logflume' ? FLUME_COLORS
+            : tier.draw==='hauntedhouse' ? HAUNTED_COLORS
+            : tier.draw==='gamestall' ? GAMESTALL_COLORS
             : tier.draw==='flower' ? FLOWER_COLORS : null;
           var baseColor = basePalette ? basePalette[Math.floor(Math.random()*basePalette.length)] : tier.color;
           var instanceColor = shadeColor(baseColor, rand(-0.1, 0.08));
           var shirtColor = tier.draw==='person' ? SHIRT_COLORS[Math.floor(Math.random()*SHIRT_COLORS.length)] : null;
           var heightMul = rand(heightRange[0], heightRange[1]);
-          objects.push({
+          var newObj = {
             kind:'food', tier: tierIdx, r: instanceR, color: instanceColor, shirtColor: shirtColor, draw: tier.draw,
             x:x, y:y, rot: rot, heightMul: heightMul, seed: Math.floor(rand(1,999999)),
             alive:true, swallowing:false, swallowT:0, swallower:null
-          });
+          };
+          objects.push(newObj);
+          registerObject(newObj);
           placed = true;
           totalCount++;
         }
@@ -1003,7 +1069,7 @@
   // and reuses the exact same clearance check the main placement loop
   // uses so an attached queue/gate can never land on top of something
   // already there.
-  var RIDE_ENTRANCE_DRAWS = ['coaster_loop','coaster_classic','coaster_corkscrew','ferriswheel','viking','carousel','teacups','droptower','bumpercars'];
+  var RIDE_ENTRANCE_DRAWS = ['coaster_loop','coaster_classic','coaster_corkscrew','ferriswheel','viking','carousel','teacups','droptower','bumpercars','swingride','logflume','hauntedhouse'];
   function placeRideQueues(){
     var queueTier = TIERS.filter(function(tr){ return tr.name==='queueline'; })[0];
     var gateTier = TIERS.filter(function(tr){ return tr.name==='archgate'; })[0];
@@ -1014,13 +1080,7 @@
         if (dist(x,y,CORNERS[ci][0],CORNERS[ci][1]) < CORNER_CLEAR) return false;
       }
       if (x < vr+30 || x > WORLD.w-vr-30 || y < vr+30 || y > WORLD.h-vr-30) return false;
-      for (var j=0;j<objects.length;j++){
-        var o = objects[j];
-        if (o === skip) continue;
-        var vr2 = o.r * (SHAPE_WIDTH[o.draw]||1.2) / 2;
-        if (dist(x,y,o.x,o.y) < (vr+vr2)*1.05 + 10) return false;
-      }
-      return true;
+      return hasClearance(x, y, vr, skip, 1.0, 5);
     }
     rides.forEach(function(ride){
       var rideVR = ride.r * (SHAPE_WIDTH[ride.draw]||1.2) / 2;
@@ -1034,11 +1094,13 @@
         var qy = ride.y + dir[1]*(rideVR + queueVR + gap);
         if (!clearOf(qx, qy, queueVR, ride)) continue;
 
-        objects.push({
+        var newQueue = {
           kind:'food', tier:-1, r: queueR, color: shadeColor(queueTier.color, rand(-0.1,0.08)),
           shirtColor:null, draw:'queue', x:qx, y:qy, rot:0, heightMul:1, seed: Math.floor(rand(1,999999)),
           alive:true, swallowing:false, swallowT:0, swallower:null
-        });
+        };
+        objects.push(newQueue);
+        registerObject(newQueue);
 
         // The gate sits one step further out along the same line — the
         // actual walk-up entrance, beyond the far end of the queue.
@@ -1047,11 +1109,13 @@
         var gx = qx + dir[0]*(queueVR + gateVR + gap);
         var gy = qy + dir[1]*(queueVR + gateVR + gap);
         if (clearOf(gx, gy, gateVR, ride)){
-          objects.push({
+          var newGate = {
             kind:'food', tier:-1, r: gateR, color: shadeColor(gateTier.color, rand(-0.1,0.08)),
             shirtColor:null, draw:'archgate', x:gx, y:gy, rot:0, heightMul:1, seed: Math.floor(rand(1,999999)),
             alive:true, swallowing:false, swallowT:0, swallower:null
-          });
+          };
+          objects.push(newGate);
+          registerObject(newGate);
         }
         break; // this ride has its queue — no need to try the other sides
       }
@@ -1087,6 +1151,69 @@
         for (var i=0;i<bucket.length;i++) fn(bucket[i]);
       }
     }
+  }
+  function addToGrid(o){
+    var key = Math.floor(o.x/GRID_CELL) + ',' + Math.floor(o.y/GRID_CELL);
+    (objectGrid[key] || (objectGrid[key] = [])).push(o);
+  }
+
+  // World generation used to check every new candidate spot against the
+  // entire `objects` array built so far — fine early on, but by the time
+  // it's placing the thousands of small, numerous things (grass, trees,
+  // fences) near the end, that's a full scan of a 25,000+ item array for
+  // every single try, which is what made clicking Play visibly hang for a
+  // moment. Almost everything in the world has a small, modest footprint
+  // (SHAPE_WIDTH-based half-width under ~140) — for those, the same grid
+  // used for gameplay collision (built incrementally here, not just once
+  // at the end) narrows the check down to a handful of nearby objects
+  // instead of the whole map. The genuinely big things (the castle, every
+  // ride) stay in their own small side-list, checked directly — there are
+  // only ever a few hundred of them, so a full scan of just that list is
+  // still effectively instant, and it means the grid query's own reach
+  // never has to be padded out to "as wide as a castle" just in case one
+  // happens to be nearby.
+  var BIG_FOOTPRINT_THRESHOLD = 140;
+  var SMALL_NEIGHBOR_MAX = 95;
+  var bigPlaced;
+  function registerObject(o){
+    addToGrid(o);
+    var vr = o.r * (SHAPE_WIDTH[o.draw] || 1.2) / 2;
+    if (vr > BIG_FOOTPRINT_THRESHOLD) bigPlaced.push(o);
+  }
+  // A tiny prop (a fence post, a sign, a cone) checking clearance against
+  // a giant ride used the ride's FULL footprint half-width in the sum —
+  // sensible for keeping two big things from truly overlapping, but once
+  // the coasters grew to a 650+ half-width and there are hundreds of
+  // them, that exclusion zone around every single one got bigger than a
+  // city block, and swallowed almost every fence candidate on the whole
+  // map (observed: fence count collapsed to a small handful). A ride's
+  // dense, actually-solid-looking area is nowhere near its full swept
+  // radius — capping how much of a big neighbor's footprint counts
+  // against a TINY candidate keeps big-vs-big spacing exactly as
+  // conservative as before while letting small roadside props sit just
+  // outside a ride's core without being blocked from three blocks away.
+  var TINY_CANDIDATE_MAX = 50;
+  var BIG_NEIGHBOR_CAP_FOR_TINY = 260;
+  function hasClearance(x, y, vr1, skipObj, padMult, padConst){
+    padMult = padMult===undefined ? 1.1 : padMult;
+    padConst = padConst===undefined ? 12 : padConst;
+    var capNeighbor = vr1 < TINY_CANDIDATE_MAX;
+    var ok = true;
+    forNearbyObjects(x, y, vr1 + SMALL_NEIGHBOR_MAX, function(o){
+      if (!ok || o === skipObj) return;
+      var vr2 = o.r * (SHAPE_WIDTH[o.draw] || 1.2) / 2;
+      if (capNeighbor) vr2 = Math.min(vr2, BIG_NEIGHBOR_CAP_FOR_TINY);
+      if (dist(x,y,o.x,o.y) < (vr1+vr2)*padMult + padConst) ok = false;
+    });
+    if (!ok) return false;
+    for (var bi=0; bi<bigPlaced.length; bi++){
+      var o2 = bigPlaced[bi];
+      if (o2 === skipObj) continue;
+      var vr2b = o2.r * (SHAPE_WIDTH[o2.draw] || 1.2) / 2;
+      if (capNeighbor) vr2b = Math.min(vr2b, BIG_NEIGHBOR_CAP_FOR_TINY);
+      if (dist(x,y,o2.x,o2.y) < (vr1+vr2b)*padMult + padConst) return false;
+    }
+    return true;
   }
 
   function updateCamera(dt){
@@ -1562,17 +1689,26 @@
   // but a genuinely different shape for every single coaster.
   function coasterTrack(r, seed){
     var rng = makeRng(seed);
-    var n = 10 + Math.floor(rng()*3);
+    // More control points spread across a wider radial range than before
+    // — a longer, more winding lap around the same footprint instead of
+    // a short loop of only a handful of hills.
+    var n = 16 + Math.floor(rng()*6);
     var peakIdx = 2 + Math.floor(rng()*(n-4));
+    // Per-instance profile — some coasters are dramatically taller (a big
+    // lift hill and a real plunge) or wilder (every hill in between is
+    // exaggerated too) than others, not just a different-shaped layout at
+    // the same modest scale every time.
+    var tallness = 0.7 + rng()*1.0;
+    var wildness = 0.6 + rng()*1.1;
     var pts = [];
     for (var i=0;i<n;i++){
       var ang = (i/n)*Math.PI*2 + Math.PI/2;
-      var radial = 0.55 + rng()*0.55;
+      var radial = 0.5 + rng()*0.65;
       var heightBias;
-      if (i === peakIdx) heightBias = -0.6;
-      else if (i === (peakIdx+1)%n) heightBias = 0.4;
+      if (i === peakIdx) heightBias = -0.6*tallness;
+      else if (i === (peakIdx+1)%n) heightBias = 0.4*tallness;
       else if (i === 0) heightBias = 0.15;
-      else heightBias = (rng()-0.5)*0.3;
+      else heightBias = (rng()-0.5)*0.34*wildness;
       pts.push({ x: Math.cos(ang)*r*radial, y: Math.sin(ang)*r*radial*0.8 + r*heightBias });
     }
     return pts;
@@ -1586,6 +1722,20 @@
       var p0 = pts[i], p1 = pts[(i+1)%n];
       ctx.quadraticCurveTo(p0.x, p0.y, (p0.x+p1.x)/2, (p0.y+p1.y)/2);
     }
+  }
+
+  // A log flume's channel — flat and ground-level (no hills), just a
+  // winding closed loop of water to tell it apart from a coaster.
+  function flumeTrack(r, seed){
+    var rng = makeRng(seed);
+    var n = 9 + Math.floor(rng()*4);
+    var pts = [];
+    for (var i=0;i<n;i++){
+      var ang = (i/n)*Math.PI*2 + Math.PI/2;
+      var radial = 0.5 + rng()*0.5;
+      pts.push({ x: Math.cos(ang)*r*radial, y: Math.sin(ang)*r*radial*0.72 });
+    }
+    return pts;
   }
 
   function drawCoasterStation(p0, r, fillColor){
@@ -1605,9 +1755,15 @@
   // running along the track — and actually stopping at the station for a
   // beat each lap instead of circling forever with nowhere to load.
   function drawCoasterTrain(pts, r, fillColor, seed){
+    // Slow, medium, fast, and crazy-fast laps — a fixed per-instance pace
+    // class (not just a bit of random jitter on one shared speed), rolled
+    // from its own seeded slice so it doesn't disturb the rest of this
+    // instance's random sequence below.
+    var paceRoll = makeRng(seed+31)();
+    var cycle = paceRoll<0.25 ? 11 : paceRoll<0.55 ? 7 : paceRoll<0.85 ? 4.3 : 2.6;
     var rng = makeRng(seed+7);
     var n = pts.length;
-    var cycle = 7, dwell = 0.22;
+    var dwell = 0.22;
     var phase = (t/cycle + rng()) % 1;
     var u = phase < dwell ? 0 : (phase-dwell)/(1-dwell);
     var riderShirts = ['#C0453D','#3E7DBB','#4C9A63','#D6A82A','#8B5E9E'];
@@ -1774,6 +1930,17 @@
         ctx.fillStyle = shadeColor(fillColor, -0.3);
         roundRect(ctx, -r*0.75, r*0.15, r*0.14, r*0.25, r*0.03); ctx.fill();
         roundRect(ctx, r*0.61, r*0.15, r*0.14, r*0.25, r*0.03); ctx.fill();
+        // Sometimes someone's actually sitting here — a stable per-bench
+        // roll (seeded), not a coin flip that changes every frame.
+        var benchRng = makeRng(o.seed);
+        if (benchRng() < 0.4){
+          var sitX = (benchRng()-0.5) * r*1.0;
+          ctx.fillStyle = SHIRT_COLORS[Math.floor(benchRng()*SHIRT_COLORS.length)];
+          roundRect(ctx, sitX-r*0.26, -r*0.72, r*0.52, r*0.58, r*0.12);
+          ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#F0DCC0';
+          ctx.beginPath(); ctx.arc(sitX, -r*0.86, r*0.2, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        }
         break;
       case 'windmill':
         // The tower is the generic wall; this is just the rotor — genuinely
@@ -1873,10 +2040,19 @@
         ctx.lineWidth = Math.max(3, r*0.075);
         strokeSmoothClosed(ptsL);
         ctx.stroke();
-        var loopAt = ptsL[1];
-        ctx.strokeStyle = shadeColor(fillColor, 0.05);
-        ctx.lineWidth = Math.max(2, r*0.05);
-        ctx.beginPath(); ctx.arc(loopAt.x, loopAt.y - r*0.22, r*0.22, 0, Math.PI*2); ctx.stroke();
+        // Some of these get just the one loop, others a genuinely loopy
+        // ride with two or three — a per-instance roll, not always one.
+        var loopRng = makeRng(o.seed + 55);
+        var loopRoll = loopRng();
+        var loopCount = loopRoll<0.4 ? 1 : (loopRoll<0.75 ? 2 : 3);
+        var loopIdxs = [1, Math.floor(ptsL.length*0.45), Math.floor(ptsL.length*0.7)];
+        for (var lci=0; lci<loopCount; lci++){
+          var loopAt = ptsL[loopIdxs[lci] % ptsL.length];
+          var loopR = r * (0.16 + loopRng()*0.09);
+          ctx.strokeStyle = shadeColor(fillColor, 0.05);
+          ctx.lineWidth = Math.max(2, r*0.05);
+          ctx.beginPath(); ctx.arc(loopAt.x, loopAt.y - loopR, loopR, 0, Math.PI*2); ctx.stroke();
+        }
         drawCoasterStation(ptsL[0], r, fillColor);
         drawCoasterTrain(ptsL, r, fillColor, o.seed);
         break;
@@ -2021,6 +2197,108 @@
           ctx.restore();
         }
         break;
+      case 'swingride':
+        // A central tower with a rotating canopy up top and chairs on
+        // chains swinging outward — a wave swinger, distinct from both
+        // the carousel (ground-level horses) and the ferris wheel (a
+        // fixed rim of gondolas).
+        ctx.strokeStyle = shadeColor(fillColor,-0.3);
+        ctx.lineWidth = Math.max(2, r*0.07);
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-r*1.3); ctx.stroke();
+        ctx.save();
+        ctx.translate(0,-r*1.3);
+        ctx.rotate(t*0.9);
+        ctx.fillStyle = shadeColor(fillColor,0.15);
+        ctx.beginPath(); ctx.ellipse(0,0, r*0.5, r*0.16, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        for (var swi=0; swi<8; swi++){
+          var swang = swi/8*Math.PI*2;
+          var chx = Math.cos(swang)*r*0.85, chy = Math.sin(swang)*r*0.34 + r*0.5;
+          ctx.strokeStyle = shadeColor(fillColor,-0.35);
+          ctx.lineWidth = Math.max(1, r*0.018);
+          ctx.beginPath(); ctx.moveTo(Math.cos(swang)*r*0.45, Math.sin(swang)*r*0.14); ctx.lineTo(chx,chy); ctx.stroke();
+          ctx.fillStyle = SHIRT_COLORS[swi % SHIRT_COLORS.length];
+          roundRect(ctx, chx-r*0.09, chy-r*0.05, r*0.18, r*0.16, r*0.04);
+          ctx.fill(); ctx.stroke();
+        }
+        ctx.restore();
+        break;
+      case 'logflume':
+        // A flat winding water channel — no hills, just a boat gliding
+        // the loop and pausing at the dock — the thing that actually
+        // tells it apart from a roller coaster at a glance.
+        var flumePts = flumeTrack(r, o.seed);
+        ctx.strokeStyle = shadeColor(fillColor,-0.3);
+        ctx.lineWidth = Math.max(4, r*0.12);
+        strokeSmoothClosed(flumePts);
+        ctx.stroke();
+        ctx.strokeStyle = mixColor(fillColor,'#FFFFFF',0.35);
+        ctx.lineWidth = Math.max(2, r*0.06);
+        strokeSmoothClosed(flumePts);
+        ctx.stroke();
+        var flumeRng = makeRng(o.seed+7);
+        var flumeCycle = 6, flumeDwell = 0.25;
+        var flumePhase = (t/flumeCycle + flumeRng()) % 1;
+        var flumeU = flumePhase < flumeDwell ? 0 : (flumePhase-flumeDwell)/(1-flumeDwell);
+        var fn = flumePts.length;
+        var ffp = flumeU * fn;
+        var fi0 = Math.floor(ffp) % fn, fi1 = (fi0+1) % fn;
+        var flt = ffp - Math.floor(ffp);
+        var fp0 = flumePts[fi0], fp1 = flumePts[fi1];
+        var boatX = fp0.x + (fp1.x-fp0.x)*flt, boatY = fp0.y + (fp1.y-fp0.y)*flt;
+        var boatAng = Math.atan2(fp1.y-fp0.y, fp1.x-fp0.x);
+        ctx.save();
+        ctx.translate(boatX,boatY);
+        ctx.rotate(boatAng);
+        ctx.fillStyle = shadeColor(fillColor,-0.15);
+        ctx.beginPath();
+        ctx.moveTo(-r*0.16,0); ctx.quadraticCurveTo(-r*0.2,-r*0.08,-r*0.12,-r*0.1);
+        ctx.lineTo(r*0.12,-r*0.1); ctx.quadraticCurveTo(r*0.2,-r*0.08,r*0.16,0);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#F0DCC0';
+        ctx.beginPath(); ctx.arc(-r*0.04,-r*0.04,r*0.045,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(r*0.04,-r*0.04,r*0.045,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+        break;
+      case 'hauntedhouse':
+        // Deliberately crooked — a jagged multi-peak roofline and glowing
+        // window "eyes" instead of the tidy restaurant/gate silhouette
+        // everything else in the park uses.
+        roundRect(ctx, -r*0.85,-r*0.3, r*1.7, r*0.95, r*0.05); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = shadeColor(fillColor,-0.2);
+        ctx.beginPath();
+        ctx.moveTo(-r*0.95,-r*0.28); ctx.lineTo(-r*0.3,-r*0.75); ctx.lineTo(r*0.1,-r*0.55); ctx.lineTo(r*0.55,-r*0.85); ctx.lineTo(r*0.95,-r*0.28);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#E8A63C';
+        ctx.beginPath(); ctx.arc(-r*0.3,-r*0.05,r*0.13,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(r*0.3,-r*0.05,r*0.13,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = COLOR.ink;
+        ctx.beginPath(); ctx.arc(-r*0.3,-r*0.05,r*0.055,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(r*0.3,-r*0.05,r*0.055,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = shadeColor(fillColor,-0.3);
+        roundRect(ctx, -r*0.14, r*0.2, r*0.28, r*0.45, r*0.05); ctx.fill(); ctx.stroke();
+        break;
+      case 'gamestall':
+        // A carnival game booth: striped awning, a prize wall, a counter
+        // — the classic midway stall, not a ride at all.
+        roundRect(ctx, -r*0.8,-r*0.25, r*1.6, r*0.8, r*0.05); ctx.fill(); ctx.stroke();
+        for (var pzx=-2; pzx<=2; pzx++){
+          ctx.fillStyle = SHIRT_COLORS[(pzx+2) % SHIRT_COLORS.length];
+          roundRect(ctx, pzx*r*0.28-r*0.1, -r*0.15, r*0.2, r*0.24, r*0.04); ctx.fill();
+        }
+        ctx.fillStyle = shadeColor(fillColor,0.25);
+        ctx.beginPath();
+        ctx.moveTo(-r*0.9,-r*0.25); ctx.lineTo(r*0.9,-r*0.25); ctx.lineTo(r*0.7,-r*0.5); ctx.lineTo(-r*0.7,-r*0.5); ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        var gsN=5, gsStep=r*1.8/gsN;
+        ctx.fillStyle = '#F0EFE8';
+        for (var gsi=0; gsi<gsN; gsi++){
+          if (gsi%2!==0) continue;
+          var gx0=-r*0.9+gsi*gsStep, gx1=gx0+gsStep, gMid=(gx0+gx1)/2;
+          ctx.beginPath(); ctx.moveTo(gx0,-r*0.25); ctx.lineTo(gx1,-r*0.25); ctx.lineTo(gMid,-r*0.1); ctx.closePath(); ctx.fill();
+        }
+        ctx.fillStyle = shadeColor(fillColor,-0.2);
+        roundRect(ctx, -r*0.85, r*0.35, r*1.7, r*0.2, r*0.04); ctx.fill(); ctx.stroke();
+        break;
       case 'viking':
         // A swinging Viking longship ride: A-frame gantry, ship hull
         // pendulum-swinging from the clock, a few riders, a curled prow.
@@ -2033,17 +2311,22 @@
         ctx.translate(0,-r*0.85);
         ctx.rotate(swingAngle);
         ctx.fillStyle = fillColor;
+        // The hull hangs below the pivot with its curled prow and stern
+        // tips rising back UP toward the support arms (the actual
+        // signature of a viking longship's silhouette) and a rounded
+        // keel at the bottom — not the other way around, which is what
+        // was reading as the whole ship hanging upside down.
         ctx.beginPath();
-        ctx.moveTo(-r*0.55, r*1.2); ctx.lineTo(-r*0.65, r*0.75); ctx.quadraticCurveTo(-r*0.6, r*0.55, -r*0.4, r*0.55);
-        ctx.lineTo(r*0.4, r*0.55); ctx.quadraticCurveTo(r*0.6, r*0.55, r*0.65, r*0.75); ctx.lineTo(r*0.55, r*1.2);
+        ctx.moveTo(-r*0.55, r*0.7); ctx.lineTo(-r*0.65, r*1.15); ctx.quadraticCurveTo(-r*0.6, r*1.35, -r*0.4, r*1.35);
+        ctx.lineTo(r*0.4, r*1.35); ctx.quadraticCurveTo(r*0.6, r*1.35, r*0.65, r*1.15); ctx.lineTo(r*0.55, r*0.7);
         ctx.closePath(); ctx.fill(); ctx.stroke();
         ctx.fillStyle = '#F0EFE8';
         for (var vri=-1; vri<=1; vri++){
-          ctx.beginPath(); ctx.arc(vri*r*0.3, r*0.85, r*0.06, 0, Math.PI*2); ctx.fill();
+          ctx.beginPath(); ctx.arc(vri*r*0.3, r*1.05, r*0.06, 0, Math.PI*2); ctx.fill();
         }
         ctx.fillStyle = shadeColor(fillColor,0.15);
-        ctx.beginPath(); ctx.moveTo(-r*0.55,r*1.2); ctx.lineTo(-r*0.75,r*1.35); ctx.lineTo(-r*0.5,r*1.3); ctx.closePath(); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(r*0.55,r*1.2); ctx.lineTo(r*0.75,r*1.35); ctx.lineTo(r*0.5,r*1.3); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(-r*0.55,r*0.7); ctx.lineTo(-r*0.75,r*0.55); ctx.lineTo(-r*0.5,r*0.6); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(r*0.55,r*0.7); ctx.lineTo(r*0.75,r*0.55); ctx.lineTo(r*0.5,r*0.6); ctx.closePath(); ctx.fill();
         ctx.restore();
         break;
       case 'queue':
@@ -2133,8 +2416,8 @@
   // sorting to correctly layer it behind/in front of whatever it passes
   // near, it just looked like it was growing out of the nearest neighbor.
   // Kept modest instead; draw-order sorting below does the rest of the work.
-  var SHAPE_HEIGHT = { cone:0.6, person:1.1, tree:1.0, fence:0.65, castle:1.4, flower:0.35, grass:0.3, lake:0.05, sign:0.55, bench:0.32, windmill:2.0, watertower:1.7, ferriswheel:1.3, fountain:0.25, picnictable:0.3, coaster_loop:2.1, coaster_classic:1.9, coaster_corkscrew:2.1, viking:1.6, queue:0.35, archgate:1.3, restaurant:0.9, carousel:1.3, teacups:0.7, droptower:2.6, bumpercars:0.5 };
-  var SHAPE_WIDTH  = { cone:1.05, person:0.5, tree:0.24, fence:1.7, castle:2.5, flower:0.55, grass:0.75, lake:2.2, sign:0.5, bench:1.9, windmill:0.5, watertower:0.5, ferriswheel:1.9, fountain:1.8, picnictable:1.85, coaster_loop:2.5, coaster_classic:2.5, coaster_corkscrew:2.5, viking:1.5, queue:1.7, archgate:1.9, restaurant:1.9, carousel:2.0, teacups:2.0, droptower:0.5, bumpercars:2.0 };
+  var SHAPE_HEIGHT = { cone:0.6, person:1.1, tree:1.0, fence:0.65, castle:1.4, flower:0.35, grass:0.3, lake:0.05, sign:0.55, bench:0.32, windmill:2.0, watertower:1.7, ferriswheel:1.3, fountain:0.25, picnictable:0.3, coaster_loop:3.0, coaster_classic:2.7, coaster_corkscrew:3.0, viking:1.6, queue:0.35, archgate:1.3, restaurant:0.9, carousel:1.3, teacups:0.7, droptower:2.6, bumpercars:0.5, swingride:2.3, logflume:1.1, hauntedhouse:1.35, gamestall:0.85 };
+  var SHAPE_WIDTH  = { cone:1.05, person:0.5, tree:0.24, fence:1.7, castle:2.5, flower:0.55, grass:0.75, lake:2.2, sign:0.5, bench:1.9, windmill:0.5, watertower:0.5, ferriswheel:1.9, fountain:1.8, picnictable:1.85, coaster_loop:2.5, coaster_classic:2.5, coaster_corkscrew:2.5, viking:1.5, queue:1.7, archgate:1.9, restaurant:1.9, carousel:2.0, teacups:2.0, droptower:0.5, bumpercars:2.0, swingride:1.9, logflume:2.3, hauntedhouse:2.0, gamestall:1.8 };
   // Trees get a real wood trunk instead of a shaded copy of their (green)
   // canopy color; flowers get a real green stem the same way.
   var SHAPE_WALL_COLOR = { tree: 'wood', flower: 'green' };
@@ -2156,6 +2439,15 @@
     var h = o.heightMul || 1;
     var bodyH = r * (SHAPE_HEIGHT[o.draw] || 0.5) * h;
     var footW = r * (SHAPE_WIDTH[o.draw] || 1.2);
+    // A coaster is an open lattice of track and thin support poles, not a
+    // walled building — the generic solid wall below was filling in the
+    // whole footprint underneath the track as one big opaque block, which
+    // doesn't read as a roller coaster at all. These draw their own
+    // ground-to-track supports directly (see the coaster cases in
+    // drawShapePath), so they skip the wall and sit right at true ground
+    // level instead of floating a wall's height above it.
+    var isOpenFrame = o.draw==='coaster_loop' || o.draw==='coaster_classic' || o.draw==='coaster_corkscrew' || o.draw==='logflume';
+    var wallH = isOpenFrame ? 0 : bodyH;
 
     ctx.save();
     ctx.translate(o.x, o.y);
@@ -2220,43 +2512,48 @@
 
     // The wall: a real solid volume rising straight up from the footprint —
     // this is what actually reads as "standing up" instead of "lying flat
-    // with a copy stacked on it."
-    ctx.save();
-    var wallBase = SHAPE_WALL_COLOR[o.draw]==='wood' ? shadeColor(COLOR.wood,-0.15)
-      : SHAPE_WALL_COLOR[o.draw]==='green' ? shadeColor(COLOR.green,-0.1)
-      : shadeColor(fillColor, -0.42);
-    // A flat single-tone wall read as a colored strip, not a vertical
-    // surface — a light-to-dark gradient from roofline down to the ground
-    // (as if it's catching the same overhead light the roof does, then
-    // falling into its own shadow near the base) is what actually sells
-    // "this rises up out of the ground" instead of "this is a sticker."
-    var wallGrad = ctx.createLinearGradient(0, -bodyH, 0, r*0.22);
-    wallGrad.addColorStop(0, shadeColor(wallBase, 0.16));
-    wallGrad.addColorStop(1, shadeColor(wallBase, -0.18));
-    ctx.fillStyle = wallGrad;
-    ctx.strokeStyle = COLOR.ink;
-    ctx.lineWidth = Math.max(1, r*0.05);
-    roundRect(ctx, -footW/2, -bodyH, footW, bodyH + r*0.22, r*0.08);
-    ctx.fill(); ctx.stroke();
-    if (bodyH > r*0.9){
-      // Any other tall wall (house, castle) gets plain horizontal coursing
-      // seams down its face for the same reason — so it still reads as a
-      // real vertical surface instead of a flat color block wherever the
-      // camera happens to crop it.
-      ctx.strokeStyle = shadeColor(wallBase, -0.25);
-      ctx.lineWidth = Math.max(1, r*0.035);
-      for (var seamY = -bodyH + r*0.35; seamY < r*0.1; seamY += r*0.35){
-        ctx.beginPath();
-        ctx.moveTo(-footW/2 + r*0.06, seamY);
-        ctx.lineTo(footW/2 - r*0.06, seamY);
-        ctx.stroke();
+    // with a copy stacked on it." Skipped entirely for open-frame rides
+    // (see isOpenFrame above) — they have no wall to draw.
+    if (!isOpenFrame){
+      ctx.save();
+      var wallBase = SHAPE_WALL_COLOR[o.draw]==='wood' ? shadeColor(COLOR.wood,-0.15)
+        : SHAPE_WALL_COLOR[o.draw]==='green' ? shadeColor(COLOR.green,-0.1)
+        : shadeColor(fillColor, -0.42);
+      // A flat single-tone wall read as a colored strip, not a vertical
+      // surface — a light-to-dark gradient from roofline down to the ground
+      // (as if it's catching the same overhead light the roof does, then
+      // falling into its own shadow near the base) is what actually sells
+      // "this rises up out of the ground" instead of "this is a sticker."
+      var wallGrad = ctx.createLinearGradient(0, -wallH, 0, r*0.22);
+      wallGrad.addColorStop(0, shadeColor(wallBase, 0.16));
+      wallGrad.addColorStop(1, shadeColor(wallBase, -0.18));
+      ctx.fillStyle = wallGrad;
+      ctx.strokeStyle = COLOR.ink;
+      ctx.lineWidth = Math.max(1, r*0.05);
+      roundRect(ctx, -footW/2, -wallH, footW, wallH + r*0.22, r*0.08);
+      ctx.fill(); ctx.stroke();
+      if (wallH > r*0.9){
+        // Any other tall wall (house, castle) gets plain horizontal coursing
+        // seams down its face for the same reason — so it still reads as a
+        // real vertical surface instead of a flat color block wherever the
+        // camera happens to crop it.
+        ctx.strokeStyle = shadeColor(wallBase, -0.25);
+        ctx.lineWidth = Math.max(1, r*0.035);
+        for (var seamY = -wallH + r*0.35; seamY < r*0.1; seamY += r*0.35){
+          ctx.beginPath();
+          ctx.moveTo(-footW/2 + r*0.06, seamY);
+          ctx.lineTo(footW/2 - r*0.06, seamY);
+          ctx.stroke();
+        }
       }
+      ctx.restore();
     }
-    ctx.restore();
 
-    // The roof: the object's actual silhouette, capping the top of the wall.
+    // The roof: the object's actual silhouette, capping the top of the
+    // wall (or, for an open-frame ride with no wall, sitting right at
+    // true ground level instead of floating bodyH above it).
     ctx.save();
-    ctx.translate(0, -bodyH);
+    ctx.translate(0, -wallH);
     drawShapePath(o, r, shadeColor(fillColor, 0.08), shirtFill);
     ctx.restore();
 
