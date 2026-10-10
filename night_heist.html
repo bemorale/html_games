@@ -49,7 +49,7 @@ function txt(s,x,y,col='#fff',al='left',sz=8){
 const keys={},pressed={};let lastDir='down';
 const KEYMAP={ArrowUp:'up',w:'up',W:'up',ArrowDown:'down',s:'down',S:'down',ArrowLeft:'left',a:'left',A:'left',
   ArrowRight:'right',d:'right',D:'right',f:'flash',F:'flash',m:'map',M:'map',p:'pause',P:'pause',Escape:'pause',
-  Enter:'start',' ':'fire',x:'fire',X:'fire',e:'use',E:'use'};
+  Enter:'start',' ':'fire',x:'fire',X:'fire',e:'use',E:'use',n:'music',N:'music'};
 addEventListener('keydown',e=>{
   const k=KEYMAP[e.key];if(!k)return;e.preventDefault();initAudio();
   if(!keys[k])pressed[k]=true;keys[k]=true;
@@ -90,10 +90,87 @@ const sfx={
   cp:()=>{beep(660,.08);beep(990,.12,'square',.05,0,.08);}
 };
 
+// ================= MUSIC (generated chiptune, no audio files) =================
+// Each track: 4 bars x 16 steps. Notes are names like A4 / C#5, '.' is a rest.
+const NOTE={C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,Bb:10,B:11};
+const midi=n=>{const m=n.match(/^([A-G][#b]?)(\d)$/);return 12*(+m[2]+1)+NOTE[m[1]];};
+const mf=m=>440*Math.pow(2,(m-69)/12);
+const seq=str=>str.trim().split(/\s+/).map(t=>t==='.'?0:midi(t));
+// bass line from chords: one chord per bar, eighth notes
+const bassFrom=(chords,pat)=>chords.flatMap(ch=>{const r=midi(ch)-12,out=Array(16).fill(0);pat.forEach((o,i)=>{if(o!==null)out[i*2]=r+o;});return out;});
+const ANDALUSIAN=['A3','G3','F3','E3'];
+const cityLead=seq(`A4 . . C5 . . B4 . A4 . . . E4 . . .  G4 . . B4 . . A4 . G4 . . . D4 . . .
+                    F4 . . A4 . . G4 . F4 . . . C5 . . .  E4 . G#4 . B4 . D5 . C5 . B4 . G#4 . . .`);
+const TRACKS={
+  city:{bpm:96,lead:cityLead,leadVol:.022,leadLen:.09,bassVol:.085,
+    bass:bassFrom(ANDALUSIAN,[0,null,7,null,12,null,7,3]),
+    kick:[0,8],hat:[2,6,10,14],snare:[]},
+  title:{bpm:100,lead:cityLead,leadVol:.026,leadLen:.14,bassVol:.085,
+    bass:bassFrom(ANDALUSIAN,[0,null,7,null,12,null,7,3]),
+    kick:[0,8],hat:[2,6,10,14],snare:[4,12]},
+  chase:{bpm:152,leadVol:.016,leadLen:.06,bassVol:.09,
+    lead:ANDALUSIAN.flatMap(ch=>{const r=midi(ch)+12,t=r+(ch==='A3'?3:4),f=r+7;return [r,t,f,t+12,f,t,r+12,f,r,t,f,t+12,r+12,f,t,f];}),
+    bass:bassFrom(ANDALUSIAN,[0,12,0,12,0,12,0,12]),
+    kick:[0,4,8,12],hat:[2,6,10,14],snare:[4,12]},
+  bank:{bpm:116,leadVol:.02,leadLen:.16,bassVol:.09,
+    lead:seq(`D5 . . . A4 . . . C5 . D5 . . . . .  F5 . . . E5 . . . D5 . C5 . . . . .
+              D5 . . . F5 . . . Bb4 . . . D5 . . .  C#5 . . . E5 . . . A4 . . . C#5 . E5 .`),
+    bass:bassFrom(['D3','D3','Bb2','A2'],[0,0,12,0,0,0,12,0]),
+    kick:[0,6,8],hat:[0,2,4,6,8,10,12,14],snare:[12]}
+};
+const music={on:true,master:null,noise:null,name:null,next:0,step:0};
+try{music.on=localStorage.getItem('nh_music')!=='off';}catch(e){}
+function musicSetup(){
+  if(music.master||!actx)return;
+  music.master=actx.createGain();music.master.gain.value=.8;music.master.connect(actx.destination);
+  const b=actx.createBuffer(1,actx.sampleRate*.3,actx.sampleRate),d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;music.noise=b;
+}
+function tone(f,t,dur,type,vol,slide=0){
+  const o=actx.createOscillator(),g=actx.createGain();
+  o.type=type;o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(20,f+slide),t+dur);
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g);g.connect(music.master);o.start(t);o.stop(t+dur+.02);
+}
+function hit(t,dur,vol,hp){
+  const s=actx.createBufferSource(),f=actx.createBiquadFilter(),g=actx.createGain();
+  s.buffer=music.noise;f.type='highpass';f.frequency.value=hp;
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  s.connect(f);f.connect(g);g.connect(music.master);s.start(t);s.stop(t+dur+.02);
+}
+function wantTrack(){
+  if(!music.on||paused)return null;
+  if(state==='title')return 'title';
+  if(state==='city')return wanted()?'chase':'city';
+  if(state==='bank')return 'bank';
+  return null;
+}
+function musicTick(){
+  if(!actx)return;musicSetup();
+  const name=wantTrack();
+  if(name!==music.name){music.name=name;music.step=0;music.next=actx.currentTime+.06;}
+  if(!name)return;
+  const tr=TRACKS[name],sp=60/tr.bpm/4;
+  if(music.next<actx.currentTime-.2)music.next=actx.currentTime+.05; // tab was in background
+  while(music.next<actx.currentTime+.15){
+    const t=music.next,i=music.step%64,b=i%16;
+    if(tr.bass[i])tone(mf(tr.bass[i]),t,sp*1.8,'triangle',tr.bassVol);
+    if(tr.lead[i])tone(mf(tr.lead[i]),t,tr.leadLen,'square',tr.leadVol);
+    if(tr.kick.includes(b))tone(140,t,.12,'sine',.18,-100);
+    if(tr.snare.includes(b))hit(t,.12,.06,1200);
+    if(tr.hat.includes(b))hit(t,.03,.025,7000);
+    music.next+=sp;music.step++;
+  }
+}
+function toggleMusic(){
+  music.on=!music.on;try{localStorage.setItem('nh_music',music.on?'on':'off');}catch(e){}
+  say(music.on?'MUSIC ON':'MUSIC OFF',1.2);
+}
+
 // ================= GLOBAL STATE =================
 let state='title',cash=0,cityCash=0,spent=0,lives=MAXL,battery=600,flashOn=false,hasKey=false;
 let showMap=false,paused=false,msg='',msgT=0,shake=0,hurtFlash=0,endT=0,trans=null,gameT=0;
-let speedLvl=0,weapon=null,ammo=0,fireCD=0,shopOpen=false,shopSel=0;
+let respawnsLeft=3,bustedBy='bank',speedLvl=0,weapon=null,ammo=0,fireCD=0,shopOpen=false,shopSel=0;
 let floaters=[];
 const cam={x:0,y:0};
 function say(t,d=2.6){msg=t;msgT=d;}
@@ -389,6 +466,9 @@ function hurtCity(why,caught){
 // caught or knocked out: drop ALL cash on the spot (hidden from the map),
 // wake up somewhere far from the bank, the keycard and every lost pile
 function bust(why){
+  // out of respawns: game over
+  if(respawnsLeft<=0){bustedBy='city';toEnd('gameover');return;}
+  respawnsLeft--;
   const lost=cash,dx=P.x,dy=P.y;
   if(lost>0)lostPiles.push({x:dx,y:dy,val:lost,ph:Math.random()*6});
   cash=0;
@@ -405,7 +485,7 @@ function bust(why){
   Object.assign(P,{tx:best[0],ty:best[1],ttx:best[0],tty:best[1],x:best[0]*T,y:best[1]*T,moving:false,inv:2.5,hidden:false});
   for(const c of cops){c.state='patrol';c.lost=0;c.alert=0;}
   lastSeenG=null;bullets=[];bolts=[];hurtFlash=.8;
-  say(why+(lost>0?'|YOU DROPPED $'+lost+'. GO FIND IT!':'|YOU WAKE UP ACROSS TOWN'),4.5);
+  say(why+(lost>0?' DROPPED $'+lost:'')+'|'+(respawnsLeft?respawnsLeft+(respawnsLeft>1?' RESPAWNS':' RESPAWN')+' LEFT':'NO RESPAWNS LEFT! CAREFUL!'),4.5);
 }
 function enterBank(){
   sfx.big();
@@ -787,9 +867,10 @@ function buildBank(){
   plat(12,15,10);cash(13,9);cash(14,9);
   LV(17,3,1.4,1.5);cash(19,12);
   // S2 pit + floor lasers
-  pit(22,25);plat(23,24,9);cash(23,8);cash(24,8);
-  hint(27,8,'JUMP IT!');LH(28,30,12);
-  hint(32,7,'CROUCH!');LH(32,36,11);cash(34,12);
+  cp(19);
+  hint(20,6,'HOP THE STONE!');pit(21,26);plat(23,23,10);cash(23,9);
+  hint(28,8,'JUMP IT!');LH(31,32,12);
+  hint(33,7,'CROUCH!');LH(35,37,11);cash(36,12);
   cp(38);
   // S3 wall-jump shaft
   hint(39,2,'WALL JUMP:');hint(39,3,'PRESS UP ON');hint(39,4,'A WALL');
@@ -1039,6 +1120,7 @@ function drawHUD(){
   ctx.fillStyle='#000';ctx.fillRect(0,0,VW,12);ctx.fillStyle='#223';ctx.fillRect(0,12,VW,1);
   txt('$'+cash,4,2,'#7dff7d');
   for(let i=0;i<MAXL;i++)heart(60+i*8,3,i<lives);
+  txt('x'+respawnsLeft,86,2,respawnsLeft?'#ccd':'#f55');
   const frac=battery/600;
   ctx.fillStyle='#aaa';ctx.fillRect(104,2,22,8);ctx.fillRect(126,4,2,4);ctx.fillStyle='#000';ctx.fillRect(105,3,20,6);
   ctx.fillStyle=frac>.5?'#3f3':frac>.2?'#ffd400':'#f33';ctx.fillRect(105,3,Math.ceil(20*frac),6);
@@ -1107,16 +1189,16 @@ function drawTitle(){
   thiefTop(tx,196,'right',gameT,true,false);
   copTop(tx-40,198,{moving:true,anim:gameT,dx:1,dy:0,state:'chase'});
   carDraw({ax:'x',d:1,w:20,h:12,cop:true},tx-80,200);
-  ctx.fillStyle='rgba(0,0,0,.65)';ctx.fillRect(16,56,288,112);
+  ctx.fillStyle='rgba(0,0,0,.65)';ctx.fillRect(16,56,288,122);
   txt('NIGHT HEIST',VW/2+2,18,'#c0242c','center',16);
   txt('NIGHT HEIST',VW/2,16,'#ffd400','center',16);
   txt('ROB THE CITY. CRACK THE BANK.',VW/2,38,'#9fd3ff','center');
-  const L=[['ARROWS','MOVE'],['F','FLASHLIGHT (10 MIN)'],['M','CITY MAP'],['TRUCK','WALK UP TO SHOP'],['SPACE','FIRE STUN WEAPON'],['P','PAUSE']];
+  const L=[['ARROWS','MOVE'],['F','FLASHLIGHT (10 MIN)'],['M','CITY MAP'],['TRUCK','WALK UP TO SHOP'],['SPACE','FIRE STUN WEAPON'],['P','PAUSE'],['N','MUSIC ON/OFF']];
   L.forEach(([a,b],i)=>{txt(a,24,62+i*11,'#ffd400');txt(b,88,62+i*11,'#fff');});
-  txt('3 HEARTS. CAUGHT = DROP CASH!',24,132,'#3f3');
-  txt('DODGE CARS, COP CARS, BULLETS.',24,143,'#f66');
-  txt('FIND THE KEYCARD -> ROB BANK!',24,154,'#5ff');
-  if(Math.floor(gameT*2)%2)txt('PRESS ENTER',VW/2,174,'#fff','center');
+  txt('3 HEARTS + 3 RESPAWNS.',24,141,'#3f3');
+  txt('CAUGHT = DROP ALL YOUR CASH!',24,152,'#f66');
+  txt('FIND THE KEYCARD -> ROB BANK!',24,163,'#5ff');
+  if(Math.floor(gameT*2)%2)txt('PRESS ENTER',VW/2,183,'#fff','center');
 }
 function rank(c){return c>=32000?'LEGENDARY PHANTOM':c>=24000?'MASTER THIEF':c>=16000?'SMOOTH OPERATOR':'PETTY CROOK';}
 function drawEnd(){
@@ -1133,9 +1215,9 @@ function drawEnd(){
     txt('RANK:',VW/2,146,'#9fd3ff','center');txt(rank(total),VW/2,160,'#fff','center');
   }else{
     txt('BUSTED!',VW/2,40,'#f33','center',16);
-    txt('THE BANK GUARDS GOT YOU.',VW/2,80,'#ccd','center');
+    txt(bustedBy==='city'?'NO RESPAWNS LEFT.':'THE BANK GUARDS GOT YOU.',VW/2,80,'#ccd','center');
     txt('YOU STOLE $'+(cash+spent),VW/2,104,'#7dff7d','center');
-    txt(hasKey?'SO CLOSE TO THE BANK...':'TIP: WATCH THE LASERS',VW/2,128,'#9fd3ff','center');
+    txt(bustedBy==='city'?'TIP: HIDE IN GREEN DOORS':hasKey?'SO CLOSE TO THE BANK...':'TIP: WATCH THE LASERS',VW/2,128,'#9fd3ff','center');
   }
   if(endT>1&&Math.floor(gameT*2)%2)txt('PRESS ENTER',VW/2,190,'#fff','center');
 }
@@ -1143,7 +1225,7 @@ function drawEnd(){
 // ================= MAIN LOOP =================
 function newGame(){
   cash=0;cityCash=0;spent=0;lives=MAXL;battery=600;flashOn=false;hasKey=false;showMap=false;paused=false;
-  speedLvl=0;weapon=null;ammo=0;shopOpen=false;
+  respawnsLeft=3;bustedBy='bank';speedLvl=0;weapon=null;ammo=0;shopOpen=false;
   B=null;initCity();state='city';say('STEAL CASH & FIND THE KEYCARD|THEN ROB THE BIG BANK!',5);
 }
 function update(dt){
@@ -1175,7 +1257,8 @@ function draw(){
 let last=performance.now();
 function frame(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
-  update(dt);draw();
+  if(pressed.music)toggleMusic();
+  update(dt);draw();musicTick();
   for(const k in pressed)delete pressed[k];
   requestAnimationFrame(frame);
 }
