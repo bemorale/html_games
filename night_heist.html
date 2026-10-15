@@ -64,6 +64,11 @@ addEventListener('keydown',e=>{
   if(k==='up'||k==='down'||k==='left'||k==='right')lastDir=k;
 });
 addEventListener('keyup',e=>{const k=KEYMAP[e.key];if(k)keys[k]=false;});
+// raw key state by physical key, for the 2-player race (P1 = arrow keys, P2 = W A S D) and the 1/2 menu
+const rawKeys={},rawPressed={};
+addEventListener('keydown',e=>{if(!rawKeys[e.code])rawPressed[e.code]=true;rawKeys[e.code]=true;});
+addEventListener('keyup',e=>{rawKeys[e.code]=false;});
+addEventListener('blur',()=>{for(const k in rawKeys)rawKeys[k]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
 
 // ================= AUDIO =================
@@ -155,7 +160,7 @@ function hit(t,dur,vol,hp){
 function wantTrack(){
   if(!music.on||paused)return null;
   if(state==='title')return 'title';
-  if(state==='story')return 'title';
+  if(state==='story'||state==='choose')return 'title';
   if(state==='lock')return null; // the lock plays its own metronome
   if(state==='boat')return 'chase';
   if(state==='city')return wanted()||isRoof()?'chase':isJail()?'jail':isGallery()?'bank':'city';
@@ -976,15 +981,61 @@ function escapeJail(){
   sfx.big();nightLog.push({n:night,kind:isIsland()?'ISLAND ESCAPE':'JAILBREAK',v:nightStolen,h:nightHurt});
   const score=recordScore();
   const last=night+1>=NIGHTS;
-  showStory("YOU'RE OUT!",[
-    isIsland()?'THE BOAT REACHES THE MAINLAND':'THE GIANT LOCK CLICKS OPEN...',
-    isIsland()?'WITH $'+cash+' OF SHELLS + TREASURE.':'WITH $'+cash+' OF THE GUARDS\' CASH.',
+  const island=isIsland();
+  showStory("YOU'RE OUT!",island?[
+    'THE BOAT REACHES THE MAINLAND',
+    'WITH $'+cash+' OF SHELLS + TREASURE.',
     '',
-    last?'ONE LAST JOB. A HELICOPTER':'BUT THE CITY IS ON HIGH ALERT:',
-    last?'WILL WAIT ON THE BANK ROOF.':'MORE COPS. MORE COP CARS.',
+    'ON THE DOCK, A NEWSPAPER:',
+    '"MOONSTONE MOVED TO THE',
+    'FEDERAL RESERVE FOR SAFETY."',
+    vinnieWon?'SO THAT IS WHERE VINNIE HID IT.':'WAIT... MOVED? YOU STOLE IT!'
+  ]:[
+    'THE GIANT LOCK CLICKS OPEN.',
+    "WITH $"+cash+" OF THE GUARDS' CASH.",
     '',
-    'NEXT: NIGHT '+(night+1)+' - '+(last?'THE GAUNTLET':night+1===3?'INSIDE THE MUSEUM':'ANOTHER BANK')
-  ],()=>startNight(night+1),score);
+    "IN THE WARDEN'S OFFICE YOU",
+    'FIND A LETTER WITH YOUR NAME',
+    'ON IT. IT IS FROM VINNIE.'
+  ],()=>night+1===3?chooseMode():startNight(night+1),score,island?[
+    ['ONE LAST JOB',[
+      vinnieWon?'VINNIE SOLD THE MOONSTONE TO':'THE MOONSTONE YOU STOLE WAS A',
+      vinnieWon?'THE RESERVE FOR A FORTUNE.':'FAKE. VINNIE SWAPPED IT!',
+      '',
+      'MIDNIGHT. YOU WATCH VINNIE',
+      'SLIP OUT OF THE RESERVE WITH',
+      'THE REAL MOONSTONE IN HIS BAG.',
+      '',
+      'YOU FOLLOW HIM.']],
+    ['SPOTTED!',[
+      'A POLICE CAR TURNS THE CORNER.',
+      'ITS SPOTLIGHT LANDS ON YOU,',
+      'NOT ON VINNIE.',
+      '',
+      '"FREEZE!"',
+      '',
+      'YOU JUMP FOR A FIRE ESCAPE',
+      'AND CLIMB.']],
+    ['THE ROOFTOPS',[
+      'YOU HOP ROOF TO ROOF AFTER',
+      'VINNIE. HE DROPS INTO THE',
+      'RESERVE THROUGH A ROOF HATCH.',
+      'IT LOCKS BEHIND HIM.',
+      'THE POLICE CLIMB UP AFTER YOU.',
+      'CUT THE POWER, OPEN THE HATCH,',
+      'AND GO GET HIM.',
+      'NEXT: NIGHT 5 - THE GAUNTLET']]
+  ]:[
+    ["VINNIE'S LETTER",[
+      '"SORRY, PARTNER. I NEEDED THE',
+      'COPS BUSY AT THE BANK WHILE I',
+      'CASED THE MUSEUM. THE MOONSTONE',
+      'IS MINE NEXT WEEK."',
+      '',
+      'NOT IF YOU STEAL IT FIRST.',
+      '',
+      'NEXT: NIGHT 3 - THE MUSEUM']]
+  ]);
 }
 // Rings spin around the lock. Each ring has one gap. Jump [UP] when the next ring's gap
 // is at the top. Every gap passes the top exactly on a metronome tick: keep the rhythm.
@@ -1072,24 +1123,100 @@ function drawLock(){
 let BTS=null;
 function startBoat(){
   state='boat';flashOn=false;
-  const len=3000,rocks=[],pats=[];
-  for(let d=260;d<len-160;d+=55+rI(50))rocks.push({d,x:24+rI(272),r:7+rI(7)});
-  for(let d=500;d<len-250;d+=380+rI(160))pats.push({d,x:40+rI(240),vx:(Math.random()<.5?-1:1)*(30+rI(25)),ph:Math.random()*6});
-  BTS={d:0,x:160,len,rocks,pats,inv:0,t:0};
+  const len=3400,rocks=[],pats=[],logs=[],sharks=[],pools=[],bottles=[],fuel=[];
+  for(let d=300;d<len-160;d+=90+rI(70))rocks.push({d,x:24+rI(272),r:7+rI(7)});
+  for(let d=600;d<len-250;d+=420+rI(180))pats.push({d,x:40+rI(240),vx:(Math.random()<.5?-1:1)*(30+rI(25)),ph:Math.random()*6});
+  for(let d=450;d<len-200;d+=300+rI(200))logs.push({d,x:40+rI(240),vx:(Math.random()<.5?-1:1)*(25+rI(20)),w:34+rI(14)});
+  for(let d=800;d<len-300;d+=500+rI(250))sharks.push({d,x:30+rI(260),ph:Math.random()*6});
+  for(let d=700;d<len-300;d+=550+rI(250))pools.push({d,x:50+rI(220),r:26+rI(8)});
+  for(let d=200;d<len-120;d+=120+rI(110))bottles.push({d,x:24+rI(272),crab:Math.random()<.35,got:false,ph:Math.random()*6});
+  for(let d=900;d<len-300;d+=650+rI(300))fuel.push({d,x:30+rI(260),got:false});
+  BTS={d:0,x:160,len,rocks,pats,logs,sharks,pools,bottles,fuel,inv:0,t:0,turbo:0,match:null};
   say('ESCAPE BY BOAT! STEER WITH|LEFT/RIGHT. UP = FASTER',4);showHelp();
 }
 const BOAT_Y=VH-46;
+// ---- crash into a rock: "PATCH THE HULL!" memory game. match all pairs before time runs out ----
+const CARD_ICONS=['anchor','fish','star','shell','wheel','crab'];
+function startMatch(){
+  const icons=CARD_ICONS.slice().sort(()=>Math.random()-.5).slice(0,4),cards=[...icons,...icons].sort(()=>Math.random()-.5).map(ic=>({ic,up:false,done:false}));
+  BTS.match={cards,cur:0,open:[],wait:0,time:16,result:null,resT:0};sfx.hurt();shake=.4;
+}
+function updMatch(dt){
+  const m=BTS.match;
+  if(m.result){m.resT-=dt;if(m.resT<=0){BTS.match=null;BTS.inv=1.5;}return;}
+  m.time-=dt;
+  if(m.time<=0){m.result='fail';m.resT=1.4;loseHP(armor?1:3);sfx.hurt();hurtFlash=.4;
+    if(hp<=0){hp=MAXHP;say('OUT OF HEARTS! BACK TO THE DOCK',3);startBoat();helpOpen=false;return;}
+    say('TOO SLOW! THE BOAT LEAKS|'+(armor?'-1/3 HEART':'-1 HEART'),2);return;}
+  if(pressed.left)m.cur=(m.cur+7)%8;if(pressed.right)m.cur=(m.cur+1)%8;if(pressed.up||pressed.down)m.cur=(m.cur+4)%8;
+  if(m.wait>0){m.wait-=dt;if(m.wait<=0){for(const i of m.open)m.cards[i].up=false;m.open=[];}return;}
+  if(pressed.fire||pressed.start)flipCard(m.cur);
+}
+function flipCard(i){
+  const m=BTS&&BTS.match;if(!m||m.result||m.wait>0)return;
+  if(!m.cards[i].up&&!m.cards[i].done){m.cur=i;
+    m.cards[i].up=true;m.open.push(i);sfx.click();
+    if(m.open.length===2){const [a,b]=m.open;
+      if(m.cards[a].ic===m.cards[b].ic){m.cards[a].done=m.cards[b].done=true;m.open=[];sfx.coin();
+        if(m.cards.every(c=>c.done)){m.result='win';m.resT=1.2;sfx.big();say('HULL PATCHED! NO DAMAGE',1.6);}}
+      else m.wait=.6;}
+  }
+}
+// mouse: click a card to flip it, hover to highlight it
+function cardAt(e){
+  const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*VW/r.width,y=(e.clientY-r.top)*VH/r.height;
+  for(let i=0;i<8;i++){const cx=70+(i%4)*48,cy=82+Math.floor(i/4)*52;if(x>=cx-2&&x<cx+34&&y>=cy-2&&y<cy+44)return i;}
+  return -1;
+}
+cv.addEventListener('mousedown',e=>{if(state==='boat'&&BTS&&BTS.match&&!paused){const i=cardAt(e);if(i>=0){initAudio();flipCard(i);}}});
+cv.addEventListener('mousemove',e=>{if(state==='boat'&&BTS&&BTS.match){const i=cardAt(e);if(i>=0&&!BTS.match.result)BTS.match.cur=i;cv.style.cursor=i>=0?'pointer':'default';}else cv.style.cursor='default';});
+function drawCardIcon(ic,x,y){
+  const R=(a,b,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(x+a,y+b,w,h);};
+  if(ic==='anchor'){R(9,3,2,14,'#c0c5cf');R(6,5,8,2,'#c0c5cf');R(4,15,12,2,'#c0c5cf');R(4,12,2,4,'#c0c5cf');R(14,12,2,4,'#c0c5cf');R(8,1,4,3,'#c0c5cf');}
+  else if(ic==='fish'){R(4,8,10,6,'#ff9a3c');R(14,6,4,10,'#ff9a3c');R(6,9,2,2,'#000');R(3,9,2,4,'#ffb070');}
+  else if(ic==='star'){R(9,3,2,14,'#ffd400');R(3,9,14,2,'#ffd400');R(6,6,8,8,'#ffd400');R(8,8,4,4,'#fff6a0');}
+  else if(ic==='shell'){R(5,6,10,9,'#f0c8c0');R(7,4,6,2,'#f0c8c0');R(7,7,1,8,'#c89890');R(10,6,1,9,'#c89890');R(13,7,1,8,'#c89890');R(8,15,4,2,'#c89890');}
+  else if(ic==='wheel'){ctx.strokeStyle='#8a5a30';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x+10,y+10,6,0,7);ctx.stroke();R(9,2,2,16,'#8a5a30');R(2,9,16,2,'#8a5a30');R(8,8,4,4,'#d4a017');}
+  else{R(5,9,10,6,'#d8402a');R(6,8,8,1,'#f06040');R(6,6,1,3,'#000');R(13,6,1,3,'#000');R(2,8,3,3,'#d8402a');R(15,8,3,3,'#d8402a');R(4,15,2,2,'#a02010');R(14,15,2,2,'#a02010');}
+}
+function drawMatch(){
+  const m=BTS.match;
+  ctx.fillStyle='rgba(0,10,25,.85)';ctx.fillRect(0,0,VW,VH);
+  ctx.fillStyle='#14283e';ctx.fillRect(40,30,240,170);ctx.fillStyle='#ffb000';ctx.fillRect(40,30,240,2);ctx.fillRect(40,198,240,2);
+  txt('CRASH! PATCH THE HULL!',VW/2,38,'#ffb000','center');
+  txt('MATCH THE PAIRS',VW/2,52,'#9fd3ff','center');
+  const t=Math.max(0,Math.ceil(m.time));ctx.fillStyle='#223';ctx.fillRect(60,66,200,6);ctx.fillStyle=m.time<5?'#f33':'#7dff7d';ctx.fillRect(60,66,Math.round(200*Math.max(0,m.time)/16),6);
+  m.cards.forEach((c,i)=>{const cx=70+(i%4)*48,cy=82+Math.floor(i/4)*52,sel=i===m.cur&&!m.result;
+    ctx.fillStyle=sel?'#ffd400':'#0a1420';ctx.fillRect(cx-2,cy-2,36,46);
+    if(c.up||c.done){ctx.fillStyle=c.done?'#2a4a2a':'#e8e4d8';ctx.fillRect(cx,cy,32,42);drawCardIcon(c.ic,cx+6,cy+11);}
+    else{ctx.fillStyle='#2a5aa8';ctx.fillRect(cx,cy,32,42);ctx.fillStyle='#3a7ad0';for(let k=0;k<42;k+=8)ctx.fillRect(cx+2,cy+k+3,28,2);}
+  });
+  txt(m.result==='win'?'PATCHED!':m.result==='fail'?'LEAKING...':'CLICK OR SPACE   '+t+'s',VW/2,188,m.result==='fail'?'#f33':m.result==='win'?'#7dff7d':'#ccd','center');
+}
 function updBoat(dt){
-  const b=BTS;b.t+=dt;b.inv-=dt;msgT-=dt;hurtFlash-=dt;shake-=dt;
+  const b=BTS;msgT-=dt;hurtFlash-=dt;shake-=dt;
   for(const f of floaters)f.t-=dt*1.2;floaters=floaters.filter(f=>f.t>0);
-  const sp=keys.up?125:keys.down?45:80;
-  b.d+=sp*dt;b.x=clamp(b.x+((keys.right?1:0)-(keys.left?1:0))*130*dt,14,VW-14);
+  if(b.match){updMatch(dt);return;}
+  b.t+=dt;b.inv-=dt;b.turbo-=dt;
+  let sp=(keys.up?125:keys.down?45:80)+(b.turbo>0?70:0),steer=(keys.right?1:0)-(keys.left?1:0);
+  const sy=o=>BOAT_Y-(o.d-b.d);
+  // whirlpools drag you toward the middle and slow you down
+  for(const w of b.pools){const dy=sy(w)-BOAT_Y,dx=w.x-b.x,dist=Math.hypot(dx,dy);
+    if(dist<w.r*2.2){b.x+=Math.sign(dx)*55*dt*(1-dist/(w.r*2.2))*1.6;sp*=.6;if(dist<w.r*.6&&!b.spun){b.spun=1;say('WHIRLPOOL! STEER OUT!',1.2);}}else if(dist>w.r*3)b.spun=0;}
+  b.d+=sp*dt;b.x=clamp(b.x+steer*130*dt,14,VW-14);
   const hit=why=>{if(b.inv>0)return;loseHP(armor?1:3);b.inv=1.5;sfx.hurt();shake=.3;hurtFlash=.4;
-    if(hp<=0){hp=MAXHP;b.d=0;b.x=160;say('OUT OF HEARTS! BACK TO THE DOCK',3);}else say(why+(armor?' -1/3 HEART':' -1 HEART'),1.8);};
-  for(const r of b.rocks){const sy=BOAT_Y-(r.d-b.d);if(Math.abs(sy-BOAT_Y)<r.r+6&&Math.abs(r.x-b.x)<r.r+5)hit('CRASHED INTO A ROCK!');}
+    if(hp<=0){hp=MAXHP;say('OUT OF HEARTS! BACK TO THE DOCK',3);startBoat();helpOpen=false;return;}else say(why+(armor?' -1/3 HEART':' -1 HEART'),1.8);};
+  for(const r of b.rocks){if(r.hit)continue;const y=sy(r);if(b.inv<=0&&Math.abs(y-BOAT_Y)<r.r+6&&Math.abs(r.x-b.x)<r.r+5){r.hit=true;startMatch();return;}}
+  for(const l of b.logs){l.x+=l.vx*dt;if(l.x<l.w/2||l.x>VW-l.w/2)l.vx*=-1;const y=sy(l);if(Math.abs(y-BOAT_Y)<8&&Math.abs(l.x-b.x)<l.w/2+5)hit('CRASHED INTO A LOG!');}
+  for(const k of b.sharks){const y=sy(k);if(y>-60&&y<VH)k.x+=Math.sign(b.x-k.x)*38*dt+Math.sin(b.t*3+k.ph)*20*dt;k.d+=40*dt; // sharks swim after you
+    if(Math.abs(sy(k)-BOAT_Y)<10&&Math.abs(k.x-b.x)<11)hit('A SHARK BIT THE BOAT!');}
+  for(const bt of b.bottles){if(bt.got)continue;const y=sy(bt);if(Math.abs(y-BOAT_Y)<12&&Math.abs(bt.x-b.x)<11){bt.got=true;
+    if(bt.crab){floatTxt(b.x,BOAT_Y-14,'CRAB!','#f55');beep(300,.1,'square',.05,-150);hit('A CRAB JUMPED OUT AND BIT YOU!');}
+    else{const v=100+rI(5)*50;gain(v);sfx.coin();floatTxt(b.x,BOAT_Y-14,'+$'+v,'#7dff7d');}}}
+  for(const fu of b.fuel){if(fu.got)continue;const y=sy(fu);if(Math.abs(y-BOAT_Y)<12&&Math.abs(fu.x-b.x)<11){fu.got=true;b.turbo=3;sfx.big();floatTxt(b.x,BOAT_Y-14,'TURBO!','#ffb000');}}
   for(const p of b.pats){
     p.x+=p.vx*dt;if(p.x<20||p.x>VW-20)p.vx*=-1;
-    const py=BOAT_Y-(p.d-b.d),ang=Math.PI/2+Math.sin(b.t*1.3+p.ph)*.7;
+    const py=sy(p),ang=Math.PI/2+Math.sin(b.t*1.3+p.ph)*.7;
     const vx=b.x-p.x,vy=BOAT_Y-py,dist=Math.hypot(vx,vy);
     if(dist<120&&Math.abs(angDiff(Math.atan2(vy,vx),ang))<.22)hit('SPOTTED BY A PATROL BOAT!');
     if(Math.abs(py-BOAT_Y)<10&&Math.abs(p.x-b.x)<16)hit('RAMMED A PATROL BOAT!');
@@ -1097,28 +1224,32 @@ function updBoat(dt){
   if(b.d>=b.len){BTS=null;escapeJail();}
 }
 function drawBoat(){
-  const b=BTS,sx=shake>0?rI(5)-2:0;
+  const b=BTS,sx=shake>0?rI(5)-2:0,sy=o=>BOAT_Y-(o.d-b.d),on=y=>y>-40&&y<VH+30;
   ctx.fillStyle='#0a1a2e';ctx.fillRect(0,0,VW,VH);
   for(let i=0;i<40;i++){const y=((i*37+b.d*1)%(VH+20))-10,x=(i*71)%VW;ctx.fillStyle='rgba(120,170,220,.18)';ctx.fillRect(x+sx,y,10,1);}
-  // mainland shore
   const shoreY=BOAT_Y-(b.len-b.d)-20;
   if(shoreY>-80){ctx.fillStyle='#c8b88a';ctx.fillRect(0,0,VW,shoreY+20);ctx.fillStyle='#2f4a2a';ctx.fillRect(0,0,VW,shoreY);txt('MAINLAND',VW/2,shoreY-14,'#ffd400','center');}
-  for(const r of b.rocks){const y=BOAT_Y-(r.d-b.d);if(y<-20||y>VH+20)continue;ctx.fillStyle='#4a4f58';ctx.beginPath();ctx.arc(r.x+sx,y,r.r,0,7);ctx.fill();ctx.fillStyle='#6b7079';ctx.fillRect(r.x-3+sx,y-r.r+2,5,3);ctx.fillStyle='rgba(200,230,255,.35)';ctx.fillRect(r.x-r.r+sx,y+r.r-2,r.r*2,2);}
+  for(const w of b.pools){const y=sy(w);if(!on(y))continue;for(let k=0;k<4;k++){ctx.strokeStyle=`rgba(140,190,240,${.15+k*.08})`;ctx.lineWidth=1;ctx.beginPath();ctx.arc(w.x+sx,y,w.r*(1-k*.22),b.t*3+k,b.t*3+k+4.2);ctx.stroke();}ctx.fillStyle='#061020';ctx.beginPath();ctx.arc(w.x+sx,y,5,0,7);ctx.fill();}
+  for(const r of b.rocks){const y=sy(r);if(!on(y))continue;ctx.fillStyle='#4a4f58';ctx.beginPath();ctx.arc(r.x+sx,y,r.r,0,7);ctx.fill();ctx.fillStyle='#6b7079';ctx.fillRect(r.x-3+sx,y-r.r+2,5,3);ctx.fillStyle='rgba(200,230,255,.35)';ctx.fillRect(r.x-r.r+sx,y+r.r-2,r.r*2,2);}
+  for(const l of b.logs){const y=sy(l);if(!on(y))continue;ctx.fillStyle='#5a3d22';ctx.fillRect(l.x-l.w/2+sx,y-4,l.w,8);ctx.fillStyle='#7a5a3a';ctx.fillRect(l.x-l.w/2+sx,y-4,l.w,2);ctx.fillStyle='#3a2612';ctx.fillRect(l.x-l.w/2+sx,y-3,3,6);ctx.fillRect(l.x+l.w/2-3+sx,y-3,3,6);}
+  for(const bt of b.bottles){if(bt.got)continue;const y=sy(bt)+Math.round(Math.sin(b.t*3+bt.ph)*2);if(!on(y))continue;ctx.fillStyle='#3a8a5a';ctx.fillRect(bt.x-3+sx,y-2,7,4);ctx.fillStyle='#5aba7a';ctx.fillRect(bt.x+3+sx,y-1,3,2);ctx.fillStyle='#e8d9a8';ctx.fillRect(bt.x-1+sx,y-1,3,2);}
+  for(const fu of b.fuel){if(fu.got)continue;const y=sy(fu);if(!on(y))continue;ctx.fillStyle='#c81e1e';ctx.fillRect(fu.x-4+sx,y-5,8,10);ctx.fillStyle='#ffd400';ctx.fillRect(fu.x-2+sx,y-2,4,4);ctx.fillStyle='#222';ctx.fillRect(fu.x+1+sx,y-7,3,2);}
+  for(const k of b.sharks){const y=sy(k);if(!on(y))continue;ctx.fillStyle='rgba(200,230,255,.3)';ctx.fillRect(k.x-7+sx,y+3,14,2);ctx.fillStyle='#6b7079';ctx.beginPath();ctx.moveTo(k.x-5+sx,y+3);ctx.lineTo(k.x+sx,y-8);ctx.lineTo(k.x+4+sx,y+3);ctx.closePath();ctx.fill();}
   for(const p of b.pats){
-    const y=BOAT_Y-(p.d-b.d);if(y<-140||y>VH+20)continue;const ang=Math.PI/2+Math.sin(b.t*1.3+p.ph)*.7;
+    const y=sy(p);if(y<-140||y>VH+20)continue;const ang=Math.PI/2+Math.sin(b.t*1.3+p.ph)*.7;
     ctx.globalCompositeOperation='lighter';ctx.fillStyle='rgba(255,245,190,.2)';ctx.beginPath();ctx.moveTo(p.x+sx,y);ctx.arc(p.x+sx,y,120,ang-.22,ang+.22);ctx.closePath();ctx.fill();
     glow(p.x+sx,y,16,Math.floor(gameT*8)%2?'255,30,30':'40,90,255',.5);ctx.globalCompositeOperation='source-over';
     ctx.fillStyle='#e8e8e8';ctx.fillRect(p.x-12+sx,y-5,24,10);ctx.fillStyle='#111';ctx.fillRect(p.x-6+sx,y-3,10,6);ctx.fillStyle='#2a52b5';ctx.fillRect(p.x-12+sx,y+2,24,2);
   }
-  // your boat
   if(!(b.inv>0&&Math.floor(b.inv*12)%2)){
     const x=b.x+sx,y=BOAT_Y;ctx.fillStyle='rgba(200,230,255,.3)';ctx.fillRect(x-5,y+10,10,6);
+    if(b.turbo>0){ctx.fillStyle=Math.floor(gameT*20)%2?'#ffb000':'#ff5a00';ctx.fillRect(x-3,y+10,6,6+rI(5));}
     ctx.fillStyle='#7a5a3a';ctx.fillRect(x-6,y-8,12,18);ctx.fillRect(x-4,y-11,8,3);ctx.fillStyle='#5a3d22';ctx.fillRect(x-4,y-5,8,12);
     ctx.fillStyle='#151515';ctx.fillRect(x-3,y-3,6,2);ctx.fillStyle='#e0ac69';ctx.fillRect(x-2,y-1,4,3);ctx.fillStyle='#ff7a1a';ctx.fillRect(x-3,y+2,6,4);
   }
-  // progress bar to shore
   const f=clamp(b.d/b.len,0,1);ctx.fillStyle='#223';ctx.fillRect(VW-10,20,4,VH-40);ctx.fillStyle='#ffd400';ctx.fillRect(VW-10,20+(VH-40)*(1-f),4,(VH-40)*f);
   drawFloaters(0,0);
+  if(b.match)drawMatch();
 }
 
 function enterBank(){
@@ -1787,6 +1918,9 @@ function drawCity(){
     for(let i=0;i<3;i++){const a=gameT*9+i*2.1;ctx.fillStyle='#8a6a40';ctx.fillRect(x+Math.cos(a)*9,y+18+Math.sin(a*1.3)*-6,2,2);}
   }
   drawFloaters(cx,cy);
+  if(!hasKey&&C.mounds){ // arrow to the nearest buried part; it vanishes once you're close (then use the detector)
+    let n=null,nd=1e9;for(const m of C.mounds)if(!m.dug){const d=Math.abs(m.x-Math.round(P.x/T))+Math.abs(m.y-Math.round(P.y/T));if(d<nd){nd=d;n=m;}}
+    if(n&&nd>8)edgeArrow(n.x*T+8,n.y*T+8,cx,cy,'#ffb000','PART');}
   if(!hasKey&&C.pieces){let n=null,nd=1e9;for(const k of C.pieces)if(!k.got){const d=(Math.abs(k.x*T-P.x)+Math.abs(k.y*T-P.y))/T;if(d<nd){nd=d;n=k;}}if(n&&nd<25)edgeArrow(n.x*T+8,n.y*T+8,cx,cy,'#9fd3ff','PLANS');}
   if(!hasKey&&keyPick){const d=(Math.abs(keyPick.x*T-P.x)+Math.abs(keyPick.y*T-P.y))/T;if(d<30)edgeArrow(keyPick.x*T+8,keyPick.y*T+8,cx,cy,'#5ff','KEY');}
   if(hasKey)edgeArrow(C.door?C.door[0]*T+8:(BK0X+3.5)*T+8,C.door?C.door[1]*T+8:BK1Y*T+8,cx,cy,isJail()?'#3f3':'#ffd400',isJail()?(isIsland()?'BOAT':'EXIT'):isMuseum()?'VAULT WING':isRoof()?'HATCH':'BANK');
@@ -2011,24 +2145,77 @@ function renderBank(){
 }
 const VAULT=[10000,15000,25000];
 function crackVault(){
-  const bonus=VAULT[nightLvl()];gain(bonus);sfx.big();
+  const bonus=isMuseum()&&vinnieWon?0:VAULT[nightLvl()];if(bonus){gain(bonus);sfx.big();}
   nightLog.push({n:night,kind:isMuseum()?'MUSEUM':night===NIGHTS?'GAUNTLET':'BANK',v:nightStolen,h:nightHurt});
   const score=recordScore();
   if(night>=NIGHTS){
     if(stolen>best){best=stolen;try{localStorage.setItem('nh_best',String(best));}catch(e){}}
-    toEnd('win');return;
+    showStory('THE REAL MOONSTONE',[
+      'THE RESERVE VAULT SWINGS OPEN:',
+      'THE REAL MOONSTONE AND ALL OF',
+      "VINNIE'S LOOT. +$"+bonus+'!',
+      '',
+      'UP ON THE ROOF, VINNIE\'S',
+      'HELICOPTER IS WAITING... FOR HIM.'
+    ],()=>toEnd('win'),score,[
+      ['THE END',[
+        'YOU TAKE OFF FIRST.',
+        'BELOW, VINNIE RUNS ONTO THE ROOF',
+        'RIGHT INTO INSPECTOR GRAY.',
+        '',
+        '"NICE WORK, THIEF," GRAY SAYS,',
+        '"BUT NEXT TIME, IT\'S YOU."',
+        '',
+        'THE PERFECT CRIME.']]
+    ]);return;
   }
   const taken=cash;
-  showStory('IT WAS A TRAP!',[
-    isMuseum()?'MOONSTONE STOLEN: +$'+bonus+'!':'VAULT CRACKED: +$'+bonus+'!',
-    isMuseum()?'BUT THE CASE HAD A SILENT ALARM.':'BUT THE ALARM WAS A TRAP.',
-    'SWAT GRABS YOU ON THE WAY OUT.',
+  const museum=isMuseum();
+  showStory(museum&&vinnieWon?'VINNIE WINS!':'IT WAS A TRAP!',museum&&vinnieWon?[
+    'VINNIE GRABS THE MOONSTONE FIRST',
+    'AND TRIPS THE ALARM ON PURPOSE.',
+    'HE ESCAPES OUT THE SKYLIGHT.',
+    'SWAT GRABS YOU INSTEAD.',
     '',
     'CONFISCATED: $'+taken+' + YOUR GEAR',
-    '(TOTAL STOLEN STAYS: $'+stolen+')',
+    '(TOTAL STOLEN STAYS: $'+stolen+')'
+  ]:museum?[
+    'MOONSTONE STOLEN: +$'+bonus+'!',
+    'BUT THE CASE HAD A SILENT ALARM,',
+    'AND VINNIE WAS ON THE ROOF,',
+    'WATCHING SWAT GRAB YOU.',
     '',
-    'NEXT: NIGHT '+(night+1)+' - '+(night+1===4?'THE ISLAND PRISON':'THE JAIL')
-  ],()=>{cash=0;weapon=null;ammo=0;tomatoes=0;startNight(night+1);},score);
+    'CONFISCATED: $'+taken+' + YOUR GEAR',
+    '(TOTAL STOLEN STAYS: $'+stolen+')'
+  ]:[
+    'VAULT CRACKED: +$'+bonus+'!',
+    "BUT THE GUARDS WEREN'T ON STRIKE.",
+    'INSPECTOR GRAY AND SWAT WERE',
+    'WAITING INSIDE THE VAULT.',
+    '',
+    'CONFISCATED: $'+taken+' + YOUR GEAR',
+    '(TOTAL STOLEN STAYS: $'+stolen+')'
+  ],()=>{cash=0;weapon=null;ammo=0;tomatoes=0;startNight(night+1);},score,museum?[
+    ['GULL ROCK',[
+      'YOU ALREADY ESCAPED ONE JAIL,',
+      'SO GRAY SENDS YOU SOMEWHERE',
+      'WORSE: GULL ROCK, A PRISON ON',
+      'A TINY ISLAND. THE ONLY WAY OFF',
+      'IS AN OLD BROKEN BOAT, AND ITS',
+      'PARTS ARE BURIED IN THE SAND.',
+      '',
+      'NEXT: NIGHT 4 - ISLAND PRISON']]
+  ]:[
+    ['LOCKED UP',[
+      'GRAY SMILES AT YOU:',
+      '"SOMEONE TIPPED US OFF.',
+      'YOUR OWN PARTNER, VINNIE."',
+      '',
+      'YOU ARE THROWN IN CITY JAIL.',
+      'BREAK OUT AND FIND OUT WHY',
+      'VINNIE SOLD YOU OUT.',
+      'NEXT: NIGHT 2 - THE JAIL']]
+  ]);
 }
 function initBank(){
   if(isMuseum()){B=buildMuseum();B.img=renderMuseum();}else{B=buildBank();B.img=renderBank();}
@@ -2162,8 +2349,10 @@ function updBank(dt){
   cam.x=clamp(p.x+5-VW/2,0,B.W*T-VW);cam.y=clamp(p.y-VH/2+20,0,B.H*T-VH);
 }
 function thiefSide(x,y,p){
-  const f=p.face,X=x-1,g=ctx;
-  const R=(dx,dy,w,h,col)=>{g.fillStyle=col;g.fillRect(f>0?X+dx:X+12-dx-w,y+dy,w,h);};
+  const f=p.face,X=x-1,g=ctx,V=p.vinnie;
+  const R0=(dx,dy,w,h,col)=>{g.fillStyle=col;g.fillRect(f>0?X+dx:X+12-dx-w,y+dy,w,h);};
+  // Vinnie: green beanie, tan shirt with brown stripes
+  const R=V?(dx,dy,w,h,col)=>R0(dx,dy,w,h,col==='#e8e8e8'?'#c8a070':col==='#151515'&&dy<=2?'#1f7a3a':col==='#151515'&&dy>=8?'#6b4423':col):R0;
   const sk='#e0ac69';
   if(p.crouch){
     R(0,5,4,6,'#a8875a');R(1,4,2,1,'#7a5f3a');
@@ -2174,13 +2363,116 @@ function thiefSide(x,y,p){
   }
   R(0,8,4,7,'#a8875a');R(1,7,2,1,'#7a5f3a');R(1,10,2,2,'#5a4520');
   R(3,0,7,3,'#151515');R(3,3,7,5,sk);R(3,4,7,2,'#151515');R(7,4,2,1,'#fff');
-  if(armor){R(3,8,7,7,'#8a8f99');R(4,9,5,5,'#6b7079');R(3,11,7,1,'#4a4e56');}
+  if(armor&&!V){R(3,8,7,7,'#8a8f99');R(4,9,5,5,'#6b7079');R(3,11,7,1,'#4a4e56');}
   else{R(3,8,7,7,'#e8e8e8');R(3,9,7,1,'#151515');R(3,11,7,1,'#151515');R(3,13,7,1,'#151515');}
   const air=!p.onG,fr=air?4:(Math.abs(p.vx)>5?Math.floor(p.anim*12)%4:0);
   const legs=[[4,7],[2,9],[4,7],[6,5],[2,8]][fr];
   R(legs[0],15,3,6,'#1d1d2b');R(legs[1],15,3,air?4:6,'#1d1d2b');
   R(legs[0],21,4,1,'#000');R(legs[1],air?19:21,4,1,'#000');
   R(air?8:7,air?8:10,3,2,sk);
+}
+// ================= NIGHT 3: 2-PLAYER RACE TO THE MOONSTONE =================
+let RACE=null,vinnieWon=false,modePick=0;
+function chooseMode(){state='choose';modePick=0;storyT=0;}
+const MODE_BOX=[[34,70,252,52],[34,132,252,52]];
+function drawChoose(){
+  ctx.fillStyle='#07070f';ctx.fillRect(0,0,VW,VH);for(const [x,y,p] of sky.stars){ctx.fillStyle=Math.sin(gameT*3+p)>.3?'#fff':'#557';ctx.fillRect(x,y,1,1);}
+  txt('NIGHT 3: THE MUSEUM',VW/2,18,'#ffd400','center');txt('HOW MANY PLAYERS?',VW/2,38,'#9fd3ff','center');
+  const opts=[['1  SOLO PLAY','ROB THE MUSEUM ON YOUR OWN.',''],['2  TWO PLAYERS','RACE VINNIE TO THE MOONSTONE!','P1: ARROWS   P2: W A S D']];
+  opts.forEach(([a,b,c],i)=>{const [x,y,w,h]=MODE_BOX[i],sel=modePick===i;
+    ctx.fillStyle=sel?'#2a2a10':'#14142a';ctx.fillRect(x,y,w,h);ctx.fillStyle=sel?'#ffd400':'#445';ctx.fillRect(x,y,w,2);ctx.fillRect(x,y+h-2,w,2);ctx.fillRect(x,y,2,h);ctx.fillRect(x+w-2,y,2,h);
+    txt(a,x+12,y+10,sel?'#ffd400':'#ccd');txt(b,x+12,y+24,'#ccd');if(c)txt(c,x+12,y+36,'#9fd3ff');});
+  txt('CLICK, OR PRESS 1 / 2',VW/2,198,'#889','center');
+}
+function pickMode(i){sfx.click();if(i===0){startNight(3);}else startRace();}
+function updChoose(){
+  if(pressed.up||pressed.down){modePick=1-modePick;sfx.click();}
+  if(rawPressed.Digit1||rawPressed.Numpad1)pickMode(0);else if(rawPressed.Digit2||rawPressed.Numpad2)pickMode(1);
+  else if(pressed.start||pressed.fire)pickMode(modePick);
+}
+cv.addEventListener('mousedown',e=>{if(state!=='choose')return;const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*VW/r.width,y=(e.clientY-r.top)*VH/r.height;
+  MODE_BOX.forEach(([bx,by,bw,bh],i)=>{if(x>=bx&&x<bx+bw&&y>=by&&y<by+bh){initAudio();pickMode(i);}});});
+cv.addEventListener('mousemove',e=>{if(state!=='choose')return;const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*VW/r.width,y=(e.clientY-r.top)*VH/r.height;
+  MODE_BOX.forEach(([bx,by,bw,bh],i)=>{if(x>=bx&&x<bx+bw&&y>=by&&y<by+bh)modePick=i;});});
+function newRacer(x,vinnie){return {x,y:13*T-22,w:10,h:22,vx:0,vy:0,onG:true,face:1,crouch:false,coy:0,jbuf:0,wallLock:0,dropT:0,inv:1,anim:0,rx:x,ry:13*T-22,vinnie,loot:0};}
+function startRace(){
+  night=3;nightStolen=0;nightHurt=0;hasKey=true;flashOn=false;battery=600;hp=MAXHP;showMap=false;soap=0;disguiseT=0;boostT=0;toms=[];splats=[];banner=null;
+  C=null;state='bank';B=buildMuseum();B.img=renderMuseum();B.race=true;B.timer=0;bankT=0;floaters=[];
+  BP=newRacer(3*T,false);const p2=newRacer(3*T+14,true);RACE={p1:BP,p2,winner:null,winT:0,other:null};respawn={x:BP.x,y:BP.y};
+  cam.x=0;cam.y=16;say('RACE TO THE MOONSTONE!|P1: ARROWS   P2: W A S D',3.5);showHelp();
+}
+function racerStep(p,inp,dt){
+  p.inv-=dt;p.dropT-=dt;p.wallLock-=dt;
+  const foot=tb(Math.floor((p.x+p.w/2)/T),Math.floor((p.y+p.h+1)/T));
+  if(inp.downP&&p.onG&&foot===2){p.dropT=.25;p.onG=false;p.y+=2;}
+  const wantC=inp.down&&p.onG&&p.dropT<=0;
+  if(wantC&&!p.crouch){p.crouch=true;p.y+=8;p.h=14;}
+  else if(!wantC&&p.crouch&&canStand(p)){p.crouch=false;p.y-=8;p.h=22;}
+  const ax=(inp.right?1:0)-(inp.left?1:0);
+  if(p.wallLock<=0){const max=p.crouch?55:115,acc=p.onG?1400:800;p.vx=approach(p.vx,ax*max,acc*dt);if(ax)p.face=ax;}
+  if(inp.upP)p.jbuf=.13;else p.jbuf-=dt;
+  if(p.onG)p.coy=.1;else p.coy-=dt;
+  if(p.jbuf>0){
+    if(p.coy>0){if(p.crouch&&canStand(p)){p.crouch=false;p.y-=8;p.h=22;}if(!p.crouch){p.vy=-335;p.jbuf=0;p.coy=0;p.onG=false;}}
+    else{const w=touchWall(p,1)?1:touchWall(p,-1)?-1:0;if(w){p.vy=-300;p.vx=-w*175;p.face=-w;p.wallLock=.16;p.jbuf=0;}}
+  }
+  p.vy+=950*dt;
+  if(p.vy>55&&!p.onG&&((inp.left&&touchWall(p,-1))||(inp.right&&touchWall(p,1))))p.vy=55;
+  if(p.vy>430)p.vy=430;
+  const n=Math.ceil(dt/.008);for(let i=0;i<n;i++){moveX(p,p.vx*dt/n);moveY(p,p.vy*dt/n);}
+  p.onG=groundCheck(p);if(p.onG&&p.vy>0)p.vy=0;
+  if(p.onG){const ti=Math.round((p.y+p.h)/T)*B.W+Math.floor((p.x+p.w/2)/T),tv=B.g[ti];
+    if(tv===5&&B.conv)moveX(p,B.conv[ti]*45*dt);
+    if(tv===6){p.vy=-520;p.onG=false;p.coy=0;beep(220,.25,'square',.05,700);}}
+  if(Math.abs(p.vx)>5&&p.onG)p.anim+=dt;
+  // in the race, a hazard sends you back to your last flag (no hearts lost)
+  const back=why=>{if(p.inv>0&&why!=='FELL!')return false;floatTxt(p.x+5,p.y-6,why,'#f55');beep(p.vinnie?900:1400,.2,'sawtooth',.05,-900);
+    Object.assign(p,{x:p.rx,y:p.ry,vx:0,vy:0,inv:1.2,crouch:false,h:22,onG:true});return true;};
+  for(const l of B.lasers){if(l.k==='r'){if(rotorHits(l,p)&&back('ZAP!'))return;continue;}
+    if(!lzOn(l))continue;const [x,y,w,h]=lzRect(l);if(p.x+1<x+w&&p.x+p.w-1>x&&p.y+1<y+h&&p.y+p.h>y&&back('ZAP!'))return;}
+  if(p.onG){const ty=Math.round((p.y+p.h)/T);for(let tx=Math.floor(p.x/T);tx<=Math.floor((p.x+p.w-.01)/T);tx++){const i=ty*B.W+tx;
+    if(B.g[i]===3&&!B.crack[i]){B.crack[i]=.55;beep(1800,.05,'square',.03);}
+    if(B.g[i]===4&&alarmOn(i)&&back('ALARM!'))return;}}
+  for(const d of B.drones||[]){const x=dronePos(d),bot=droneBottom(d,x),my=p.y+p.h/2,pc=Math.floor((p.x+p.w/2)/T);
+    let shaded=false;for(let ty=Math.floor(d.y/T)+1;ty<Math.floor(p.y/T);ty++)if(SOL(tb(pc,ty)))shaded=true;
+    if(droneOn(d)&&!shaded&&my>d.y&&my<bot){const w=beamHW(d,my);if(p.x+p.w>x-w&&p.x<x+w&&back('SPOTTED!'))return;}}
+  if(p.y>B.H*T+8){back('FELL!');return;}
+  for(const k of B.items){if(k.got)continue;if(p.x<k.x+6&&p.x+p.w>k.x-6&&p.y<k.y+6&&p.y+p.h>k.y-6){k.got=true;
+    if(p.vinnie){p.loot+=k.val;floatTxt(k.x,k.y-8,'+$'+k.val,'#c8a070');}else{gain(k.val);floatTxt(k.x,k.y-8,'+$'+k.val,'#7dff7d');}sfx.coin();}}
+  for(const c of B.cps)if(p.x+p.w/2>c.x*T&&p.x+p.w/2<c.x*T+T&&p.rx<c.x*T){p.rx=c.x*T+3;p.ry=13*T-22;c.on=true;}
+  const mx=142*T+8,my=8*T;if(p.x<mx+8&&p.x+p.w>mx-8&&p.y<my+16&&p.y+p.h>my-6)return 'win';
+}
+function updRace(dt){
+  bankT+=dt;
+  if(RACE.winner){RACE.winT-=dt;if(RACE.winT<=0){vinnieWon=RACE.winner==='p2';crackVault();}return;}
+  // shared: broken glass grows back when nobody is standing on it
+  for(const i of B.glassIdx||[]){
+    if(B.crack[i]>0){B.crack[i]-=dt;if(B.crack[i]<=0){B.crack[i]=0;B.g[i]=0;B.broken[i]=4;beep(2400,.15,'sawtooth',.04,-1800);}}
+    else if(B.broken[i]>0){B.broken[i]-=dt;if(B.broken[i]<=0){const gx=(i%B.W)*T,gy=((i/B.W)|0)*T,on=p=>p.x<gx+T&&p.x+p.w>gx&&p.y<gy+T&&p.y+p.h>gy;
+      if(on(RACE.p1)||on(RACE.p2))B.broken[i]=.2;else B.g[i]=3;}}}
+  const i1={left:rawKeys.ArrowLeft,right:rawKeys.ArrowRight,up:rawKeys.ArrowUp,down:rawKeys.ArrowDown,upP:rawPressed.ArrowUp,downP:rawPressed.ArrowDown};
+  const i2={left:rawKeys.KeyA,right:rawKeys.KeyD,up:rawKeys.KeyW,down:rawKeys.KeyS,upP:rawPressed.KeyW,downP:rawPressed.KeyS};
+  const r1=racerStep(RACE.p1,i1,dt),r2=racerStep(RACE.p2,i2,dt);
+  if(r1==='win'||r2==='win'){RACE.winner=r1==='win'?'p1':'p2';RACE.winT=2.5;sfx.win();}
+}
+function drawRace(){
+  const views=[[RACE.p1,RACE.p2,0],[RACE.p2,RACE.p1,160]],W2=160;
+  for(const [p,o,vx] of views){
+    BP=p;RACE.other=o;
+    cam.x=clamp(p.x+5-W2/2,0,B.W*T-W2);cam.y=clamp(p.y-VH/2+20,0,B.H*T-VH);
+    ctx.save();ctx.beginPath();ctx.rect(vx,0,W2,VH);ctx.clip();ctx.translate(vx,0);drawBank();ctx.restore();
+  }
+  BP=RACE.p1;RACE.other=null;
+  ctx.fillStyle='#000';ctx.fillRect(158,0,4,VH);ctx.fillStyle='#ffd400';ctx.fillRect(159,0,2,VH);
+  // top bar: who is closer to the Moonstone?
+  ctx.fillStyle='#000';ctx.fillRect(0,0,VW,14);const goal=142*T;
+  const bar=(p,x,col,label)=>{const f=clamp(p.x/goal,0,1);txt(label,x,3,col);ctx.fillStyle='#223';ctx.fillRect(x+56,5,92,5);ctx.fillStyle=col;ctx.fillRect(x+56,5,Math.round(92*f),5);};
+  bar(RACE.p1,4,'#ffffff','YOU');bar(RACE.p2,164,'#c8a070','VINNIE');
+  if(RACE.winner){ctx.fillStyle='rgba(0,0,0,.8)';ctx.fillRect(30,80,260,52);ctx.fillStyle='#ffd400';ctx.fillRect(30,80,260,2);ctx.fillRect(30,130,260,2);
+    txt(RACE.winner==='p1'?'YOU GOT THE MOONSTONE!':'VINNIE GOT IT FIRST!',VW/2,92,RACE.winner==='p1'?'#7dff7d':'#ff6b6b','center');
+    txt(RACE.winner==='p1'?'PLAYER 1 WINS!':'PLAYER 2 WINS!',VW/2,110,'#fff','center');}
+  if(msgT>0){const lines=msg.split('|'),w=Math.max(...lines.map(l=>l.length))*8+12,h=lines.length*10+6;
+    ctx.fillStyle='rgba(0,0,0,.8)';ctx.fillRect((VW-w)/2,VH-h-6,w,h);lines.forEach((l,i)=>txt(l,VW/2,VH-h-2+i*10,'#ffd400','center'));}
 }
 function drawBank(){
   const sx=shake>0?rI(5)-2:0,sy=shake>0?rI(5)-2:0;
@@ -2224,6 +2516,7 @@ function drawBank(){
     }
   }
   if(!(p.inv>0&&Math.floor(p.inv*12)%2))thiefSide(Math.round(p.x)-cx,Math.round(p.y)-cy,p);
+  if(B.race&&RACE&&RACE.other){const o=RACE.other;if(!(o.inv>0&&Math.floor(o.inv*12)%2))thiefSide(Math.round(o.x)-cx,Math.round(o.y)-cy,o);}
   lx.globalCompositeOperation='source-over';lx.clearRect(0,0,VW,VH);
   lx.fillStyle='rgba(4,0,18,.45)';lx.fillRect(0,0,VW,VH);
   lx.fillStyle='rgba(0,0,0,.95)';
@@ -2237,7 +2530,8 @@ function drawBank(){
   }
   const hx=p.x+5-cx,hy=p.y+6-cy;
   radial(lx,hx,hy+4,22,.5);
-  if(flashOn){cone(lx,hx,hy,p.face>0?0:Math.PI,125,.42,1);radial(lx,hx,hy,26,.8);}
+  if(flashOn||B.race){cone(lx,hx,hy,p.face>0?0:Math.PI,125,.42,1);radial(lx,hx,hy,26,.8);}
+  if(B.race&&RACE&&RACE.other){const o=RACE.other,ox=o.x+5-cx,oy=o.y+6-cy;cone(lx,ox,oy,o.face>0?0:Math.PI,125,.42,1);radial(lx,ox,oy,26,.8);}
   lx.globalCompositeOperation='source-over';
   ctx.drawImage(lc,0,0);
   for(const l of B.lasers){
@@ -2294,7 +2588,7 @@ function drawBank(){
     }
     }
   }
-  for(const h of B.hints)if(h.x-cx>-200&&h.x-cx<VW)txt(h.s,h.x-cx,h.y-cy,'#9fd3ff');
+  if(!B.race)for(const h of B.hints)if(h.x-cx>-200&&h.x-cx<VW)txt(h.s,h.x-cx,h.y-cy,'#9fd3ff');
   drawFloaters(cx,cy);
 }
 
@@ -2432,22 +2726,25 @@ function drawTitle(){
   if(Math.floor(gameT*2)%2)txt('PRESS ENTER',VW/2,182,'#fff','center');
 }
 function rank(c){return c>=110000?'LEGENDARY PHANTOM':c>=80000?'MASTER THIEF':c>=50000?'SMOOTH OPERATOR':'PETTY CROOK';}
-function showStory(title,lines,cb,score){story={title,lines,cb,score};storyT=0;state='story';flashOn=false;showMap=false;}
+// story screens can have extra pages: more=[[title,[lines...]],...]; ENTER goes to the next page
+function showStory(title,lines,cb,score,more){story={title,lines,cb,score,more:more||[],page:0};storyT=0;state='story';flashOn=false;showMap=false;}
 function drawStory(){
   ctx.fillStyle='#07070f';ctx.fillRect(0,0,VW,VH);
-  const jailNext=story.title.includes('TRAP');
+  const pg=story.page===0?[story.title,story.lines]:story.more[story.page-1],title=pg[0],lines=pg[1];
+  const jailNext=/TRAP|LOCKED|GULL|CAUGHT/.test(title);
   if(jailNext){ctx.fillStyle='#1a1b22';for(let x=8;x<VW;x+=22)ctx.fillRect(x,0,5,VH);ctx.fillStyle='#2a2c34';for(let x=8;x<VW;x+=22)ctx.fillRect(x,0,2,VH);}
   else{for(const [x,y,p] of sky.stars){ctx.fillStyle=Math.sin(gameT*3+p)>.3?'#fff':'#557';ctx.fillRect(x,y,1,1);}}
   ctx.fillStyle='rgba(0,0,0,.75)';ctx.fillRect(14,20,VW-28,178);
-  txt(story.title,VW/2,30,jailNext?'#f33':'#3f3','center',16);
-  story.lines.forEach((l,i)=>txt(l,VW/2,56+i*13,i===story.lines.length-1?'#ffd400':'#ccd','center'));
-  if(story.score){const sc=story.score;
+  txt(title,VW/2,30,jailNext?'#f33':/END|LAST/.test(title)?'#ffd400':'#3f3','center',16);
+  lines.forEach((l,i)=>txt(l,VW/2,56+i*13,/^NEXT:/.test(l)?'#ffd400':/^"|^'/.test(l)?'#9fd3ff':'#ccd','center'));
+  if(story.score&&story.page===0){const sc=story.score;
     ctx.fillStyle='#ffd400';ctx.fillRect(40,163,240,1);
     heart(44,170,1);txt('LOST '+fmtH(sc.sc.h),54,169,sc.sc.h?'#ff6b6b':'#7dff7d');txt('$'+sc.sc.m,280,169,'#7dff7d','right');
     if(sc.newBest&&Math.floor(gameT*3)%2)txt('NEW BEST!',VW/2,182,'#ffd400','center');
     else if(sc.newWorst)txt('NEW WORST... TRY AGAIN!',VW/2,182,'#ff6b6b','center');
     else if(sc.best)txt('BEST: LOST '+fmtH(sc.best.h)+'  $'+sc.best.m,VW/2,182,'#9fd3ff','center');}
-  if(storyT>1&&Math.floor(gameT*2)%2)txt('PRESS ENTER',VW/2,204,'#fff','center');
+  if(storyT>1&&Math.floor(gameT*2)%2)txt(story.page<story.more.length?'PRESS ENTER (MORE...)':'PRESS ENTER',VW/2,204,'#fff','center');
+  if(story.more.length)txt((story.page+1)+'/'+(story.more.length+1),VW-22,190,'#556','right');
 }
 let showScores=false;
 function drawScores(){
@@ -2482,10 +2779,20 @@ function drawEnd(){
 
 // ================= MAIN LOOP =================
 function newGame(){
-  testMode=false;
+  testMode=false;vinnieWon=false;RACE=null;
   cash=0;cityCash=0;spent=0;stolen=0;nightLog=[];paused=false;
   speedLvl=0;weapon=null;ammo=0;shopOpen=false;tomatoes=0;armor=false;
-  startNight(1);
+  B=null;C=null;
+  showStory('NIGHT HEIST',[
+    'YOU ARE A SMALL-TIME THIEF.',
+    '',
+    'YOUR OLD PARTNER VINNIE CALLS:',
+    '"THE BIG BANK\'S GUARDS ARE ON',
+    'STRIKE TONIGHT. THE VAULT IS',
+    'WIDE OPEN. GO GET RICH."',
+    '',
+    'NEXT: NIGHT 1 - THE BANK'
+  ],()=>startNight(1));
 }
 // ================= HOW TO PLAY cards =================
 // shown automatically at the start of every night and every new section; H (or the button) opens them any time
@@ -2529,7 +2836,7 @@ const HELP={
     ['GLASS CRACKS: KEEP MOVING!',Y],['RED FLOOR TILES TURN ON + OFF.',Y],['DARK HALL: F = FLASHLIGHT.',W],['',W],
     ['PAINTINGS, GOLD + GEMS = LOOT.',GR]]},
   island:{t:'NIGHT 4: ISLAND PRISON',l:[
-    ['GOAL: 4 BOAT PARTS ARE BURIED.',G],['FIND THE DIRT MOUNDS (X + SHOVEL).',G],['DETECTOR BEEPS FASTER WHEN CLOSE.',G],
+    ['GOAL: 4 BOAT PARTS ARE BURIED.',G],['FIND THE DIRT MOUNDS (X + SHOVEL).',G],['FOLLOW THE ARROW, THEN THE BEEPS.',G],
     ['STAND ON A MOUND 6 SEC TO DIG.',Y],['DIGGING IS LOUD! GUARDS + CRABS',R],['RUSH IN. WALK AWAY = START OVER.',R],
     ['T = COCONUT: THE THUD CONFUSES',W],['NEARBY GUARDS FOR 3 SEC. HIT=BONK',W],
     ['HIDE IN TOOL SHEDS.',GR],['SEAGULLS SQUAWK IF YOU GET CLOSE',R]]},
@@ -2541,14 +2848,20 @@ const HELP={
     ['GOAL: REACH THE VAULT BEFORE',G],['SWAT STORMS IN (CLOCK, TOP).',G],['',W],
     ['9 ROOMS. EVERY TRAP IN THE GAME:',Y],['LASERS, SHUTTERS, SPINNERS,',W],['GLASS, ALARM FLOORS, DRONES.',W],['',W],
     ['CLOCK HITS 0 = -1 HEART, +45 SEC.',R],['THE FASTEST LASERS YET.',R],['GOOD LUCK, THIEF.',GR]]},
+  race:{t:'RACE TO THE MOONSTONE',l:[
+    ['FIRST TO JUMP UP AND GRAB THE',G],['MOONSTONE (FAR RIGHT) WINS!',G],['',W],
+    ['P1 (LEFT SCREEN): ARROW KEYS',W],['P2 (RIGHT, VINNIE): W A S D',W],['UP / W = JUMP, DOWN / S = CROUCH',W],['',W],
+    ['HAZARDS SEND YOU BACK TO YOUR',R],['LAST FLAG. NO HEARTS LOST.',R]]},
   boat:{t:'BOAT ESCAPE',l:[
-    ['GOAL: REACH THE MAINLAND',G],['(BAR ON THE RIGHT).',G],['',W],
-    ['LEFT / RIGHT = STEER',W],['UP = FASTER   DOWN = SLOWER',W],['',W],
-    ['DODGE ROCKS.',R],['STAY OUT OF POLICE BOAT LIGHTS.',R]]}
+    ['GOAL: REACH THE MAINLAND (BAR).',G],['LEFT/RIGHT STEER. UP = FASTER.',W],['',W],
+    ['HIT A ROCK = PATCH THE HULL:',Y],['MATCH THE CARD PAIRS IN TIME!',Y],
+    ['BOTTLES: CASH... OR A CRAB!',W],['RED CAN = TURBO BOOST.',GR],['',W],
+    ['SHARKS, LOGS, WHIRLPOOLS,',R],['POLICE BOAT LIGHTS: AVOID!',R]]}
 };
 function helpKey(){
   if(state==='title'||!C)return 'title';
   if(state==='lock')return 'lock';if(state==='boat')return 'boat';
+  if(state==='bank'&&B&&B.race)return 'race';
   if(state==='bank')return B&&B.kind==='museum'?'museum':isGauntlet()?'gauntlet':'bank';
   if(isJail())return isIsland()?'island':'jail';
   return isGallery()?'gallery':isRoof()?'roof':'city';
@@ -2582,7 +2895,8 @@ function update(dt){
   if(showScores){if(pressed.start||pressed.fire||pressed.scores||pressed.pause){showScores=false;sfx.click();}return;}
   if(state==='title'){if(pressed.scores){showScores=true;sfx.click();return;}if(pressed.help){showHelp();return;}if(pressed.start||pressed.fire)newGame();return;}
   if(state==='win'){endT+=dt;if((pressed.start||pressed.fire)&&endT>1)state='title';return;}
-  if(state==='story'){storyT+=dt;if((pressed.start||pressed.fire)&&storyT>1){const cb=story.cb;story=null;cb();}return;}
+  if(state==='choose'){updChoose();return;}
+  if(state==='story'){storyT+=dt;if((pressed.start||pressed.fire)&&storyT>.6){if(story.page<story.more.length){story.page++;storyT=0;sfx.click();}else{const cb=story.cb;story=null;cb();}}return;}
   if(trans){trans.t+=dt;if(!trans.fired&&trans.t>=.5){trans.fired=true;trans.cb();}if(trans.t>=1)trans=null;return;}
   if(shopOpen){updShop();return;}
   if(pressed.help&&(state==='city'||state==='bank'||state==='lock'||state==='boat')){showHelp();return;}
@@ -2593,11 +2907,13 @@ function update(dt){
   if(flashOn){battery-=dt;if(battery<=0){battery=0;flashOn=false;say('FLASHLIGHT BATTERY IS DEAD!');}}
   msgT-=dt;shake-=dt;hurtFlash-=dt;if(banner){banner.t-=dt;if(banner.t<=0)banner=null;}
   for(const f of floaters)f.t-=dt*1.2;floaters=floaters.filter(f=>f.t>0);
-  if(state==='city')updCity(dt);else if(state==='bank')updBank(dt);else if(state==='lock')updLock(dt);else if(state==='boat')updBoat(dt);
+  if(state==='city')updCity(dt);else if(state==='bank'&&B&&B.race)updRace(dt);else if(state==='bank')updBank(dt);else if(state==='lock')updLock(dt);else if(state==='boat')updBoat(dt);
 }
 function draw(){
   if(state==='title'){drawTitle();if(helpOpen)drawHelp();if(showScores)drawScores();return;}
   if(state==='story'){drawStory();return;}
+  if(state==='choose'){drawChoose();return;}
+  if(state==='bank'&&B&&B.race){drawRace();if(helpOpen)drawHelp();if(paused){ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(0,0,VW,VH);txt('PAUSED',VW/2,100,'#ffd400','center',16);}if(trans){ctx.fillStyle=`rgba(0,0,0,${1-Math.abs(trans.t-.5)*2})`;ctx.fillRect(0,0,VW,VH);}return;}
   if(state==='lock'&&LK)drawLock();else if(state==='boat'&&BTS)drawBoat();else if(B)drawBank();else if(C)drawCity();
   if(hurtFlash>0){ctx.fillStyle=`rgba(255,0,0,${hurtFlash*.6})`;ctx.fillRect(0,0,VW,VH);}
   drawHUD();
@@ -2631,6 +2947,7 @@ function frame(now){
   if(!scoresAllowed())showScores=false;
   document.getElementById('scoreBtn').style.display=scoresAllowed()?'':'none';
   for(const k in pressed)delete pressed[k];
+  for(const k in rawPressed)delete rawPressed[k];
   requestAnimationFrame(frame);
 }
 // scores can only be viewed on the title screen and the final screen, never while playing
@@ -2649,7 +2966,7 @@ document.getElementById('helpBtn').onclick=e=>{initAudio();if(helpOpen)helpOpen=
   const items=[
     ['NIGHT 1: CITY',()=>go(1)],['NIGHT 1: BANK',()=>go(1,'inside')],
     ['NIGHT 2: JAIL',()=>go(2)],['NIGHT 2: GIANT LOCK',()=>go(2,'inside')],
-    ['NIGHT 3: MUSEUM HALLS',()=>go(3)],['NIGHT 3: MOONSTONE',()=>go(3,'inside')],
+    ['NIGHT 3: MUSEUM (1 OR 2 PLAYERS)',()=>{go(2);chooseMode();}],['NIGHT 3: 2-PLAYER RACE',()=>{go(2);startRace();}],['NIGHT 3: MOONSTONE',()=>go(3,'inside')],
     ['NIGHT 4: ISLAND PRISON',()=>go(4)],['NIGHT 4: BOAT ESCAPE',()=>go(4,'inside')],
     ['NIGHT 5: ROOFTOPS',()=>go(5)],['NIGHT 5: THE GAUNTLET',()=>go(5,'inside')],
     ['ENDING SCREEN',()=>{go(5,'inside');crackVault();}],
