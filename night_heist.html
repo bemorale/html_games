@@ -75,10 +75,15 @@ addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
 
 // ================= AUDIO =================
 let actx=null;
+// Browsers (Safari especially) only allow sound after the player touches/clicks/types, and Safari pauses
+// ("suspends" or "interrupts") audio when you switch tabs. So: start or wake the audio on EVERY interaction.
 function initAudio(){
-  if(!actx){try{actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}
-  else if(actx.state==='suspended')actx.resume();
+  if(!actx){try{actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){return;}
+    try{const b=actx.createBuffer(1,1,22050),s=actx.createBufferSource();s.buffer=b;s.connect(actx.destination);s.start(0);}catch(e){}} // Safari unlock: a silent blip
+  if(actx.state!=='running'){try{const r=actx.resume();if(r&&r.catch)r.catch(()=>{});}catch(e){}}
 }
+for(const ev of ['pointerdown','touchstart','mousedown','keydown','click'])addEventListener(ev,initAudio,{capture:true,passive:true});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&actx&&actx.state!=='running')initAudio();});
 function beep(f,d,type='square',vol=.05,slide=0,delay=0){
   if(!actx||muted)return;const t=actx.currentTime+delay;
   const o=actx.createOscillator(),g=actx.createGain();
@@ -3996,6 +4001,7 @@ function frame(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
   let gdt=dt;if(slowT>0){slowT-=dt;gdt=dt*.35;}
   update(gdt);draw();drawToasts(dt);musicTick();
+  {const mb=document.getElementById('muteBtn'),want=muted?'SOUND: OFF':!actx||actx.state!=='running'?'SOUND: CLICK TO START':'SOUND: ON';if(mb.textContent!==want)mb.textContent=want;}
   if(!scoresAllowed())showScores=false;
   document.getElementById('scoreBtn').style.display=scoresAllowed()?'':'none';
   for(const k in pressed)delete pressed[k];
@@ -4058,7 +4064,7 @@ document.getElementById('helpBtn').onclick=e=>{initAudio();if(helpOpen)helpOpen=
 // ===== SOUND ON/OFF =====
 let muted=false;try{localStorage.removeItem('nh_mute');}catch(e){} // sound always starts ON
 function setMute(m){muted=m;if(music.master)music.master.gain.value=m?0:.8;document.getElementById('muteBtn').textContent=m?'SOUND: OFF':'SOUND: ON';if(!m)music.on=true;}
-document.getElementById('muteBtn').onclick=e=>{initAudio();setMute(!muted);e.target.blur();};setMute(muted);
+document.getElementById('muteBtn').onclick=e=>{const waking=/CLICK TO START/.test(e.target.textContent);initAudio();if(!waking)setMute(!muted);e.target.blur();};setMute(muted);
 // ===== TOUCH CONTROLS (phones / tablets): on-screen buttons that press the real keys =====
 (()=>{
   if(!('ontouchstart' in window)&&!(navigator.maxTouchPoints>0))return;
