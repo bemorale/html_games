@@ -19,6 +19,7 @@
 <body>
 <div id="wrap"><canvas id="c"></canvas><div id="crt"></div></div>
 <button id="helpBtn" style="position:fixed;top:8px;right:8px;z-index:9;background:#14142a;color:#ffd400;border:2px solid #ffd400;padding:4px 8px;font:bold 11px monospace;cursor:pointer">? HOW TO PLAY</button>
+<button id="hideBtn" style="position:fixed;top:68px;right:8px;z-index:9;background:#14142a;color:#ffb070;border:2px solid #ffb070;padding:4px 8px;font:bold 11px monospace;cursor:pointer;display:none">HIDEOUT</button>
 <button id="scoreBtn"  style="position:fixed;top:38px;right:8px;z-index:9;background:#14142a;color:#7dff7d;border:2px solid #7dff7d;padding:4px 8px;font:bold 11px monospace;cursor:pointer">HIGH SCORES</button>
 <button id="muteBtn" style="position:fixed;top:8px;left:8px;z-index:9;background:#14142a;color:#9fd3ff;border:2px solid #9fd3ff;padding:4px 8px;font:bold 11px monospace;cursor:pointer">SOUND: ON</button>
 <div id="touch" style="display:none"></div>
@@ -77,12 +78,23 @@ addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
 let actx=null;
 // Browsers (Safari especially) only allow sound after the player touches/clicks/types, and Safari pauses
 // ("suspends" or "interrupts") audio when you switch tabs. So: start or wake the audio on EVERY interaction.
-function initAudio(){
-  if(!actx){try{actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){return;}
-    try{const b=actx.createBuffer(1,1,22050),s=actx.createBufferSource();s.buffer=b;s.connect(actx.destination);s.start(0);}catch(e){}} // Safari unlock: a silent blip
-  if(actx.state!=='running'){try{const r=actx.resume();if(r&&r.catch)r.catch(()=>{});}catch(e){}}
+let audioTries=0,audioLastTry=0;
+function makeAudio(){
+  try{actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){actx=null;return;}
+  music.master=null;audioTries=0; // the music bus is rebuilt on the new context
+  try{const b=actx.createBuffer(1,1,22050),s=actx.createBufferSource();s.buffer=b;s.connect(actx.destination);s.start(0);}catch(e){} // Safari unlock: a silent blip
 }
-for(const ev of ['pointerdown','touchstart','mousedown','keydown','click'])addEventListener(ev,initAudio,{capture:true,passive:true});
+function initAudio(){
+  if(!actx){makeAudio();if(!actx)return;}
+  if(actx.state==='running'){audioTries=0;return;}
+  // Safari can keep a context stuck paused if it was made at the "wrong" moment: after a few tries, start fresh
+  const now=performance.now();if(now-audioLastTry>600){audioLastTry=now;audioTries++;} // one click fires several events: count it once
+  if(audioTries>3){try{actx.close();}catch(e){}makeAudio();if(!actx)return;}
+  try{const r=actx.resume();if(r&&r.catch)r.catch(()=>{});}catch(e){}
+}
+// Safari only trusts some events as "the player chose to start sound" (mostly the RELEASE of a click/tap and key presses),
+// so try on all of them
+for(const ev of ['pointerup','mouseup','touchend','click','keydown','keyup','pointerdown','touchstart'])addEventListener(ev,initAudio,{capture:true,passive:true});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&actx&&actx.state!=='running')initAudio();});
 function beep(f,d,type='square',vol=.05,slide=0,delay=0){
   if(!actx||muted)return;const t=actx.currentTime+delay;
@@ -215,7 +227,7 @@ function musicTick(){
 // ================= GLOBAL STATE =================
 let state='title',cash=0,cityCash=0,spent=0,hp=MAXHP,battery=600,flashOn=false,hasKey=false;
 let showMap=false,paused=false,msg='',msgT=0,shake=0,hurtFlash=0,endT=0,trans=null,gameT=0;
-let speedLvl=0,weapon=null,ammo=0,fireCD=0,shopOpen=false,shopSel=0,tomatoes=0,tomCD=0,armor=false,plates=0,shovelLvl=0,toms=[],splats=[];
+let speedLvl=0,weapon=null,ammo=0,fireCD=0,shopOpen=false,shopSel=0,tomatoes=0,tomCD=0,armor=false,plates=0,shovelLvl=0,cards=0,dogTreatT=0,toms=[],splats=[];
 let floaters=[];
 const cam={x:0,y:0};
 function say(t,d=2.6){msg=t;msgT=d;}
@@ -245,21 +257,33 @@ const keyName=()=>isIsland()?'BOAT KEY':'KEYCARD',bossName=()=>isIsland()?'HARBO
 const CONE_HALF=70*Math.PI/180,CONE=Math.cos(CONE_HALF),JAIL_SIGHT=6; // guards see as far as city cops, 140-degree view
 // is tile (x,y) inside this guard's view cone?
 function facesTile(c,x,y){const vx=x-c.cx,vy=y-c.cy,l=Math.hypot(vx,vy);return !l||(vx*c.dx+vy*c.dy)/l>CONE;}
-function gain(v){if(!twoP&&v>0)v=Math.round(v*(1+.1*upLvl('gloves')));cash+=v;stolen+=v;nightStolen+=v;}
+function gain(v){if(!twoP&&v>0)v=Math.round(v*(1+.1*upLvl('gloves')+.02*upLvl('trophy')));cash+=v;stolen+=v;nightStolen+=v;}
 // ===== LONG-TERM PROGRESS (saved in this browser): stash money, hideout upgrades, badges, hard mode =====
 let save=loadSave(),hardMode=false,toasts=[];
 function loadSave(){const d={stash:0,up:{},badges:{},stats:{},hard:false};try{return Object.assign(d,JSON.parse(localStorage.getItem('nh_save')||'{}'));}catch(e){return d;}}
 function writeSave(){try{localStorage.setItem('nh_save',JSON.stringify(save));}catch(e){}}
 const upLvl=k=>save.up[k]||0;
 const maxBattery=()=>600+300*upLvl('battery');
-function applyUpgrades(){MAXL=3+(twoP?0:upLvl('heart'));MAXHP=MAXL*3;}
+function applyUpgrades(){MAXL=3+(twoP?0:upLvl('heart')+upLvl('heart2'));MAXHP=MAXL*3;}
 const UPGRADES=[
   {k:'heart',name:'EXTRA HEART',cost:[30000],desc:()=>'START EVERY NIGHT WITH 4 HEARTS'},
   {k:'shoes',name:'QUIET SNEAKERS',cost:[8000,16000],desc:()=>'RUN FASTER, EVERY NIGHT'},
   {k:'battery',name:'BIG BATTERY',cost:[5000,10000],desc:l=>'FLASHLIGHT LASTS '+(10+5*Math.min(2,l+1))+' MINUTES'},
   {k:'kit',name:'STARTER KIT',cost:[6000,12000],desc:l=>l?'+ A STUN GUN EACH CITY NIGHT':'10 TOMATOES EACH CITY NIGHT'},
-  {k:'gloves',name:'CASH GLOVES',cost:[10000,20000],desc:l=>'+'+10*Math.min(2,l+1)+'% MONEY FROM EVERYTHING'}
+  {k:'gloves',name:'CASH GLOVES',cost:[10000,20000],desc:l=>'+'+10*Math.min(2,l+1)+'% MONEY FROM EVERYTHING'},
+  // ...when one is maxed, the next one takes its slot
+  {k:'vest',name:'ARMOR VEST',cost:[15000],desc:()=>'START EVERY NIGHT WEARING ARMOR'},
+  {k:'plates',name:'ARMOR PLATES',cost:[12000,24000],desc:l=>'+'+2*Math.min(2,l+1)+' ARMOR PLATES EVERY NIGHT'},
+  {k:'charm',name:'LUCKY CHARM',cost:[10000,20000],desc:()=>'RARE TREASURE SHOWS UP MORE'},
+  {k:'combo',name:'COMBO GLOVES',cost:[8000,16000],desc:l=>'COMBOS LAST LONGER, UP TO X'+(3+.5*Math.min(2,l+1))},
+  {k:'hands',name:'QUICK HANDS',cost:[12000,24000],desc:()=>'DIG, CUT AND CRACK FASTER'},
+  {k:'heart2',name:'EXTRA HEART II',cost:[60000],desc:()=>'START EVERY NIGHT WITH 5 HEARTS'}
 ];
+// after everything is bought: GOLD TROPHIES, forever (+2% money each, a bit pricier every time)
+const TROPHY={k:'trophy',name:'GOLD TROPHY',get cost(){return Array(upLvl('trophy')+1).fill(0).map((_,i)=>Math.round(25000*Math.pow(1.35,i)/500)*500);},desc:l=>'#'+(l+1)+': +2% MONEY FOREVER',endless:true};
+const HSLOTS=5;
+function shownUps(){const a=UPGRADES.filter(u=>upLvl(u.k)<u.cost.length).slice(0,HSLOTS);if(a.length<HSLOTS)a.push(TROPHY); // one trophy slot, then your maxed upgrades
+  const done=UPGRADES.filter(u=>upLvl(u.k)>=u.cost.length).reverse();while(a.length<HSLOTS&&done.length)a.push(done.shift());return a;}
 const BADGES=[
   ['first','FIRST HEIST','ROB THE BIG BANK'],['jail','JAILBIRD','BREAK OUT OF JAIL'],['moon','MOONSTRUCK','STEAL THE MOONSTONE'],
   ['island','CASTAWAY','ESCAPE THE ISLAND'],['story','MASTER THIEF','FINISH THE STORY'],['hard','LEGEND','FINISH HARD MODE'],
@@ -282,9 +306,9 @@ function drawToasts(dt){
 }
 // ---- COMBOS: grab loot quickly, one after another, and the money multiplies (up to x3)
 let comboN=0,comboT=0;
-const comboMult=()=>Math.min(3,1+.25*Math.max(0,comboN-1));
+const comboMult=()=>Math.min(3+.5*upLvl('combo'),1+.25*Math.max(0,comboN-1));
 function lootGain(v,x,y,big){
-  comboN=comboT>0?comboN+1:1;comboT=2.5;const m=comboMult(),tot=Math.round(v*m);
+  comboN=comboT>0?comboN+1:1;comboT=2.5+.75*upLvl('combo');const m=comboMult(),tot=Math.round(v*m);
   gain(tot);big?sfx.big():sfx.coin();if(comboN>1)beep(600+comboN*80,.06,'square',.03);
   floatTxt(x,y,'+$'+tot+(comboN>1?' X'+m:''),comboN>1?'#ffd400':'#7dff7d');
 }
@@ -295,7 +319,7 @@ const nearBox=(r,p,m)=>p.x-m<r[0]+r[2]&&p.x+p.w+m>r[0]&&p.y-m<r[1]+r[3]&&p.y+p.h
 // ---- RARE LOOT: some nights hide a rare treasure somewhere
 const RARES=['DIAMOND','GOLDEN IDOL','RUBY CROWN','JADE DRAGON'];
 function maybeRare(){
-  if(twoP||Math.random()>=.35)return;const sx=Math.round(P.x/T),sy=Math.round(P.y/T);
+  if(twoP||Math.random()>=.35+.2*upLvl('charm'))return;const sx=Math.round(P.x/T),sy=Math.round(P.y/T);
   for(let tr=0;tr<3000;tr++){const x=rI(CW),y=rI(CH);if(!walkC(x,y)||Math.abs(x-sx)+Math.abs(y-sy)<20||picks.some(k=>k.x===x&&k.y===y))continue;
     const name=pick(RARES),val=3000+rI(4)*1000;picks.push({x,y,type:'rare',val,name,ph:Math.random()*6,got:false});
     toast('SOMETHING RARE IS HIDDEN TONIGHT','A '+name+' WORTH $'+val+'. FIND IT!');return;}
@@ -335,11 +359,114 @@ function drawDailyRes(){
   txt('TRIES TODAY: '+R.best.plays+'. A NEW VAULT TOMORROW!',VW/2,152,'#889','center');
   if(storyT>.8&&Math.floor(gameT*2)%2)txt('ENTER = BACK TO MENU',VW/2,190,'#fff','center');
 }
+// ===== SIDE JOB LEVELS: their own rooms + mechanics that appear nowhere else =====
+// MOTION SENSORS (freeze on red) - DISPLAY CASES (hold DOWN to crack) - PATROL GUARDS (hide on shelves above their light)
+// SQUEAKY FLOORBOARDS (crouch-walk) - SLOT-MACHINE GATES (SPACE to stop the reels on 7-7-7)
+const SIDE_ROOMS={
+  sensorhall:{w:20,build:(o,E)=>{E.hint(o+1,4,'MOTION SENSOR:');E.hint(o+1,5,'FREEZE ON RED!');E.sensor(o+4,o+9,3,1.4,0);E.case(o+12,12,600);E.sensor(o+14,o+18,3,1.4,1.5);}},
+  showcases:{w:22,build:(o,E)=>{E.hint(o+1,4,'HOLD DOWN AT A');E.hint(o+1,5,'CASE TO CRACK IT');E.case(o+3,12,500);E.case(o+7,12,500);E.one(o+10,o+13,10);E.case(o+12,9,900);E.sensor(o+15,o+20,3,1.3,.8);}},
+  bigvault:{w:20,build:(o,E)=>{E.hint(o+1,3,'CRACK IT WHILE');E.hint(o+1,4,'YOU STAND STILL');E.sensor(o+2,o+11,2.8,1.3,0);E.case(o+6,12,1200);E.case(o+15,12,700);}},
+  hallway:{w:26,build:(o,E)=>{E.hint(o+1,3,'GUARD! HIDE ON THE');E.hint(o+1,4,'SHELVES ABOVE HIS LIGHT');E.guard(o+8,o+18,40,0);E.one(o+4,o+6,10);E.one(o+10,o+12,10);E.one(o+16,o+18,10);E.one(o+21,o+23,10);E.cash(o+11,9);E.gold(o+17,9);}},
+  library:{w:24,build:(o,E)=>{E.hint(o+1,3,'SQUEAKY FLOOR:');E.hint(o+1,4,'CROUCH-WALK!');E.squeak(o+3,o+20);E.guard(o+10,o+16,38,1);E.one(o+4,o+6,10);E.one(o+15,o+17,10);E.cash(o+7,9);E.case(o+19,12,700);}},
+  portraits:{w:22,build:(o,E)=>{E.hint(o+1,4,'GRAB THE PAINTINGS');E.guard(o+8,o+15,34,.5);E.one(o+9,o+12,10);E.case(o+5,12,800);E.case(o+18,12,800);E.cash(o+10,9);}},
+  dining:{w:26,build:(o,E)=>{E.hint(o+1,3,'TWO GUARDS: CROSS');E.hint(o+1,4,'ON THE SIDEBOARDS');E.guard(o+7,o+10,40,0);E.guard(o+17,o+19,40,1.2);E.one(o+5,o+11,10);E.one(o+15,o+21,10);E.squeak(o+12,o+14);E.gold(o+8,9);E.gold(o+18,9);}},
+  slots:{w:20,build:(o,E)=>{E.hint(o+1,3,'SLOT MACHINE: PRESS');E.hint(o+1,4,'SPACE ON 7-7-7');E.slot(o+6,o+10);E.cash(o+12,12);E.sensor(o+13,o+18,3,1.4,.6);}},
+  pitboss:{w:24,build:(o,E)=>{E.guard(o+8,o+16,42,0);E.one(o+4,o+6,10);E.one(o+10,o+13,10);E.one(o+17,o+20,10);E.case(o+21,12,900);E.cash(o+11,9);E.cash(o+18,9);}},
+  highroller:{w:22,build:(o,E)=>{E.slot(o+4,o+8);E.sensor(o+10,o+15,2.6,1.2,0);E.case(o+18,12,1000);}},
+  cashcage:{w:24,build:(o,E)=>{E.guard(o+7,o+11,40,.4);E.one(o+3,o+5,10);E.one(o+8,o+10,10);E.case(o+14,12,900);E.slot(o+18,o+21);E.gold(o+22,12);}}
+};
+function buildSide(sd){
+  const list=sd.roomList,W=8+list.reduce((a,n)=>a+SIDE_ROOMS[n].w,0)+12,H=15,g=new Uint8Array(W*H);
+  const S=(x,y,v=1)=>{if(x>=0&&x<W&&y>=0&&y<H)g[y*W+x]=v;};
+  for(let x=0;x<W;x++){S(x,0);S(x,13);S(x,14);}for(let y=0;y<H;y++){S(0,y);S(W-1,y);}
+  const items=[],cps=[],hints=[],sensors=[],cases=[],guards=[],squeak={},slots=[];
+  const it=(x,y,type,val)=>items.push({x:x*T+8,y:y*T+8,type,val,got:false,ph:Math.random()*6});
+  const E={
+    one:(a,b,y)=>{for(let x=a;x<=b;x++)S(x,y,2);},
+    cash:(x,y)=>it(x,y,'cash',150),gold:(x,y)=>it(x,y,'gold',600),
+    sensor:(a,b,period,on,phase)=>sensors.push({x0:a*T,x1:(b+1)*T,period,on,phase}),
+    case:(tx,ty,val)=>cases.push({tx,ty,val,prog:0,got:false}),
+    guard:(a,b,speed,phase)=>guards.push({x:a*T+(b-a)*T*((phase%1)||0),x0:a*T,x1:b*T,dir:phase>=1?-1:1,speed,wait:0,alert:0}),
+    squeak:(a,b)=>{for(let x=a;x<=b;x++)squeak[13*W+x]=1;},
+    slot:(mx,gx)=>{slots.push({mx,gx,open:false,stops:[],t:0,res:0});for(let y=1;y<=12;y++)S(gx,y,7);},
+    cp:x=>cps.push({x,on:false}),hint:(x,y,s)=>hints.push({x:x*T,y:y*T,s})
+  };
+  E.hint(1,7,sd.name);E.hint(1,8,'STEAL '+sd.prize);for(let x=4;x<=6;x++)E.cash(x,12); // low, so it never runs into the first room's hints
+  let o=8;for(const n of list){E.cp(o);SIDE_ROOMS[n].build(o,E);o+=SIDE_ROOMS[n].w;}
+  E.cp(o);const vaultTile=o+6;
+  const lamps=[];for(let x=4;x<W-4;x+=8)lamps.push(x*T+8);
+  return {kind:'bank',rooms:list,W,H,g,items,lasers:[],cps,darks:[],hints,lamps,conv:{},vaultTile,start:{x:3*T,y:13*T-22},vaultX:vaultTile*T,
+    alarms:{},drones:[],sensors,cases,guards,squeak,slots,crack:new Float32Array(W*H),broken:new Float32Array(W*H)};
+}
+// sensor state: 0 green, 1 warning (yellow), 2 red
+function sensorState(s){const m=(bankT+s.phase)%s.period,red=s.on,warnT=.6;return m<red?2:m>s.period-warnT?1:0;}
+const SLOT_SYM=['7','*','$','#','@','%'],SLOT_SPIN=5; // symbols per second
+const slotSym=(sl,k)=>Math.floor(bankT*SLOT_SPIN*(1+k*.15)+k*2)%SLOT_SYM.length;
+const nearSlot=(sl,p)=>Math.abs(p.x+5-(sl.mx*T+8))<14&&p.onG;
+// returns true if the player got caught (already sent back to the flag)
+function updSide(p,dt){
+  // motion sensors: moving (or jumping) inside a red zone = caught
+  for(const s of B.sensors)if(p.x+p.w>s.x0&&p.x<s.x1&&sensorState(s)===2&&(Math.abs(p.vx)>8||!p.onG)&&p.inv<=0){bankDie('MOTION SENSOR!',true);return true;}
+  // display cases: hold DOWN next to one
+  for(const c of B.cases){if(c.got)continue;const on=p.x+p.w>c.tx*T&&p.x<c.tx*T+T&&p.onG&&Math.abs((p.y+p.h)-(c.ty+1)*T)<3;
+    if(on&&keys.down){c.prog+=dt;if(Math.floor(c.prog*8)!==Math.floor((c.prog-dt)*8))beep(1800+c.prog*600,.03,'square',.02);if(c.prog>=1-.25*upLvl('hands')){c.got=true;lootGain(c.val,c.tx*T+8,c.ty*T-6,true);sfx.key();}}
+    else c.prog=Math.max(0,c.prog-dt*2);}
+  // squeaky floorboards: running on them wakes the guards
+  p.gT=p.onG?(p.gT||0)+dt:0; // crouching is always silent, and landing gets a moment of grace
+  if(p.onG&&p.gT>.2&&!p.crouch&&Math.abs(p.vx)>60){const ty=Math.round((p.y+p.h)/T),tx=Math.floor((p.x+5)/T);
+    if(B.squeak[ty*B.W+tx]&&(B.sqCD||0)<=0){B.sqCD=.8;floatTxt(p.x+5,p.y-6,'SQUEAK!','#ffb070');beep(700,.12,'sawtooth',.04,-300);
+      for(const g of B.guards)if(Math.abs(g.x-p.x)<320){g.alert=3;g.dir=Math.sign(p.x-g.x)||1;g.wait=0;g.turn=false;}}}
+  B.sqCD=(B.sqCD||0)-dt;
+  // patrolling guards: flashlight in front of them at floor level; shelves above it are safe
+  for(const g of B.guards){
+    g.alert-=dt;
+    if(g.wait>0)g.wait-=dt;
+    else if(g.turn){g.turn=false;g.dir=-g.dir;g.wait=.4;} // looked around: NOW turn back
+    else{g.x+=g.dir*(g.alert>0?85:g.speed)*dt;if(g.x<g.x0||g.x>g.x1){g.x=clamp(g.x,g.x0,g.x1);g.wait=1.6;g.turn=true;}} // reach the end: pause looking ahead, then turn
+    const gx=g.x+6,lit=x=>g.dir>0?x>gx-4&&x<gx+80:x<gx+4&&x>gx-80;
+    const inBand=p.y+p.h>13*T-40,touching=Math.abs(p.x+5-gx)<9&&inBand&&(Math.sign(p.x+5-gx)===g.dir||g.alert>0);
+    if(p.inv<=0&&(touching||(inBand&&(lit(p.x)||lit(p.x+p.w))))){g.alert=0;g.wait=1.2;bankDie('A GUARD SPOTTED YOU!',true);return true;}
+  }
+  // slot-machine gates
+  for(const sl of B.slots){
+    if(sl.open)continue;
+    if(sl.res>0){sl.res-=dt;if(sl.res<=0){if(sl.stops.every(v=>v===0)){sl.open=true;for(let y=1;y<=12;y++)B.g[y*B.W+sl.gx]=0;sfx.win();floatTxt(sl.gx*T+8,7*T,'JACKPOT! GATE OPEN','#ffd400');}
+      else{sl.stops=[];sfx.deny();floatTxt(sl.mx*T+8,9*T,'NO LUCK. AGAIN!','#ff6b6b');}}continue;}
+    if(nearSlot(sl,p)&&(pressed.fire||pressed.start)&&sl.stops.length<3){sl.stops.push(slotSym(sl,sl.stops.length));beep(900+sl.stops.length*200,.08,'square',.05);if(sl.stops.length===3)sl.res=.8;}
+  }
+  return false;
+}
+function drawSide(cx,cy){
+  for(const k in B.squeak){const i=+k,x=(i%B.W)*T-cx,y=((i/B.W)|0)*T-cy;if(x<-16||x>VW)continue;ctx.fillStyle='#5a3a1e';ctx.fillRect(x,y,T,4);ctx.fillStyle='#3a2410';ctx.fillRect(x+5,y,1,4);ctx.fillRect(x+11,y,1,4);}
+  for(const s of B.sensors){const x0=s.x0-cx,x1=s.x1-cx;if(x1<-10||x0>VW+10)continue;const st=sensorState(s),col=st===2?'255,40,40':st===1?'255,210,0':'60,255,120';
+    ctx.fillStyle=`rgba(${col},${st===2?.13:.05})`;ctx.fillRect(x0,T-cy,x1-x0,12*T);
+    for(let x=x0+8;x<x1;x+=32){ctx.fillStyle='#3a3f48';ctx.fillRect(x-4,T-cy,8,5);ctx.fillStyle=`rgb(${col})`;ctx.fillRect(x-2,T+5-cy,4,3);}
+    if(st===2&&Math.floor(gameT*6)%2)txt('FREEZE!',(x0+x1)/2,2*T-cy,'#ff6b6b','center');}
+  for(const c of B.cases){if(c.got)continue;const x=c.tx*T-cx,y=c.ty*T-cy;if(x<-20||x>VW+20)continue;
+    ctx.fillStyle='#5a4a3a';ctx.fillRect(x+1,y+10,14,6);ctx.fillStyle='rgba(170,220,255,.45)';ctx.fillRect(x+2,y,12,10);ctx.fillStyle='#e8f8ff';ctx.fillRect(x+2,y,12,1);
+    ctx.fillStyle=B.pal&&B.pal.deco==='portrait'?'#b8860b':B.pal&&B.pal.deco==='chips'?'#d4a017':'#4ff';ctx.fillRect(x+5,y+3,6,5);ctx.fillStyle='#fff';ctx.fillRect(x+6,y+4,2,1);
+    if(c.prog>0){ctx.fillStyle='#000';ctx.fillRect(x-2,y-8,20,4);ctx.fillStyle='#ffd400';ctx.fillRect(x-1,y-7,Math.round(18*c.prog),2);}}
+  for(const sl of B.slots){
+    const gx=sl.gx*T-cx;if(!sl.open&&gx>-20&&gx<VW+20){for(let y=1;y<=12;y++){ctx.fillStyle='#5a6676';ctx.fillRect(gx+2,y*T-cy,3,T);ctx.fillRect(gx+11,y*T-cy,3,T);ctx.fillStyle='#3a3f48';ctx.fillRect(gx,y*T-cy+6,T,3);}}
+    const mx=sl.mx*T-cx,my=13*T-cy;if(mx<-40||mx>VW+40)continue;
+    ctx.fillStyle='#c81e1e';ctx.fillRect(mx,my-26,16,26);ctx.fillStyle='#d4a017';ctx.fillRect(mx,my-26,16,3);ctx.fillStyle='#111';ctx.fillRect(mx+2,my-20,12,8);ctx.fillStyle='#888';ctx.fillRect(mx+15,my-22,2,8);
+    if(!sl.open&&nearSlot(sl,BP)){ // the reels, big, above the machine
+      ctx.fillStyle='rgba(0,0,0,.85)';ctx.fillRect(mx-22,my-70,60,30);ctx.fillStyle='#d4a017';ctx.fillRect(mx-22,my-70,60,2);
+      for(let k=0;k<3;k++){const v=k<sl.stops.length?sl.stops[k]:slotSym(sl,k),sym=SLOT_SYM[v];ctx.fillStyle=k<sl.stops.length?'#e8e4d8':'#fff';ctx.fillRect(mx-18+k*19,my-64,16,18);txt(sym,mx-10+k*19,my-60,sym==='7'?'#c81e1e':'#111','center');}
+      txt('SPACE',mx+8,my-80,'#ffd400','center',6);}
+  }
+  for(const g of B.guards){const x=Math.round(g.x)-cx,y=13*T-22-cy;if(x<-110||x>VW+110)continue;
+    ctx.globalCompositeOperation='lighter';ctx.fillStyle=g.alert>0?'rgba(255,90,60,.22)':'rgba(255,240,170,.18)';ctx.beginPath();const fx=x+6+g.dir*6;
+    ctx.moveTo(fx,y+8);ctx.lineTo(fx+g.dir*80,13*T-40-cy);ctx.lineTo(fx+g.dir*80,13*T-cy);ctx.closePath();ctx.fill();ctx.globalCompositeOperation='source-over';
+    const R=(a,b,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(g.dir>0?x+a:x+12-a-w,y+b,w,h);};
+    R(2,0,9,3,'#1b2a4a');R(1,2,11,1,'#111');R(3,3,7,5,'#e0ac69');R(7,4,2,1,'#000');R(2,8,9,8,'#2a3d6a');R(5,9,3,2,'#ffd400');R(3,16,3,6,'#1b2a4a');R(7,16,3,6,'#1b2a4a');R(10,10,4,2,'#888');
+    if(g.alert>0&&Math.floor(gameT*6)%2)txt('!',x+6,y-12,'#ff6b6b','center');}
+}
 // ---- SIDE HEISTS: short vault jobs between nights. The pay (and all loot) goes straight to your stash
 const SIDES=[
-  {name:'JEWELRY STORE',lvl:1,rooms:3,pay:5000,prize:'THE BLUE SAPPHIRE',pal:{bg:'#1a0f22',st:'#221430',pil:'#3a1f4a',pilTop:'#c0c5cf',pilBot:'#2a1838',fA:'#3a2450',fB:'#32203f',wall:'#7a6a8a',wallD:'#4a3a5a',wallL:'#6a5a7a',trim:'#c0c5cf',deco:'gems',label:'THE BLUE SAPPHIRE'}},
-  {name:'MAYOR\'S MANSION',lvl:3,rooms:4,pay:8000,prize:'THE MAYOR\'S PAINTING',pal:{bg:'#1e140c',st:'#24180e',pil:'#3a2614',pilTop:'#d4a017',pilBot:'#2a1c0e',fA:'#6b4a2a',fB:'#5e4024',wall:'#8a6a4a',wallD:'#5a4024',wallL:'#7a5a3a',trim:'#d4a017',deco:'portrait',label:'THE MAYOR\'S PAINTING'}},
-  {name:'CASINO VAULT',lvl:5,rooms:5,pay:12000,prize:'THE GOLDEN CHIP',pal:{bg:'#0c1a12',st:'#10221a',pil:'#1a3a28',pilTop:'#d4a017',pilBot:'#12281c',fA:'#7a1a1a',fB:'#6a1414',wall:'#2a5a3a',wallD:'#1a3a24',wallL:'#244e32',trim:'#d4a017',deco:'chips',label:'THE GOLDEN CHIP'}}
+  {name:'JEWELRY STORE',lvl:1,roomList:['sensorhall','showcases','bigvault'],pay:5000,prize:'THE BLUE SAPPHIRE',pal:{bg:'#1a0f22',st:'#221430',pil:'#3a1f4a',pilTop:'#c0c5cf',pilBot:'#2a1838',fA:'#3a2450',fB:'#32203f',wall:'#7a6a8a',wallD:'#4a3a5a',wallL:'#6a5a7a',trim:'#c0c5cf',deco:'gems',label:'THE BLUE SAPPHIRE'}},
+  {name:'MAYOR\'S MANSION',lvl:3,roomList:['hallway','library','portraits','dining'],pay:8000,prize:'THE MAYOR\'S PAINTING',pal:{bg:'#1e140c',st:'#24180e',pil:'#3a2614',pilTop:'#d4a017',pilBot:'#2a1c0e',fA:'#6b4a2a',fB:'#5e4024',wall:'#8a6a4a',wallD:'#5a4024',wallL:'#7a5a3a',trim:'#d4a017',deco:'portrait',label:'THE MAYOR\'S PAINTING'}},
+  {name:'CASINO VAULT',lvl:5,roomList:['slots','pitboss','highroller','cashcage'],pay:12000,prize:'THE GOLDEN CHIP',pal:{bg:'#0c1a12',st:'#10221a',pil:'#1a3a28',pilTop:'#d4a017',pilBot:'#12281c',fA:'#7a1a1a',fB:'#6a1414',wall:'#2a5a3a',wallD:'#1a3a24',wallL:'#244e32',trim:'#d4a017',deco:'chips',label:'THE GOLDEN CHIP'}}
 ];
 let sideMode=null,sideSel=0;
 function startSide(i){
@@ -349,28 +476,35 @@ function startSide(i){
 function sideFinish(){
   const sd=sideMode,pay=sd.pay+nightStolen;cash-=nightStolen;stolen-=nightStolen;sideMode=null;B=null; // the loot goes to the stash, not your pockets
   save.stash+=pay;writeSave();sfx.win();toast(sd.prize+' STOLEN!','+$'+pay+' TO YOUR STASH');badge('side');addXP(120);
-  HIDE.sideDone=true;state='hideout';
+  sideDoneNight=night;state='hideout';
 }
 // ---- the hideout: spend your stash on permanent upgrades (between nights, or from the menu)
-let HIDE={sel:0,next:null};
-function toHideout(next){HIDE={sel:0,next,sideDone:false};state='hideout';}
+let HIDE={sel:0,ret:null},sideDoneNight=0; // a side job is allowed once per night of a story run
+// open the hideout from wherever you are (between nights, menu, or paused mid-night); CLOSE puts you right back
+function openHideout(){if(state==='hideout')return;HIDE={sel:0,ret:{state,paused}};paused=false;state='hideout';showMap=false;sfx.click();}
+function closeHideout(){const r=HIDE.ret||{state:'menu',paused:false};state=r.state;paused=r.paused;sfx.click();}
+const hideoutOK=()=>!helpOpen&&!showScores&&!shopOpen&&!trans&&state!=='hideout'&&(paused||['title','menu','story','nightsel','badges','results','dailyres','win','choose'].includes(state));
+// side jobs: only BETWEEN nights of a solo story run, once per night
+const sideBlock=()=>!HIDE.ret||HIDE.ret.state!=='story'||twoP?(HIDE.ret&&HIDE.ret.paused?'FINISH THIS NIGHT FIRST':'BETWEEN NIGHTS OF STORY MODE'):sideDoneNight===night?'ONE SIDE JOB PER NIGHT':'';
 function hideoutPick(i,dir){
-  if(i===UPGRADES.length+1){ // side job row
+  if(i===HSLOTS+1){ // side job row
     if(dir){sideSel=(sideSel+dir+SIDES.length)%SIDES.length;sfx.click();return;}
-    const sd=SIDES[sideSel];if(HIDE.sideDone){sfx.deny();toast('ONE SIDE JOB PER NIGHT','COME BACK AFTER THE NEXT NIGHT');return;}
+    const sd=SIDES[sideSel],why=sideBlock();if(why){sfx.deny();toast('NO SIDE JOB RIGHT NOW',why);return;}
     if(thiefLvl()<sd.lvl){sfx.deny();toast(sd.name+' IS LOCKED','REACH THIEF LEVEL '+sd.lvl);return;}
     sfx.click();startSide(sideSel);return;}
-  if(i===UPGRADES.length){const n=OUTFITS.length;let o=save.outfit||0;for(let k=0;k<n;k++){o=(o+(dir||1)+n)%n;if(thiefLvl()>=OUTFITS[o].l)break;}save.outfit=o;writeSave();sfx.click();return;}
-  if(i>UPGRADES.length+1){sfx.click();const n=HIDE.next;HIDE.next=null;n?n():(state='menu');return;}
-  const u=UPGRADES[i],l=upLvl(u.k);if(l>=u.cost.length){sfx.deny();return;}
+  if(i===HSLOTS){const n=OUTFITS.length;let o=save.outfit||0;for(let k=0;k<n;k++){o=(o+(dir||1)+n)%n;if(thiefLvl()>=OUTFITS[o].l)break;}save.outfit=o;writeSave();sfx.click();return;}
+  if(i>HSLOTS+1){closeHideout();return;}
+  const u=shownUps()[i],l=upLvl(u.k);if(l>=u.cost.length){sfx.deny();return;}
   if(save.stash<u.cost[l]){sfx.deny();toast('NOT ENOUGH IN YOUR STASH','NEED $'+u.cost[l]);return;}
-  save.stash-=u.cost[l];save.up[u.k]=l+1;writeSave();sfx.buy();toast(u.name+' '+'I'.repeat(l+1)+'!','UPGRADE BOUGHT');badge('home');
+  save.stash-=u.cost[l];save.up[u.k]=l+1;writeSave();sfx.buy();
+  const nx=upLvl(u.k)>=u.cost.length&&!u.endless?shownUps()[HSLOTS-1]:null;
+  toast(u.endless?'GOLD TROPHY #'+(l+1)+'!':u.name+' '+'I'.repeat(l+1)+'!',nx&&nx!==u?'NEW UPGRADE: '+nx.name:'UPGRADE BOUGHT');badge('home');
 }
 function updHideout(){
-  const n=UPGRADES.length+3;
+  const n=HSLOTS+3;
   if(pressed.up){HIDE.sel=(HIDE.sel+n-1)%n;sfx.click();}if(pressed.down){HIDE.sel=(HIDE.sel+1)%n;sfx.click();}
-  if((HIDE.sel===UPGRADES.length||HIDE.sel===UPGRADES.length+1)&&(pressed.left||pressed.right))hideoutPick(HIDE.sel,pressed.left?-1:1);
-  if(pressed.pause)hideoutPick(UPGRADES.length+2);else if(pressed.start||pressed.fire)hideoutPick(HIDE.sel);
+  if((HIDE.sel===HSLOTS||HIDE.sel===HSLOTS+1)&&(pressed.left||pressed.right))hideoutPick(HIDE.sel,pressed.left?-1:1);
+  if(pressed.pause)hideoutPick(HSLOTS+2);else if(pressed.start||pressed.fire)hideoutPick(HIDE.sel);
 }
 const HIDE_BOX=[0,1,2,3,4,5,6,7].map(i=>[20,40+i*22,280,20]);
 function drawHideout(){
@@ -380,9 +514,9 @@ function drawHideout(){
   const lv=thiefLvl(),lo=LEVELS[lv-1],hi=LEVELS[lv]||lo,fx=hi>lo?clamp(((save.xp||0)-lo)/(hi-lo),0,1):1;
   txt('STASH $'+save.stash,24,26,'#7dff7d');txt('LV '+lv+' '+RANKS[lv],296,26,'#ffd400','right',6);
   ctx.fillStyle='#223';ctx.fillRect(196,34,100,3);ctx.fillStyle='#ffd400';ctx.fillRect(196,34,Math.round(100*fx),3);
-  UPGRADES.forEach((u,i)=>{const [x,y,w,h]=HIDE_BOX[i],l=upLvl(u.k),max=u.cost.length,sel=HIDE.sel===i,done=l>=max,afford=!done&&save.stash>=u.cost[l];
+  shownUps().forEach((u,i)=>{const [x,y,w,h]=HIDE_BOX[i],l=upLvl(u.k),max=u.endless?0:u.cost.length,sel=HIDE.sel===i,done=!u.endless&&l>=max,afford=!done&&save.stash>=u.cost[l];
     ctx.fillStyle=sel?'#2a2a10':'rgba(20,20,42,.9)';ctx.fillRect(x,y,w,h);ctx.fillStyle=sel?'#ffd400':'#445';ctx.fillRect(x,y,w,1);ctx.fillRect(x,y+h-1,w,1);
-    txt((sel?'> ':'  ')+u.name,x+4,y+2,sel?'#ffd400':'#fff');
+    txt((sel?'> ':'  ')+u.name+(u.endless&&l?' x'+l:''),x+4,y+2,sel?'#ffd400':'#fff');
     for(let k=0;k<max;k++){ctx.fillStyle=k<l?'#7dff7d':'#333348';ctx.fillRect(x+170+k*10,y+3,8,6);}
     txt(done?'MAXED':'$'+u.cost[l],x+w-4,y+2,done?'#7dff7d':afford?'#ffd400':'#ff6b6b','right');
     txt(done?'FULLY UPGRADED':u.desc(l),x+22,y+12,'#9fd3ff','left',6);});
@@ -393,10 +527,11 @@ function drawHideout(){
   {const [x,y,w,h]=HIDE_BOX[6],sel=HIDE.sel===6,sd=SIDES[sideSel],lock=lv<sd.lvl;
     ctx.fillStyle=sel?'#2a2a10':'rgba(20,20,42,.9)';ctx.fillRect(x,y,w,h);ctx.fillStyle=sel?'#ffd400':'#445';ctx.fillRect(x,y,w,1);ctx.fillRect(x,y+h-1,w,1);
     txt((sel?'> ':'  ')+'SIDE JOB: < '+sd.name+' >',x+4,y+2,sel?'#ffd400':'#fff','left',sd.name.length>13?6:8);
-    txt(HIDE.sideDone?'DONE':lock?'LV '+sd.lvl:'$'+sd.pay,x+w-4,y+2,HIDE.sideDone?'#889':lock?'#ff6b6b':'#7dff7d','right');
-    txt(HIDE.sideDone?'ONE SIDE JOB PER NIGHT':lock?'LOCKED: REACH LEVEL '+sd.lvl:'STEAL '+sd.prize+' (ENTER)',x+22,y+12,'#9fd3ff','left',6);}
+    const why=sideBlock();
+    txt(why?'---':lock?'LV '+sd.lvl:'$'+sd.pay,x+w-4,y+2,why?'#889':lock?'#ff6b6b':'#7dff7d','right');
+    txt(why?'AVAILABLE '+why.replace('FINISH THIS NIGHT FIRST','AFTER THIS NIGHT').replace('ONE SIDE JOB PER NIGHT','AGAIN AFTER THE NEXT NIGHT'):lock?'LOCKED: REACH LEVEL '+sd.lvl:'STEAL '+sd.prize+' (ENTER)',x+22,y+12,'#9fd3ff','left',6);}
   const [x,y,w,h]=HIDE_BOX[7],sel=HIDE.sel===7;ctx.fillStyle=sel?'#2a2a10':'rgba(20,20,42,.9)';ctx.fillRect(x,y,w,h);ctx.fillStyle=sel?'#ffd400':'#445';ctx.fillRect(x,y,w,1);ctx.fillRect(x,y+h-1,w,1);
-  txt((sel?'> ':'  ')+(HIDE.next?'NEXT NIGHT':'BACK TO MENU'),x+4,y+6,sel?'#ffd400':'#fff');
+  txt((sel?'> ':'  ')+'CLOSE THE HIDEOUT',x+4,y+6,sel?'#ffd400':'#fff');
   txt('UPGRADES ARE FOREVER. EVERY HEIST FILLS YOUR STASH.',VW/2,216,'#889','center',6);
 }
 // ---- badges screen
@@ -1271,7 +1406,7 @@ function escapeJail(){
     "IN THE WARDEN'S OFFICE YOU",
     'FIND A LETTER WITH YOUR NAME',
     'ON IT. IT IS FROM VINNIE.'
-  ],()=>toHideout(()=>startNight(night+1)),score,island?[
+  ],()=>startNight(night+1),score,island?[
     ['ONE LAST JOB',[
       vinnieWon?'VINNIE SOLD THE MOONSTONE TO':'THE MOONSTONE YOU STOLE WAS A',
       vinnieWon?'THE RESERVE FOR A FORTUNE.':'FAKE. VINNIE SWAPPED IT!',
@@ -1581,7 +1716,11 @@ function updCity(dt){
     if(shopBlock&&!nearTruck())shopBlock=false;
     if(!shopBlock&&!P.hidden&&nearTruck()){shopOpen=true;shopSel=0;sfx.horn();truck.mode='park';truck.t=Math.max(truck.t,4);return;}
   }
-  tomCD-=dt;
+  tomCD-=dt;dogTreatT-=dt;
+  if(pressed.use&&isJail()&&!isIsland()&&!shopOpen){
+    if(cards<=0){say('NO CARDS! BUY A DECK AT THE STORE',1.8);sfx.deny();}
+    else{let n=0;for(const c of cops)if(c.guard&&!c.dog&&!(c.blind>0)&&Math.abs(c.tx-ptx)+Math.abs(c.ty-pty)<=7){c.blind=8;c.confused=false;c.slip=false;c.state='patrol';c.alert=0;c.cards=8;n++;}
+      if(n){cards--;sfx.toss();floatTxt(P.x+8,P.y-8,'CARDS!','#fff');say(n+' GUARD'+(n>1?'S STOP':' STOPS')+' TO PLAY CARDS!|8 SECONDS. SNEAK PAST!',2.5);}else say('NO GUARDS CLOSE ENOUGH|GET WITHIN 7 STEPS FIRST',1.8);}}
   if(pressed.tomato&&isIsland()){
     if(coconuts<=0){say('NO COCONUTS! GRAB SOME|UNDER THE PALMS (ON THE GRASS)',2);sfx.deny();}
     else if(tomCD<=0&&!P.inDoor){coconuts--;tomCD=.3;sfx.toss();const a=aimAng(P.x+8,P.y+8,110,P.dx,P.dy);toms.push({x:P.x+8,y:P.y+8,vx:Math.cos(a)*150,vy:Math.sin(a)*150,life:.75,hit:new Set(),coco:true,t0:.75});}
@@ -1637,7 +1776,7 @@ function updCity(dt){
       if(C.cutT===0)say('CUTTING THE POWER... STAY 3 SEC!',2);
       C.cutT+=dt;C.cutNoise-=dt;C.cutBox=bx;
       if(C.cutNoise<=0){C.cutNoise=1;beep(2200,.08,'sawtooth',.04,-1500);makeNoise(P.x+8,P.y+8,9);}
-      if(C.cutT>=3){bx.cut=true;C.cutT=0;const n=C.boxes.filter(b=>b.cut).length;sfx.zap();floatTxt(bx.x*T+8,bx.y*T,'POWER CUT!','#ffd400');
+      if(C.cutT>=3-.75*upLvl('hands')){bx.cut=true;C.cutT=0;const n=C.boxes.filter(b=>b.cut).length;sfx.zap();floatTxt(bx.x*T+8,bx.y*T,'POWER CUT!','#ffd400');
         if(n>=3){hasKey=true;say('ALL 3 POWER BOXES CUT!|THE ROOF HATCH IS OPEN. GO!',4);}else say('POWER BOX '+n+'/3 CUT!',2.5);}
     }else if(C.cutT>0){C.cutT=0;C.cutNoise=0;say('YOU STOPPED. THE BOX RESETS',1.5);}
   }
@@ -1648,11 +1787,13 @@ function updCity(dt){
     const m=C.mounds.find(m=>!m.dug&&m.x===ptx&&m.y===pty);
     if(m&&!P.moving&&!P.inDoor){
       if(C.digT===0){say('DIGGING... STAY '+digNeed()+' SECONDS!|(IT\'S LOUD. THEY\'RE COMING!)',2.5);}
-      if(C.digT===0)C.digNoise=3.5; // quiet at first: guards who hear it arrive around the end
+      if(C.digT===0)C.digNoise=1; // digging is LOUD: guards hear it after a second
       C.digT+=dt;C.digNoise-=dt;C.digM=m;
       if(Math.floor(C.digT*4)!==Math.floor((C.digT-dt)*4))beep(140+rI(40),.05,'square',.025,-40); // soft scrape sounds
-      if(C.digNoise<=0){C.digNoise=2;beep(120+rI(60),.12,'square',.05,-60);makeNoise(P.x+8,P.y+8,6);}
+      if(C.digNoise<=0){C.digNoise=1.5;beep(120+rI(60),.12,'square',.05,-60);const n=makeNoise(P.x+8,P.y+8,9);
+        if(n)say('THE DIGGING IS LOUD! '+n+' GUARD'+(n>1?'S ARE':' IS')+' COMING|'+(coconuts>0?'THROW A COCONUT AT THEM: PRESS T!':'NO COCONUTS! GRAB SOME UNDER THE PALMS'),3);}
       if(C.digT>=digNeed()){
+        C.cocoTip=4; // (the dig message already said it)
         m.dug=true;C.digT=0;stat('dug',1,10,'dig');
         if(m.part>=0){const pt=C.parts.find(p=>!p.got);pt.got=true;const got=C.parts.filter(p=>p.got).length;sfx.win();floatTxt(P.x+8,P.y-6,pt.name+'!','#ffb000');
           banner={t:3,idx:pt.idx,name:pt.name,got};
@@ -1661,7 +1802,10 @@ function updCity(dt){
       }
     }else if(C.digT>0){C.digT=0;C.digNoise=0;say('YOU STOPPED DIGGING.|THE HOLE FILLS BACK IN',1.8);}
   }
-  const digging=!!(C.mounds&&C.digT>3.5); // crabs only notice after 3.5 seconds
+  if(C.mounds){C.cocoTip=(C.cocoTip||0)-dt;
+    if(C.cocoTip<=0&&C.digT<=0&&cops.some(c=>(c.state==='chase'||c.state==='investigate')&&!(c.blind>0)&&Math.abs(c.tx-ptx)+Math.abs(c.ty-pty)<=10)){
+      C.cocoTip=10;say('THE POLICE ARE COMING TO YOU!|'+(coconuts>0?'THROW A COCONUT: PRESS T!':'GRAB COCONUTS UNDER THE PALMS'),2.8);}}
+  const digging=!!(C.mounds&&C.digT>digNeed()*.5); // crabs notice halfway through a dig
   if(C.crabs)for(const b of C.crabs){ // crabs only go back and forth (sideways!)
     if(digging&&Math.abs(b.x-P.x)+Math.abs(b.y-P.y)<3*T){ // ...except while you dig: they scuttle at you, fast
       const ddx=P.x-b.x,ddy=P.y-b.y,want=Math.abs(ddx)>Math.abs(ddy)?[Math.sign(ddx),0]:[0,Math.sign(ddy)];
@@ -1715,6 +1859,7 @@ function updCity(dt){
     c.cx=Math.round(c.x/T);c.cy=Math.round(c.y/T);
     c.dist=Math.abs(c.cx-ptx)+Math.abs(c.cy-pty);
     // guards: only inside their view cone (fooled by a uniform). dogs: sniff all around, short range
+    if(c.dog&&dogTreatT>0){c.sees=false;continue;} // busy with a treat
     const looking=c.dog||(!c.guard&&!c.cone)||facesTile(c,ptx,pty),fooled=c.guard&&disguiseT>0;
     c.sees=!(c.blind>0)&&!P.hidden&&looking&&!fooled&&c.dist<=(c.dog?3:sightR)&&los(c.cx,c.cy,ptx,pty);
     c.fresh=false;
@@ -1731,7 +1876,7 @@ function updCity(dt){
   if(copsSee){
     lastSeenG=pGoal;
     // spotter radios nearby units; at most 5 cops chase at once
-    const team=cops.filter(c=>c.sees||c.state==='chase'||c.dist<=14).sort((a,b)=>a.dist-b.dist).slice(0,5);
+    const team=cops.filter(c=>!(c.dog&&dogTreatT>0)&&(c.sees||c.state==='chase'||c.dist<=14)).sort((a,b)=>a.dist-b.dist).slice(0,5);
     let newAlarm=false;
     for(const c of team){if(c.state!=='chase'){c.alert=1.2;newAlarm=true;}c.state='chase';c.lost=4;c.fresh=true;}
     if(newAlarm)sfx.alarm();
@@ -1775,7 +1920,7 @@ function updCity(dt){
       if(c.hasKeyCard){c.hasKeyCard=false;hasKey=true;sfx.key();floatTxt(c.x+8,c.y-14,keyName(),'#5ff');say(isIsland()?'YOU LIFTED THE BOAT KEY!|NOW SNEAK TO THE DOCK':"YOU LIFTED THE WARDEN'S KEYCARD!|NOW SNEAK TO THE EXIT GATE",4);}
     }
     const reach=P.inDoor?18:10,aware=(!c.guard&&!c.cone)||c.sees||(c.state==='chase'&&disguiseT<=0);
-    if(aware&&!P.hidden&&!(c.blind>0)&&Math.abs(c.x-P.x)<reach&&Math.abs(c.y-P.y)<reach)
+    if(aware&&!P.hidden&&!(c.blind>0)&&!(c.dog&&dogTreatT>0)&&Math.abs(c.x-P.x)<reach&&Math.abs(c.y-P.y)<reach)
       {const h0=hp;hurtCity(c.dog?'CAUGHT BY A GUARD DOG!':c.guard?'CAUGHT BY A GUARD!':'TACKLED BY A COP!');
        if(hp<h0){c.blind=1.5;c.slip=true;c.confused=false;c.state='patrol';floatTxt(P.x+8,P.y-8,'WRIGGLED FREE!','#ffb000');}}
   }
@@ -1838,9 +1983,13 @@ const JSHOP=[
   {name:'BARS OF SOAP',desc:()=>'+5 (HAVE '+soap+'). THROW [T]: SLIP',cost:()=>150,buy:()=>{soap+=5;return '+5 BARS OF SOAP! PRESS [T]';}},
   {name:'ENERGY DRINK',desc:()=>'+15 SEC OF FAST RUNNING',cost:()=>200,buy:()=>{boostT=Math.max(0,boostT)+15;return 'ENERGY DRINK! '+Math.ceil(boostT)+'S OF SPEED!';}},
   {name:'CANDY BAR',desc:()=>hp>=MAXHP?'ALREADY FULL HEARTS':'+1 HEART',cost:()=>hp>=MAXHP?null:250,buy:()=>{hp=Math.min(MAXHP,hp+3);return 'SUGAR RUSH! +1 HEART';}},
+  {name:'INSTANT NOODLES',desc:()=>hp>=MAXHP?'ALREADY FULL HEARTS':'CHEAP SNACK: +1/3 HEART',cost:()=>hp>=MAXHP?null:90,buy:()=>{hp=Math.min(MAXHP,hp+1);return 'SLURP! +1/3 HEART';}},
+  {name:'DECK OF CARDS',desc:()=>'+1 (HAVE '+cards+'). [E]: GUARDS PLAY 8S',cost:()=>350,buy:()=>{cards++;return 'A DECK OF CARDS! PRESS [E] NEAR GUARDS';}},
+  {name:'DOG TREATS',desc:()=>'+40S: THE DOGS IGNORE YOU',cost:()=>300,buy:()=>{dogTreatT=Math.max(0,dogTreatT)+40;for(const c of cops)if(c.dog)c.state='patrol';return 'DOG TREATS! THE DOGS ARE BUSY CHEWING';}},
+  {name:'PRISON MAP',desc:()=>C&&C.wardenMap?'YOU ALREADY HAVE ONE':'AN ARROW TO THE WARDEN ALL NIGHT',cost:()=>C&&C.wardenMap?null:250,buy:()=>{C.wardenMap=true;return 'PRISON MAP! FOLLOW THE ARROW TO THE WARDEN';}},
   {name:'LEAVE',desc:()=>'',cost:()=>null}
 ];
-const digNeed=()=>6-1.5*shovelLvl; // seconds to dig up a mound (a sturdier shovel is faster)
+const digNeed=()=>Math.max(2,6-1.5*shovelLvl-.75*upLvl('hands')); // seconds to dig up a mound (a sturdier shovel is faster)
 const ISHOP=[
   {name:'STURDY SHOVEL',desc:()=>shovelLvl>=2?'BEST SHOVEL ALREADY':'DIG IN '+digNeed()+'S -> '+(digNeed()-1.5)+'S',cost:()=>shovelLvl>=2?null:[250,450][shovelLvl],buy:()=>{shovelLvl++;return 'STURDY SHOVEL! DIG IN '+digNeed()+' SECONDS';}},
   {name:'COCONUT PACK',desc:()=>'+3 COCONUTS (HAVE '+coconuts+')',cost:()=>80,buy:()=>{coconuts+=3;return '+3 COCONUTS! PRESS [T] TO THROW';}},
@@ -1890,11 +2039,11 @@ function drawShop(){
   txt(isIsland()?'SNACK MACHINE':isJail()?'COMMISSARY':isRoof()?'DRONE DELIVERY':isGallery()?'BLACK MARKET DEALER':'PINK SHOP TRUCK',VW/2,y+14,isIsland()?'#ff6b6b':isJail()?'#ff8cc8':isRoof()?'#9fd3ff':isGallery()?'#c9a0ff':'#ff8cc8','center');
   txt('CASH $'+cash,VW/2,y+28,'#7dff7d','center');
   shopList().forEach((it,i)=>{
-    const yy=y+44+i*22,sel=i===shopSel,cost=it.cost();
-    if(sel){ctx.fillStyle='#4a1a34';ctx.fillRect(x+6,yy-3,w-12,21);}
+    const rh=shopList().length>6?19:22,yy=y+42+i*rh,sel=i===shopSel,cost=it.cost();
+    if(sel){ctx.fillStyle='#4a1a34';ctx.fillRect(x+6,yy-3,w-12,rh-1);}
     txt((sel?'> ':'  ')+it.name,x+10,yy,sel?'#fff':'#c9a');
     if(cost!==null)txt('$'+cost,x+w-10,yy,cash>=cost?'#7dff7d':'#f55','right');
-    if(it.desc())txt(it.desc(),x+26,yy+9,'#888');
+    if(it.desc())txt(it.desc(),x+26,yy+9,'#888','left',shopList().length>6?6:8);
   });
   txt('ENTER: BUY   E: EXIT',VW/2,y+h-12,'#889','center');
 }
@@ -2222,7 +2371,7 @@ function drawCity(){
       ctx.fillStyle='#6b7079';ctx.fillRect(x+2,y+2,12,13);ctx.fillStyle='#3a3f48';ctx.fillRect(x+3,y+3,10,11);
       ctx.fillStyle=b.cut?'#444':'#ffd400';ctx.fillRect(x+7,y+4,3,3);ctx.fillRect(x+6,y+7,3,2);ctx.fillRect(x+5,y+9,3,3);
       ctx.fillStyle=b.cut?'#600':Math.floor(gameT*3)%2?'#f33':'#900';ctx.fillRect(x+11,y+4,2,2);if(!b.cut)txt('POWER',x+8,y-10,'#ffd400','center');}
-    if(C.cutT>0){const x=P.x+8-cx,y=P.y-10-cy,f=Math.min(1,C.cutT/3);ctx.fillStyle='#000';ctx.fillRect(x-13,y-1,26,6);ctx.fillStyle='#3a3a44';ctx.fillRect(x-12,y,24,4);ctx.fillStyle='#ffd400';ctx.fillRect(x-12,y,Math.round(24*f),4);
+    if(C.cutT>0){const x=P.x+8-cx,y=P.y-10-cy,f=Math.min(1,C.cutT/(3-.75*upLvl('hands')));ctx.fillStyle='#000';ctx.fillRect(x-13,y-1,26,6);ctx.fillStyle='#3a3a44';ctx.fillRect(x-12,y,24,4);ctx.fillStyle='#ffd400';ctx.fillRect(x-12,y,Math.round(24*f),4);
       for(let i=0;i<4;i++){ctx.fillStyle=Math.random()<.5?'#fff6a0':'#7ff';ctx.fillRect(C.cutBox.x*T+8-cx+rI(14)-7,C.cutBox.y*T+4-cy+rI(10),2,2);}}
   }
   if(C.helis)for(const h of C.helis){const x=h.x-cx,y=h.y-cy;if(x<-80||y<-80||x>VW+80||y>VH+80)continue;
@@ -2244,7 +2393,7 @@ function drawCity(){
   if(!hasKey&&C.pieces){let n=null,nd=1e9;for(const k of C.pieces)if(!k.got){const d=(Math.abs(k.x*T-P.x)+Math.abs(k.y*T-P.y))/T;if(d<nd){nd=d;n=k;}}if(n&&nd<25)edgeArrow(n.x*T+8,n.y*T+8,cx,cy,'#9fd3ff','PLANS');}
   if(!hasKey&&keyPick){const d=(Math.abs(keyPick.x*T-P.x)+Math.abs(keyPick.y*T-P.y))/T;if(d<30)edgeArrow(keyPick.x*T+8,keyPick.y*T+8,cx,cy,'#5ff','KEY');}
   if(hasKey)edgeArrow(C.door?C.door[0]*T+8:(BK0X+3.5)*T+8,C.door?C.door[1]*T+8:BK1Y*T+8,cx,cy,isJail()?'#3f3':'#ffd400',isJail()?(isIsland()?'BOAT':'EXIT'):isMuseum()?'VAULT WING':isRoof()?'HATCH':'BANK');
-  else if(isJail()){const w=cops.find(c=>c.hasKeyCard);if(w&&(Math.abs(w.x-P.x)+Math.abs(w.y-P.y))/T<25)edgeArrow(w.x+8,w.y+8,cx,cy,'#5ff',isIsland()?'MASTER':'WARDEN');}
+  else if(isJail()){const w=cops.find(c=>c.hasKeyCard);if(w&&(C.wardenMap||(Math.abs(w.x-P.x)+Math.abs(w.y-P.y))/T<25))edgeArrow(w.x+8,w.y+8,cx,cy,'#5ff',isIsland()?'MASTER':'WARDEN');}
 }
 function radial(g,x,y,r,a){const gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,`rgba(0,0,0,${a})`);gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.beginPath();g.arc(x,y,r,0,Math.PI*2);g.fill();}
 function cone(g,x,y,ang,r,spread,a){const gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,`rgba(0,0,0,${a})`);gr.addColorStop(.7,`rgba(0,0,0,${a*.8})`);gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.beginPath();g.moveTo(x,y);g.arc(x,y,r,ang-spread,ang+spread);g.closePath();g.fill();}
@@ -2590,6 +2739,12 @@ function renderBank(){
     else if(y>=13){R(X,Y,T,T,'#05040a');}
   }
   for(const lx0 of B.lamps){R(lx0-1,16,2,6,'#8a6a0a');R(lx0-6,22,12,3,'#d4a017');R(lx0-4,25,8,2,'#fff2b0');}
+  if(B.side){ // the prize on a lit pedestal
+    const px=(B.vaultTile+1)*T+8,py=13*T;R(px-20,py-34,40,34,'#2a2430');R(px-24,py-38,48,6,P_.trim);R(px-16,py-30,32,4,'rgba(255,255,255,.08)');
+    const d=P_.deco;if(d==='gems'){g.fillStyle='#3a6aff';g.beginPath();g.moveTo(px,py-70);g.lineTo(px+12,py-58);g.lineTo(px,py-44);g.lineTo(px-12,py-58);g.closePath();g.fill();R(px-4,py-64,4,6,'#bcd0ff');}
+    else if(d==='portrait'){R(px-18,py-80,36,40,'#b8860b');R(px-14,py-76,28,32,'#3a2a1e');R(px-6,py-70,12,10,'#e0ac69');R(px-10,py-58,20,14,'#2a3d6a');}
+    else{g.fillStyle='#d4a017';g.beginPath();g.arc(px,py-56,14,0,7);g.fill();g.fillStyle='#fff2a0';g.beginPath();g.arc(px,py-56,9,0,7);g.fill();R(px-2,py-62,4,12,'#d4a017');}
+    g.font='8px '+FONT;g.textAlign='center';g.fillStyle='#ffd400';g.fillText(P_.label,px,4*T+8);return c;}
   const vx=(B.vaultTile+2)*T+8,vy=9*T+8;
   g.fillStyle='#3a3f48';g.fillRect(B.vaultTile*T-4,4*T,6*T+4,9*T);
   g.fillStyle='#5d6673';g.beginPath();g.arc(vx,vy,42,0,7);g.fill();
@@ -2640,7 +2795,9 @@ function crackVault(){
         '',
         'YOU SHRUG AND WALK AWAY.',
         'YOU KEEP THE CASH, THOUGH.',
-        'CASE CLOSED.'],()=>toEnd('win'),null,hardMode?[['A LEGEND',['YOU BEAT HARD MODE.','','THE NEWSPAPERS CALL YOU','"THE PHANTOM OF THE NIGHT."','','NOBODY HAS EVER PULLED OFF','FIVE HEISTS LIKE THESE.','','YOU ARE A LEGEND.']]]:null);}}),score);return;
+        'CASE CLOSED.'],()=>toEnd('win'),null,(hardMode?[['A LEGEND',['YOU BEAT HARD MODE.','','THE NEWSPAPERS CALL YOU','"THE PHANTOM OF THE NIGHT."','','NOBODY HAS EVER PULLED OFF','FIVE HEISTS LIKE THESE.','','YOU ARE A LEGEND.']]]:[]).concat([['ONE YEAR LATER...',i?
+        ['AFTER THE ROOFTOPS, THE COPTER','DROPS YOU BACK IN THE CITY.','YOU AND VINNIE SPLIT UP, AND','THE MONEY GOES FAST.','','THEN THE PHONE RINGS. VINNIE:','"THE BIG BANK\'S GUARDS ARE ON','STRIKE TONIGHT. LIKE OLD TIMES?"','','NEXT: NIGHT 1 - THE BANK']:
+        ['AFTER THE ROOFTOPS, YOU LAY LOW','BACK IN THE CITY. THE CASH','RUNS OUT FAST.','','THEN THE PHONE RINGS. IT\'S','VINNIE, OUT ON PAROLE:','"THE BIG BANK\'S GUARDS ARE ON','STRIKE TONIGHT. ONE MORE JOB?"','','NEXT: NIGHT 1 - THE BANK']]]));}}),score);return;
   }
   const taken=cash;
   const museum=isMuseum();
@@ -2668,7 +2825,7 @@ function crackVault(){
     '',
     'CONFISCATED: $'+taken+' + YOUR GEAR',
     '(TOTAL STOLEN STAYS: $'+stolen+')'
-  ],()=>{cash=0;weapon=null;ammo=0;tomatoes=0;toHideout(()=>startNight(night+1));},score,museum?[
+  ],()=>{cash=0;weapon=null;ammo=0;tomatoes=0;startNight(night+1);},score,museum?[
     ['GULL ROCK',[
       'YOU ALREADY ESCAPED ONE JAIL,',
       'SO GRAY SENDS YOU SOMEWHERE',
@@ -2691,10 +2848,10 @@ function crackVault(){
   ]);
 }
 function initBank(){
-  if(sideMode){B=buildBank(sideMode.rooms);B.pal=sideMode.pal;B.side=sideMode;B.img=renderBank();}
+  if(sideMode){B=buildSide(sideMode);B.pal=sideMode.pal;B.side=sideMode;B.img=renderBank();}
   else if(isMuseum()){B=buildMuseum();B.img=renderMuseum();}else if(isGauntlet()){B=buildReserve();B.img=renderReserve();}
   else{if(dailyMode){const o=Math.random;Math.random=mulberry32(+dayStr());try{B=buildBank();}finally{Math.random=o;}}else B=buildBank();B.img=renderBank();}
-  if(!dailyMode&&!twoP&&Math.random()<.3){const c=B.items.filter(k=>k.type==='cash');if(c.length){const k=pick(c);k.type='rare';k.name=pick(RARES);k.val=3000+rI(4)*1000;}} // sometimes a rare treasure
+  if(!dailyMode&&!twoP&&Math.random()<.3+.15*upLvl('charm')){const c=B.items.filter(k=>k.type==='cash');if(c.length){const k=pick(c);k.type='rare';k.name=pick(RARES);k.val=3000+rI(4)*1000;}} // sometimes a rare treasure
   for(const l of B.lasers)if(l.k==='m')l.speed*=1+.25*nightLvl(); // sweeping lasers get faster
   BP={x:B.start.x,y:B.start.y,w:10,h:22,vx:0,vy:0,onG:true,face:1,crouch:false,coy:0,jbuf:0,wallLock:0,dropT:0,inv:1,anim:0};
   respawn={x:B.start.x,y:B.start.y};bankT=0;floaters=[];cam.x=0;cam.y=16;
@@ -2794,8 +2951,9 @@ function updBank(dt){
     if(p.inv<=0&&nearBox([x,y,w,h],p,6))nearMiss(p.x+5,p.y-10);
   }
   if(B.shots){updShots(dt);for(const s of B.shots){if(shotHits(s,p)&&p.inv<=0){s.life=0;bankDie('SHOT BY A TURRET!',true);return;}if(p.inv<=0&&Math.abs(s.x-(p.x+5))<8&&(Math.abs(s.y-p.y)<7||Math.abs(s.y-(p.y+p.h))<7))nearMiss(p.x+5,p.y-10);}}
+  if(B.sensors&&updSide(p,dt))return;
   if(B.glassIdx){
-    // glass cracks under your feet, breaks, then grows back
+    // (glass) cracks under your feet, breaks, then grows back
     if(p.onG){const ty=Math.round((p.y+p.h)/T);for(let tx=Math.floor(p.x/T);tx<=Math.floor((p.x+p.w-.01)/T);tx++){const i=ty*B.W+tx;if(B.g[i]===3&&!B.crack[i]){B.crack[i]=.55;beep(1800,.05,'square',.03);}}}
     for(const i of B.glassIdx){
       if(B.crack[i]>0){B.crack[i]-=dt;if(B.crack[i]<=0){B.crack[i]=0;B.g[i]=0;B.broken[i]=4;beep(2400,.15,'sawtooth',.04,-1800);}}
@@ -2860,7 +3018,7 @@ const TITLE_BOX=[0,1,2,3,4,5].map(i=>[40,54+i*20,240,18]);
 const NSEL_BOX=[0,1,2,3,4].map(i=>[30,34+i*31,260,28]).concat([[70,18,180,13]]);
 // reset everything for a fresh run (story mode, night select or 2-player race)
 function resetRun(){
-  testMode=false;vinnieWon=false;RACE=null;GRACE=null;twoP=false;hardMode=false;dailyMode=false;sideMode=null;comboN=0;comboT=0;slowT=0;SEASON=[0,0];endChoice=null;RES=null;LK=null;BTS=null;
+  testMode=false;vinnieWon=false;RACE=null;GRACE=null;twoP=false;hardMode=false;dailyMode=false;sideMode=null;sideDoneNight=0;comboN=0;comboT=0;slowT=0;SEASON=[0,0];endChoice=null;RES=null;LK=null;BTS=null;
   cash=0;cityCash=0;spent=0;stolen=0;nightLog=[];paused=false;
   speedLvl=0;weapon=null;ammo=0;shopOpen=false;tomatoes=0;armor=false;plates=0;
   B=null;C=null;
@@ -2871,7 +3029,7 @@ function titlePick(i){sfx.click();
     else newGame();}
   else if(i===1)newGame(true);
   else if(i===2){state='nightsel';nselSel=0;}
-  else if(i===3)toHideout(null);
+  else if(i===3)openHideout();
   else if(i===4){state='badges';badgeSel=0;}
   else startDaily();
 }
@@ -2970,7 +3128,7 @@ function grCaught(pl,why,c){
   if(c){c.blind=2.5;c.slip=true;c.state='patrol';}
   pl.hp-=3;pl.hurt=.45;pl.digT=0;pl.cutT=0;
   let dropped=false;const keyRace=GRACE.need===1;
-  if(pl.got.length&&(!keyRace||pl.hp<=0)){dropObj(pl.got.pop());pl.pieces--;dropped=true;
+  if(pl.got.length&&!GRACE.open&&(!keyRace||pl.hp<=0)){dropObj(pl.got.pop());pl.pieces--;dropped=true;
     grBanner(pname(pl.vinnie?1:0)+(GRACE.kind==='boxes'?' LOST A POWER BOX!':' DROPPED THE '+OBJN[GRACE.kind]+'!'+(GRACE.kind==='key'?' THE COPS HID IT':'')),'#ff6b6b');}
   const obj=GRACE.kind==='boxes'?'A POWER BOX TURNED BACK ON!':'DROPPED THE '+OBJN[GRACE.kind]+'!';
   if(pl.hp<=0){ // out of hearts: back to the start
@@ -2979,12 +3137,19 @@ function grCaught(pl,why,c){
   floatTxt(pl.x+8,pl.y-8,dropped?(GRACE.kind==='boxes'?'POWER BACK ON!':'DROPPED IT!'):'-1 HEART','#ff6b6b');
   grSay(pl,why+'|-1 HEART'+(dropped?'. '+obj:''),3);
 }
+const OPEN_TXT={pieces:['ALL PLANS FOUND! VAULT WING OPEN. RACE!','ALL PLANS FOUND!|BOTH CAN GO IN. RACE!'],
+  mounds:['ALL PARTS DUG UP! THE BOAT IS READY. RACE!','ALL PARTS DUG UP!|BOTH CAN GO. RACE!'],
+  boxes:['THE POWER IS CUT! ROOF HATCH OPEN. RACE!','THE POWER IS CUT!|BOTH CAN GO IN. RACE!']};
+function grCheckOpen(){const G=GRACE;if(G.open||G.need<2||G.pl[0].pieces+G.pl[1].pieces<G.need)return;
+  G.open=true;const t=OPEN_TXT[G.kind];grBanner(t[0],'#ffd400');for(const q of G.pl)grSay(q,t[1],3.5);sfx.win();}
+const grReady=pl=>GRACE.open||pl.pieces>=GRACE.need;
 function grGot(pl,i,w,label){
   pl.got.push(w);pl.pieces++;const G=GRACE,o=G.pl[1-i];sfx.key();
   if(G.need===1)grBanner(pname(i)+' HAS THE '+OBJN[G.kind]+'!',i?'#c8a070':'#ffffff');
   floatTxt(pl.x+8,pl.y-8,label+' '+pl.pieces+'/'+G.need,'#9fd3ff');
   grSay(pl,pl.pieces>=G.need?(G.need>1?'ALL '+G.need+'! ':'GOT IT! ')+'RUN TO THE|'+DOORN[night]+'!':label+' '+pl.pieces+'/'+G.need,3);
   if(pl.pieces>=G.need)grSay(o,(i?'VINNIE':'VINAE')+' IS HEADING FOR|THE '+DOORN[night]+'! HURRY!',3);
+  grCheckOpen();
 }
 function updGalRace(dt){
   cityTime+=dt;flashOn=false;const G=GRACE;if(G.banner){G.banner.t-=dt;if(G.banner.t<=0)G.banner=null;}
@@ -2994,14 +3159,14 @@ function updGalRace(dt){
     for(const d of ['up','down','left','right'])if(rawPressed[K[d]])pl.lastDir=d;
     let want=pl.lastDir&&rawKeys[K[pl.lastDir]]?pl.lastDir:['up','down','left','right'].find(d=>rawKeys[K[d]]);
     if(pl.stun>0)want=null;
-    const ready=pl.pieces>=G.need;
+    const ready=grReady(pl);
     if(pl.moving){
       if(want){const [wx,wy]=DV[want];if(wx===-pl.dx&&wy===-pl.dy){const ox=pl.tx,oy=pl.ty;pl.tx=pl.ttx;pl.ty=pl.tty;pl.ttx=ox;pl.tty=oy;pl.dx=wx;pl.dy=wy;pl.dir=want;}}
       if(stepMover(pl,74,dt)&&ct(pl.tx,pl.ty)===TKD){G.winner=i?'p2':'p1';G.winT=2;sfx.win();return;}
     }
     if(!pl.moving&&want){
       const [dx,dy]=DV[want];pl.dir=want;pl.dx=dx;pl.dy=dy;const nx=pl.tx+dx,ny=pl.ty+dy,t=ct(nx,ny);
-      if(t===TKD&&!ready){if(pl.msgT<=0){grSay(pl,DOORN[night]+' LOCKED!|GET '+(G.need>1?G.need+' '+OBJN[G.kind]+'S':'THE '+OBJN[G.kind])+' FIRST');sfx.deny();}}
+      if(t===TKD&&!ready){if(pl.msgT<=0){grSay(pl,DOORN[night]+' LOCKED!|'+(G.need>1?'TOGETHER: '+(G.pl[0].pieces+G.pl[1].pieces)+'/'+G.need+' '+OBJN[G.kind]+'S':'GET THE '+OBJN[G.kind]+' FIRST'));sfx.deny();}}
       else if(t===TKD||walkC(nx,ny)||t===TD){pl.ttx=nx;pl.tty=ny;pl.moving=true;}
     }
     const ptx=Math.round(pl.x/T),pty=Math.round(pl.y/T);
@@ -3014,7 +3179,7 @@ function updGalRace(dt){
       grSay(pl,'WHISTLE! '+n+(n===1?' COP HEADS':' COPS HEAD')+' FOR|'+(i?'VINAE':'VINNIE'),2.5);if(n)grSay(o,'SOMEONE WHISTLED!|COPS ARE COMING TO YOU',2.5);}}
     for(const k of picks){
       if(k.got||Math.abs(pl.x-k.x*T)>=10||Math.abs(pl.y-k.y*T)>=10)continue;
-      if(k.type==='piece'||k.type==='key'){if(pl.pieces>=G.need)continue;k.got=true;grGot(pl,i,{kind:'pick',k},k.type==='key'?'KEYCARD':'PLANS');}
+      if(k.type==='piece'||k.type==='key'){if(pl.pieces>=G.need||G.open)continue;k.got=true;grGot(pl,i,{kind:'pick',k},k.type==='key'?'KEYCARD':'PLANS');}
       else if(k.type!=='coco'){k.got=true;if(i===0)gain(k.val);RSTATS.loot[i]+=k.val;sfx.coin();floatTxt(k.x*T+8,k.y*T,'+$'+k.val,i?'#c8a070':'#7dff7d');}
     }
     // pickpocket guards (and the warden's keycard) from behind
@@ -3026,7 +3191,7 @@ function updGalRace(dt){
     // island: dig (stand still on a mound 6 seconds)
     if(G.kind==='mounds'){
       const m=C.mounds.find(m=>!m.dug&&m.x===ptx&&m.y===pty);
-      if(m&&!pl.moving&&!pl.inDoor&&pl.stun<=0&&pl.pieces<G.need){
+      if(m&&!G.open&&!pl.moving&&!pl.inDoor&&pl.stun<=0&&pl.pieces<G.need){
         if(pl.digT===0){pl.digNoise=3.5;grSay(pl,'DIGGING... STAY 6 SECONDS!',2);}
         pl.digT+=dt;pl.digNoise-=dt;
         if(Math.floor(pl.digT*4)!==Math.floor((pl.digT-dt)*4))beep(140+rI(40),.05,'square',.025,-40);
@@ -3037,7 +3202,7 @@ function updGalRace(dt){
     // rooftops: cut a power box (stand next to it 3 seconds)
     if(G.kind==='boxes'){
       const bx=C.boxes.find(b=>!b.cut&&Math.abs(b.x-ptx)+Math.abs(b.y-pty)===1);
-      if(bx&&!pl.moving&&!pl.inDoor&&pl.stun<=0&&pl.pieces<G.need){
+      if(bx&&!G.open&&!pl.moving&&!pl.inDoor&&pl.stun<=0&&pl.pieces<G.need){
         if(pl.cutT===0){pl.cutNoise=0;grSay(pl,'CUTTING THE POWER... 3 SEC!',2);}
         pl.cutT+=dt;pl.cutBox=bx;pl.cutNoise-=dt;
         if(pl.cutNoise<=0){pl.cutNoise=1;beep(2200,.08,'sawtooth',.04,-1500);makeNoise(pl.x+8,pl.y+8,9);}
@@ -3047,7 +3212,7 @@ function updGalRace(dt){
   });
   if(G.winner)return;
   // STEAL: sneak up behind the other thief to take what they're carrying
-  if(G.kind!=='boxes')G.pl.forEach((a,i)=>{const b=G.pl[1-i];
+  if(G.kind!=='boxes'&&!G.open)G.pl.forEach((a,i)=>{const b=G.pl[1-i];
     if(a.stealCD>0||b.hidden||b.inv>0||!b.got.length||a.pieces>=G.need)return;
     if(Math.abs(a.x-b.x)>18||Math.abs(a.y-b.y)>18)return;
     if((a.x-b.x)*b.dx+(a.y-b.y)*b.dy>0)return; // b is looking at a: no luck
@@ -3175,14 +3340,14 @@ function nightEnd2P(){
   else if(n===3)showStory('CAUGHT AGAIN!',['A SILENT ALARM! SWAT STORMS','THE MUSEUM AND TAKES BACK','THE MOONSTONE.','','YOU BOTH GET SHIPPED TO','GULL ROCK, AN ISLAND PRISON.','',sc,'','NEXT: NIGHT 4 - ISLAND PRISON'],next);
   else if(n===4)showStory("YOU'RE OUT!",['TWO BOATS REACH THE MAINLAND.','A NEWSPAPER: "MOONSTONE MOVED','TO THE FEDERAL RESERVE."','','ONE LAST RACE: OVER THE','ROOFTOPS, INTO THE VAULT.','',sc,'','NEXT: NIGHT 5 - THE GAUNTLET'],next);
   else{const w=SEASON[0]>SEASON[1]?0:SEASON[1]>SEASON[0]?1:-1;badge('champ');
-    showStory('THE END',w===0?['VINAE WON '+SEASON[0]+' OF 5 NIGHTS!','','VINAE GRABS THE REAL MOONSTONE','AND TAKE OFF IN VINNIE\'S','HELICOPTER. BELOW, VINNIE','SHAKES HIS FIST.','','"BEST PARTNER I EVER HAD."','VINAE IS THE MASTER THIEF!']:
+    showStory('THE END',w===0?['VINAE WON '+SEASON[0]+' OF 5 NIGHTS!','','VINAE GRABS THE REAL MOONSTONE','AND TAKES OFF IN VINNIE\'S','HELICOPTER. BELOW, VINNIE','SHAKES HIS FIST.','','"BEST PARTNER I EVER HAD."','VINAE IS THE MASTER THIEF!']:
       w===1?['VINNIE WON '+SEASON[1]+' OF 5 NIGHTS!','','VINNIE GRABS THE MOONSTONE','AND FLIES OFF, WAVING.','"BETTER LUCK NEXT TIME,','PARTNER!"','','VINNIE IS THE MASTER THIEF!']:
-      ['IT\'S A TIE! '+SEASON[0]+' - '+SEASON[1],'','YOU BOTH GRAB THE MOONSTONE.','IT SNAPS IN HALF.','','"FIFTY-FIFTY?" VINNIE SAYS.','','PARTNERS AFTER ALL.'],()=>toEnd('win'));}
+      ['IT\'S A TIE! '+SEASON[0]+' - '+SEASON[1],'','YOU BOTH GRAB THE MOONSTONE.','IT SNAPS IN HALF.','','"FIFTY-FIFTY?" VINNIE SAYS.','','PARTNERS AFTER ALL.'],()=>toEnd('win'),null,[['ONE YEAR LATER...',['BACK IN THE CITY, THE MOONSTONE','MONEY IS ALL GONE.','','THE PHONE RINGS. VINNIE:','"THE BIG BANK\'S GUARDS ARE ON','STRIKE TONIGHT. REMATCH?"','','NEXT: NIGHT 1 - THE BANK']]]);}
 }
 function drawGalRace(){
   const W2=160,saveP=P,G=GRACE,saveKP=keyPick;
   for(const [i,vx] of [[0,0],[1,160]]){
-    const pl=G.pl[i],o=G.pl[1-i];P=pl;G.other=o;hasKey=pl.pieces>=G.need;viewW=W2;
+    const pl=G.pl[i],o=G.pl[1-i];P=pl;G.other=o;hasKey=grReady(pl);viewW=W2;
     if(keyPick&&keyPick.got)keyPick=null;
     if(C.mounds)C.digT=pl.digT;if(C.boxes){C.cutT=pl.cutT;C.cutBox=pl.cutBox;}
     cam.x=clamp(pl.x+8-W2/2,0,WW-W2);cam.y=clamp(pl.y+8-(VH+12)/2,-12,WH-VH);
@@ -3207,7 +3372,7 @@ function drawGalRace(){
   const box=(pl,x,col,label)=>{txt(label,x,3,col);const hx=x+label.length*8+4;for(let k=0;k<MAXL;k++)heart(hx+k*8,4,clamp(pl.hp/3-k,0,1));
     const bx=hx+28;for(let k=0;k<G.need;k++){ctx.fillStyle=k<pl.pieces?'#9fd3ff':'#223';ctx.fillRect(bx+k*10,4,8,7);}
     if(G.need===1)txt(pl.pieces?'HAS KEY':'-',bx+12,3,pl.pieces?'#5ff':'#556');
-    else txt(pl.pieces>=G.need?'GO!':pl.pieces+'/'+G.need,bx+G.need*10+2,3,pl.pieces>=G.need?'#7dff7d':'#9fd3ff');};
+    else txt(grReady(pl)?(G.open?'OPEN!':'GO!'):pl.pieces+'/'+G.need,bx+G.need*10+2,3,grReady(pl)?'#7dff7d':'#9fd3ff');};
   box(G.pl[0],4,'#ffffff','VINAE');box(G.pl[1],164,'#c8a070','VINNIE');
   if(G.banner&&!G.winner){const b=G.banner,a=Math.min(1,b.t*3),sz=b.text.length>36?6:8,w=Math.min(VW-8,b.text.length*sz+16);
     ctx.globalAlpha=a;ctx.fillStyle='rgba(0,0,0,.85)';ctx.fillRect((VW-w)/2,22,w,18);ctx.fillStyle=b.col;ctx.fillRect((VW-w)/2,22,w,2);ctx.fillRect((VW-w)/2,38,w,2);
@@ -3341,7 +3506,7 @@ function racerStep(p,inp,dt){
   // in the race, a hazard sends you back to your last flag (no hearts lost)
   const back=why=>{if(p.inv>0&&why!=='FELL!')return false;beep(p.vinnie?900:1400,.2,'sawtooth',.05,-900);
     p.hp-=3;p.hurt=.45;
-    if(p.hp<=0){p.hp=MAXHP;p.rx=p.sx;p.ry=p.sy;floatTxt(p.x+5,p.y-6,'OUT OF HEARTS!','#f55');}else floatTxt(p.x+5,p.y-6,why+' -1','#f55');
+    if(p.hp<=0){p.hp=MAXHP;floatTxt(p.x+5,p.y-6,'OUT OF HEARTS! HEARTS REFILLED','#f55');} // always back to YOUR last flag, never the startelse floatTxt(p.x+5,p.y-6,why+' -1','#f55');
     Object.assign(p,{x:p.rx,y:p.ry,vx:0,vy:0,inv:1.2,crouch:false,h:22,onG:true});return true;};
   for(const l of B.lasers){if(l.k==='r'){if(rotorHits(l,p)&&back('ZAP!'))return;continue;}
     if(!lzOn(l))continue;const [x,y,w,h]=lzRect(l);if(p.x+1<x+w&&p.x+p.w-1>x&&p.y+1<y+h&&p.y+p.h>y&&back('ZAP!'))return;}
@@ -3400,7 +3565,7 @@ function drawRace(){
     txt(RACE.winner==='p1'?(B.kind==='museum'?'VINAE GOT THE MOONSTONE!':'VINAE CRACKED THE VAULT!'):'VINNIE GOT THERE FIRST!',VW/2,92,RACE.winner==='p1'?'#7dff7d':'#ff6b6b','center');
     txt(RACE.winner==='p1'?'VINAE WINS!':'VINNIE WINS!',VW/2,110,'#fff','center');}
   if(msgT>0){const lines=msg.split('|'),w=Math.max(...lines.map(l=>l.length))*8+12,h=lines.length*10+6;
-    ctx.fillStyle='rgba(0,0,0,.8)';ctx.fillRect((VW-w)/2,VH-h-6,w,h);lines.forEach((l,i)=>txt(l,VW/2,VH-h-2+i*10,'#ffd400','center'));}
+    ctx.fillStyle='rgba(0,0,0,.62)';ctx.fillRect((VW-w)/2,16,w,h);lines.forEach((l,i)=>txt(l,VW/2,20+i*10,'#ffd400','center'));}
 }
 function drawBank(){
   const RS=B.theme==='reserve';
@@ -3446,6 +3611,7 @@ function drawBank(){
       ctx.fillStyle='#18181c';ctx.fillRect(x,y+3,T,1);ctx.fillRect(x+7,y,1,T);
     }
   }
+  if(B.sensors)drawSide(cx,cy);
   if(!(p.inv>0&&Math.floor(p.inv*12)%2))thiefSide(Math.round(p.x)-cx,Math.round(p.y)-cy,p);
   if(B.race&&RACE&&RACE.other){const o=RACE.other;if(!(o.inv>0&&Math.floor(o.inv*12)%2))thiefSide(Math.round(o.x)-cx,Math.round(o.y)-cy,o);}
   lx.globalCompositeOperation='source-over';lx.clearRect(0,0,VW,VH);
@@ -3556,6 +3722,7 @@ function drawHUD(){
   if(hasKey){ctx.fillStyle='#5ff';ctx.fillRect(176,3,10,7);ctx.fillStyle='#066';ctx.fillRect(176,5,10,2);}
   else if(keyTaken&&Math.floor(gameT*3)%2){ctx.fillStyle='#f33';ctx.fillRect(176,3,10,7);ctx.fillStyle='#600';ctx.fillRect(176,5,10,2);}
   if(weapon){ctx.fillStyle='#7ff';ctx.fillRect(192,3,3,3);ctx.fillRect(194,5,3,3);ctx.fillRect(192,7,3,3);txt(String(ammo),199,2,ammo?'#7ff':'#f55');}
+  if(cards){ctx.fillStyle='#fff';ctx.fillRect(237,3,6,8);ctx.fillStyle='#c81e1e';ctx.fillRect(239,5,2,3);txt(String(cards),245,2,'#fff');}
   if(soap){ctx.fillStyle='#e8f8ff';ctx.fillRect(218,4,7,5);txt(String(soap),227,2,'#cff');}
   if(isIsland()&&state==='city'){ctx.fillStyle='#6b4423';ctx.fillRect(219,4,6,6);ctx.fillStyle='#8a5a30';ctx.fillRect(220,4,3,2);txt(String(coconuts),227,2,'#c8a070');}
   if(tomatoes){ctx.fillStyle='#c81e1e';ctx.fillRect(219,4,6,6);ctx.fillStyle='#3a8a2a';ctx.fillRect(221,3,2,1);txt(String(tomatoes),227,2,'#ff6b5b');}
@@ -3595,11 +3762,13 @@ function drawHUD(){
     }
   }
   if(msgT>0){
-    const lines=msg.split('|'),w=Math.max(...lines.map(l=>l.length))*8+12,h=lines.length*10+6;
-    ctx.fillStyle='rgba(0,0,0,.8)';ctx.fillRect((VW-w)/2,VH-h-6,w,h);
-    ctx.fillStyle='#ffd400';ctx.fillRect((VW-w)/2,VH-h-6,w,1);
-    lines.forEach((l,i)=>txt(l,VW/2,VH-h-2+i*10,'#ffd400','center'));
-  }else if(state==='city'&&cityTime<20)txt(isJail()?(isIsland()?'DIG UP 4 PARTS. T = COCONUT':'ROB GUARDS NOT FACING YOU'):isGallery()?'HIDE IN SARCOPHAGI. FIND DEALER':isRoof()?'CUT 3 POWER BOXES. AVOID LIGHTS':'[M]AP [F]LASH  FIND PINK TRUCK',VW/2,VH-10,'#889','center');
+    // side-view levels (vaults, museum, Reserve): the floor + hazards are at the BOTTOM, so messages go at the top
+    const lines=msg.split('|'),w=Math.max(...lines.map(l=>l.length))*8+12,h=lines.length*10+6,top=state==='bank';
+    const y0=top?16+(comboN>1&&comboT>0?14:0):VH-h-6;
+    ctx.fillStyle=top?'rgba(0,0,0,.62)':'rgba(0,0,0,.8)';ctx.fillRect((VW-w)/2,y0,w,h);
+    ctx.fillStyle='#ffd400';ctx.fillRect((VW-w)/2,top?y0+h-1:y0,w,1);
+    lines.forEach((l,i)=>txt(l,VW/2,y0+4+i*10,'#ffd400','center'));
+  }else if(state==='city'&&cityTime<20)txt(isJail()?(isIsland()?'DIG. COPS COMING? T = COCONUT!':'ROB GUARDS NOT FACING YOU'):isGallery()?'HIDE IN SARCOPHAGI. FIND DEALER':isRoof()?'CUT 3 POWER BOXES. AVOID LIGHTS':'[M]AP [F]LASH  FIND PINK TRUCK',VW/2,VH-10,'#889','center');
 }
 function drawMap(){
   ctx.fillStyle='rgb(0,0,12)';ctx.fillRect(0,0,VW,VH);
@@ -3629,7 +3798,8 @@ function drawMap(){
     if(!hasKey&&C.pieces){ctx.strokeStyle=bl?'#9fd3ff':'#4a7aa8';ctx.lineWidth=1;
       for(const k of C.pieces)if(!k.got){ctx.beginPath();ctx.arc(ox+(k.cx+.5)*s,oy+(k.cy+.5)*s,6*s,0,7);ctx.stroke();txt('?',ox+k.cx*s-2,oy+k.cy*s-4,'#9fd3ff');}}
     else if(!hasKey&&C.key){ctx.fillStyle='#5ff';mr(C.key[0]-1,C.key[1]-1,3,3);if(bl)txt('?',ox+C.key[0]*s-3,oy+C.key[1]*s-12,'#5ff');}
-    if(bl){ctx.fillStyle='#fff';mr(Math.round(P.x/T)-1,Math.round(P.y/T)-1,3,3);}
+    if(C.race&&GRACE){GRACE.pl.forEach((q,i)=>{if(bl||i){ctx.fillStyle=i?'#c8a070':'#fff';mr(Math.round(q.x/T)-1,Math.round(q.y/T)-1,3,3);}{const ly=oy+Math.round(q.y/T)*s;txt(i?'VINNIE':'VINAE',ox+Math.round(q.x/T)*s+(i?6:-6),ly<oy+14?ly+6:ly-11,i?'#c8a070':'#fff','center',6);}});}
+    else if(bl){ctx.fillStyle='#fff';mr(Math.round(P.x/T)-1,Math.round(P.y/T)-1,3,3);}
     const ly=oy+CH*s+3;
     const leg=isIsland()?[['#fff','YOU'],['#f33','GUARD'],['#3f3','HIDE'],['#ff7a1a','CELL'],['#a06a30','BOAT'],['#ff6b6b','SNACK']]
                   :jail?[['#fff','YOU'],['#f33','GUARD'],['#5ff','WARDEN'],['#3f3','HIDE'],['#ff8cc8','STORE'],['#ffd400','EXIT']]
@@ -3646,7 +3816,8 @@ function drawMap(){
     for(const k of B.items)if(!k.got){ctx.fillStyle=k.type==='cash'?'#7dff7d':'#ffd400';ctx.fillRect(ox+k.x/T*s,oy+k.y/T*s,1.5,1.5);}
     for(const c of B.cps){ctx.fillStyle=c.on?'#3f3':'#a33';ctx.fillRect(ox+c.x*s,oy+11*s,2,4);}
     ctx.fillStyle='#ffd400';ctx.fillRect(ox+B.vaultX/T*s,oy+5*s,5*s,8*s);
-    if(bl){ctx.fillStyle='#fff';ctx.fillRect(ox+BP.x/T*s-1,oy+BP.y/T*s,3,4);}
+    if(B.race&&RACE){[RACE.p1,RACE.p2].forEach((q,i)=>{ctx.fillStyle=i?'#c8a070':'#fff';if(bl||i)ctx.fillRect(ox+q.x/T*s-1,oy+q.y/T*s,3,4);txt(i?'VINNIE':'VINAE',ox+q.x/T*s,oy+q.y/T*s-10-i*8,i?'#c8a070':'#fff','center',6);});}
+    else if(bl){ctx.fillStyle='#fff';ctx.fillRect(ox+BP.x/T*s-1,oy+BP.y/T*s,3,4);}
     txt('RED = LASERS',8,130,'#f66');txt('PURPLE = NO LIGHTS',8,142,'#b9f');txt(B.kind==='museum'?'BLUE = GLASS  GOLD = MOONSTONE':'GOLD BOX = VAULT',8,154,'#ffd400');
     txt('GREEN FLAGS = CHECKPOINTS',8,166,'#7f7');
   }
@@ -3758,7 +3929,7 @@ function drawEnd(){
     txt('BEST EVER',36,144,'#ccd');txt('$'+best,284,144,'#9fd3ff','right');
     txt('RANK:',VW/2,162,'#9fd3ff','center');txt(rank(stolen),VW/2,175,'#fff','center');
   }
-  if(endT>1&&Math.floor(gameT*2)%2)txt('PRESS ENTER',VW/2,190,'#fff','center');
+  if(endT>1){if(Math.floor(gameT*2)%2)txt('ENTER = THE NEXT HEIST',VW/2,190,'#fff','center');txt('ESC = TITLE SCREEN',VW/2,204,'#889','center',6);}
 }
 
 // ================= MAIN LOOP =================
@@ -3811,7 +3982,7 @@ const HELP={
   jail:{t:'NIGHT 2: THE JAIL',l:[
     ['GOAL: STEAL THE WARDEN\'S KEYCARD',G],['(GOLD CAP), REACH THE EXIT GATE.',G],['',W],
     ['GUARDS SEE IN THEIR YELLOW CONE.',W],['STAND NEXT TO A GUARD WHO IS',W],['NOT FACING YOU = ROB HIM.',GR],
-    ['HIDE IN CELLS (GREEN LIGHT).',GR],['STORE: SOAP [T], DRINK, CANDY',W],['UNIFORMS HANG IN THE LAUNDRY.',W],['',W],
+    ['HIDE IN CELLS (GREEN LIGHT).',GR],['STORE: SOAP [T], CARDS [E], DOG',W],['TREATS, MAP, SNACKS, DRINK.',W],['UNIFORMS HANG IN THE LAUNDRY.',W],
     ['CAMERAS + DOGS CALL THE GUARDS.',R],['3 CATCHES = BACK TO YOUR CELL.',R]]},
   lock:{t:'THE GIANT LOCK',l:[
     ['GOAL: REACH THE KEYHOLE.',G],['',W],
@@ -3830,7 +4001,7 @@ const HELP={
   island:{t:'NIGHT 4: ISLAND PRISON',l:[
     ['GOAL: 4 BOAT PARTS ARE BURIED.',G],['FIND THE DIRT MOUNDS (X + SHOVEL).',G],['FOLLOW THE ARROW, THEN THE BEEPS.',G],
     ['STAND ON A MOUND 6 SEC TO DIG.',Y],['DIGGING IS LOUD! GUARDS + CRABS',R],['RUSH IN. WALK AWAY = START OVER.',R],
-    ['T = COCONUT: THE THUD CONFUSES',W],['NEARBY GUARDS FOR 3 SEC. HIT=BONK',W],
+    ['COPS COMING? PRESS T: THROW A',Y],['COCONUT. THE THUD CONFUSES THEM!',Y],
     ['HIDE IN TOOL SHEDS.',GR],['SEAGULLS SQUAWK IF YOU GET CLOSE',R],
     ['SHELLS = MONEY: SPEND IT AT THE',Y],['GUARDS\' SNACK MACHINE (MAP)',Y]]},
   roof:{t:'NIGHT 5: THE GAUNTLET',l:[
@@ -3850,15 +4021,15 @@ const HELP={
     ['        VINAE      VINNIE',W],['MOVE    W A S D    ARROWS',W],['THROW   Q          ENTER',W],['WHISTLE E          R-SHIFT',W],
     ['SNEAK BEHIND = STEAL THE KEY',Y],['0 HEARTS = YOU LOSE THE KEY',R],['DOGS SMELL YOU ALL AROUND!',R]]},
   race_pieces:{t:'NIGHT 3 RACE: THE MUSEUM',l:[
-    ['GRAB 3 OF THE 5 BLUEPRINT',G],['PIECES, THEN REACH THE VAULT',G],['WING FIRST (FOLLOW THE ARROW).',G],
+    ['3 PLANS BETWEEN YOU OPEN THE',G],['VAULT WING FOR BOTH. THEN RACE:',G],['FIRST ONE IN WINS!',G],
     ['        VINAE      VINNIE',W],['MOVE    W A S D    ARROWS',W],['THROW   Q          ENTER',W],['WHISTLE E          R-SHIFT',W],
     ['SNEAK BEHIND = STEAL A PIECE',Y],['CAUGHT/SHOT = -1 HEART, DROP IT',R],['GUARDS HAVE GUNS! HIDE IN COFFINS',R]]},
   race_mounds:{t:'NIGHT 4 RACE: THE ISLAND',l:[
-    ['5 BOAT PARTS ARE BURIED. DIG UP',G],['3 (STAND STILL 6 SEC), THEN',G],['REACH THE BOAT FIRST.',G],
+    ['DIG UP 3 BOAT PARTS BETWEEN YOU',G],['(STAND STILL ON A MOUND). THEN',G],['RACE: FIRST TO THE BOAT WINS!',G],
     ['        VINAE      VINNIE',W],['MOVE    W A S D    ARROWS',W],['THROW   Q          ENTER',W],['WHISTLE E          R-SHIFT',W],
     ['SNEAK BEHIND = STEAL A PART',Y],['DIGGING IS LOUD! CRABS PINCH!',R],['CAUGHT = -1 HEART, DROP A PART',R]]},
   race_boxes:{t:'NIGHT 5 RACE: THE ROOFTOPS',l:[
-    ['CUT 2 OF THE 3 POWER BOXES',G],['(STAND NEXT TO ONE 3 SEC),',G],['THEN REACH THE ROOF HATCH.',G],
+    ['CUT 2 POWER BOXES BETWEEN YOU',G],['(STAND NEXT TO ONE 3 SEC). THEN',G],['RACE: FIRST INTO THE HATCH WINS!',G],
     ['        VINAE      VINNIE',W],['MOVE    W A S D    ARROWS',W],['THROW   Q          ENTER',W],['WHISTLE E          R-SHIFT',W],
     ['SWAT SHOOT! HELICOPTERS SPOT!',R],['CAUGHT = -1 HEART AND ONE OF',R],['YOUR BOXES TURNS BACK ON.',R]]},
   lockrace:{t:'NIGHT 2 RACE: THE GIANT LOCK',l:[
@@ -3870,13 +4041,18 @@ const HELP={
     ['VINAE: W A S D  VINNIE: ARROWS',W],['LEFT/RIGHT STEER. UP = FASTER',W],['',W],
     ['ROCKS, LOGS, SHARKS, PATROL',R],['BOATS: -1 HEART EACH.',R],['0 HEARTS = PUSHED BACK.',R],
     ['BOTTLES: CASH (OR A CRAB!)',Y],['GAS CANS: TURBO!',Y]]},
-  side:{t:()=>sideMode?'SIDE JOB: '+sideMode.name:'SIDE JOB',l:[
-    ['GOAL: STEAL THE PRIZE AT THE',G],['END OF THE VAULT.',G],['',W],['NO TIME LIMIT. GET HIT =',W],['BACK TO THE LAST FLAG.',W],['',W],
-    ['THE PAY + ALL THE LOOT GO',Y],['STRAIGHT TO YOUR STASH.',Y],['ONE SIDE JOB PER NIGHT.',W]]},
+  side:{t:()=>sideMode?'SIDE JOB: '+sideMode.name:'SIDE JOB',get l(){const n=sideMode?sideMode.name:'';
+    const L=[['GOAL: STEAL THE PRIZE AT THE END.',G],['PAY + LOOT GO TO YOUR STASH.',G],['',W]];
+    if(/JEWEL|CASINO/.test(n))L.push(['MOTION SENSOR: WHEN THE LAMP',Y],['TURNS RED, FREEZE! (NO JUMPING)',Y]);
+    L.push(['GLASS CASE: STAND ON IT AND',W],['HOLD DOWN TO CRACK IT OPEN.',W]);
+    if(/MANSION|CASINO/.test(n))L.push(['GUARD: HIDE ON THE SHELVES',R],['ABOVE HIS FLASHLIGHT.',R]);
+    if(/MANSION/.test(n))L.push(['SQUEAKY FLOOR: CROUCH-WALK.',R]);
+    if(/CASINO/.test(n))L.push(['SLOT GATE: SPACE x3 ON 7-7-7.',Y]);
+    return L.slice(0,12);}},
   race:{t:()=>night===3?'RACE TO THE MOONSTONE':'RACE TO THE VAULT',l:[
     ['FIRST TO THE FAR RIGHT WINS: THE',G],['VAULT (OR JUMP FOR THE MOONSTONE)',G],['',W],
     ['VINAE (LEFT SCREEN): W A S D',W],['VINNIE (RIGHT): ARROW KEYS',W],['W / UP = JUMP, S / DOWN = CROUCH',W],['THROW: Q / ENTER (SLOWS THEM)',Y],
-    ['HAZARDS: -1 HEART, BACK TO YOUR',R],['LAST FLAG. 0 HEARTS = BACK TO',R],['THE START.',R]]},
+    ['HAZARDS: -1 HEART, BACK TO YOUR',R],['LAST FLAG. 0 HEARTS = HEARTS',R],['REFILL, STILL AT YOUR FLAG.',R]]},
   boat:{t:'BOAT ESCAPE',l:[
     ['GOAL: REACH THE MAINLAND (BAR).',G],['LEFT/RIGHT STEER. UP = FASTER.',W],['',W],
     ['HIT A ROCK = PATCH THE HULL:',Y],['MATCH THE CARD PAIRS IN TIME!',Y],
@@ -3906,8 +4082,9 @@ function drawHelp(){
 }
 function startNight(n){
   applyUpgrades();banner=null;keyTaken=false;
-  soap=0;disguiseT=0;boostT=0;coconuts=3;shovelLvl=0;
+  soap=0;disguiseT=0;boostT=0;coconuts=3;shovelLvl=0;cards=0;dogTreatT=0;
   night=n;nightStolen=0;nightHurt=0;hasKey=false;flashOn=false;battery=maxBattery();hp=MAXHP;showMap=false;B=null;toms=[];splats=[];
+  if(!twoP){if(upLvl('vest'))armor=true;plates=Math.max(plates,2*upLvl('plates'));}
   if(!twoP&&n%2===1){if(upLvl('kit')>=1)tomatoes=Math.max(tomatoes,10);if(upLvl('kit')>=2&&!weapon){weapon='stun';ammo=Math.max(ammo,6);}} // STARTER KIT
   if(n%2===1){
     setDims(9,7); // (night 3 replaces this with its own museum floor plan)
@@ -3931,13 +4108,13 @@ function update(dt){
   if(state==='badges'){updBadges();return;}
   if(state==='nightsel'){updNightSel();return;}
   if(state==='results'){storyT+=dt;if((pressed.start||pressed.fire)&&storyT>.8)resultsDone();return;}
-  if(state==='win'){endT+=dt;if((pressed.start||pressed.fire)&&endT>1)state='title';return;}
+  if(state==='win'){endT+=dt;if(endT>1){if(pressed.pause){resetRun();state='title';sfx.click();}else if(pressed.start||pressed.fire){if(twoP)newGame(true);else titlePick(0);}}return;} // the story loops: play the next heist
   if(state==='choose'){updChoose();return;}
   if(state==='story'){storyT+=dt;if((pressed.start||pressed.fire)&&storyT>.6){if(story.page<story.more.length){story.page++;storyT=0;sfx.click();}else{const cb=story.cb;story=null;cb();}}return;}
   if(trans){trans.t+=dt;if(!trans.fired&&trans.t>=.5){trans.fired=true;trans.cb();}if(trans.t>=1)trans=null;return;}
   if(shopOpen){updShop();return;}
   if(pressed.help&&(state==='city'||state==='bank'||state==='lock'||state==='boat')){showHelp();return;}
-  if(pressed.map&&(state==='city'||state==='bank')&&!(C&&C.race)&&!(B&&B.race)){showMap=!showMap;sfx.click();}
+  if(pressed.map&&(state==='city'||state==='bank')){showMap=!showMap;sfx.click();} // 2 players: either one presses M, the race pauses while the map is open
   if(pressed.pause&&!showMap){paused=!paused;pauseSel=0;sfx.click();}
   else if(paused){
     if(pressed.up){pauseSel=(pauseSel+2)%3;sfx.click();}if(pressed.down){pauseSel=(pauseSel+1)%3;sfx.click();}
@@ -3964,7 +4141,7 @@ function draw(){
   if(state==='nightsel'){drawNightSel();return;}
   if(state==='results'){drawResults();return;}
   const racing=state==='city'&&C&&C.race?drawGalRace:state==='bank'&&B&&B.race?drawRace:state==='lock'&&LK&&LK.race?drawLock:state==='boat'&&BTS&&BTS.race?drawBoatRace:null;
-  if(racing){racing();if(helpOpen)drawHelp();if(paused)drawPause();if(trans){ctx.fillStyle=`rgba(0,0,0,${1-Math.abs(trans.t-.5)*2})`;ctx.fillRect(0,0,VW,VH);}return;}
+  if(racing){racing();if(showMap&&(state==='city'||state==='bank'))drawMap();if(helpOpen)drawHelp();if(paused)drawPause();if(trans){ctx.fillStyle=`rgba(0,0,0,${1-Math.abs(trans.t-.5)*2})`;ctx.fillRect(0,0,VW,VH);}return;}
   if(state==='lock'&&LK)drawLock();else if(state==='boat'&&BTS)drawBoat();else if(B)drawBank();else if(C)drawCity();
   if(hurtFlash>0){ctx.fillStyle=`rgba(255,0,0,${hurtFlash*.6})`;ctx.fillRect(0,0,VW,VH);}
   drawHUD();
@@ -4004,12 +4181,14 @@ function frame(now){
   {const mb=document.getElementById('muteBtn'),want=muted?'SOUND: OFF':!actx||actx.state!=='running'?'SOUND: CLICK TO START':'SOUND: ON';if(mb.textContent!==want)mb.textContent=want;}
   if(!scoresAllowed())showScores=false;
   document.getElementById('scoreBtn').style.display=scoresAllowed()?'':'none';
+  {const hb=document.getElementById('hideBtn'),show=hideoutOK()?'':'none',top=scoresAllowed()?'68px':'38px';if(hb.style.display!==show)hb.style.display=show;if(hb.style.top!==top)hb.style.top=top;}
   for(const k in pressed)delete pressed[k];
   for(const k in rawPressed)delete rawPressed[k];
   requestAnimationFrame(frame);
 }
 // scores can only be viewed on the title screen and the final screen, never while playing
 const scoresAllowed=()=>state==='title'||state==='win';
+document.getElementById('hideBtn').onclick=e=>{initAudio();if(hideoutOK())openHideout();e.target.blur();};
 document.getElementById('scoreBtn').onclick=e=>{initAudio();if(scoresAllowed())showScores=!showScores;e.target.blur();};
 document.getElementById('helpBtn').onclick=e=>{initAudio();if(helpOpen)helpOpen=false;else showHelp();e.target.blur();};
 // ===== TEST MENU (temporary) — REMOVE WHEN DONE =====
@@ -4037,8 +4216,8 @@ document.getElementById('helpBtn').onclick=e=>{initAudio();if(helpOpen)helpOpen=
     ['NIGHT 5: ROOFTOP RACE',()=>go2(5)],['NIGHT 5: RESERVE RACE',()=>go2(5,'inside')],
     ['2P ENDING SCREEN',()=>{fresh(true);night=5;SEASON=[3,2];nightLog=[1,2,3,4,5].map(n=>({n,kind:NIGHT_NAMES[n],v:0,h:0,w:n%2?0:1}));toEnd('win');}],
     ['--- PROGRESS ---',null],
-    ['SIDE JOB: JEWELRY STORE',()=>{fresh(false);toHideout(null);startSide(0);}],['SIDE JOB: MAYOR\'S MANSION',()=>{fresh(false);toHideout(null);startSide(1);}],['SIDE JOB: CASINO VAULT',()=>{fresh(false);toHideout(null);startSide(2);}],
-    ['HIDEOUT SCREEN',()=>{fresh(false);testMode=false;toHideout(null);}],
+    ['SIDE JOB: JEWELRY STORE',()=>{fresh(false);state='menu';openHideout();startSide(0);}],['SIDE JOB: MAYOR\'S MANSION',()=>{fresh(false);state='menu';openHideout();startSide(1);}],['SIDE JOB: CASINO VAULT',()=>{fresh(false);state='menu';openHideout();startSide(2);}],
+    ['HIDEOUT SCREEN',()=>{fresh(false);testMode=false;state='menu';openHideout();}],
     ['BADGES SCREEN',()=>{fresh(false);testMode=false;state='badges';}],
     ['NIGHT 1 IN HARD MODE',()=>{fresh(false);hardMode=true;startNight(1);}],
     ['GIVE STASH $50000',()=>{save.stash+=50000;writeSave();}],
