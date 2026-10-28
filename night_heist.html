@@ -33,13 +33,16 @@
 <script>
 'use strict';
 // ================= SETUP =================
-const VW=320,VH=224,T=16;let MAXL=3,MAXHP=MAXL*3; // hp counts thirds of a heart (an EXTRA HEART upgrade makes it 4)
+let VW=320;const VH=224,T=16;let MAXL=3,MAXHP=MAXL*3; // VW grows with a wide window, so the levels fill the screen. // hp counts thirds of a heart (an EXTRA HEART upgrade makes it 4)
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 cv.width=VW;cv.height=VH;
 const lc=document.createElement('canvas');lc.width=VW;lc.height=VH;const lx=lc.getContext('2d');
 const wrap=document.getElementById('wrap');
 function fit(){
-  const kb=document.getElementById('keys2p'),kh=kb&&kb.style.display!=='none'?kb.offsetHeight+10:0;
+  const kh=0; // (the 2-player controls box only shows over the help card, so it takes no room)
+  // the game is always 224 pixels tall; on a wide window it gets wider (up to 640) instead of leaving black bars
+  const nw=Math.max(320,Math.min(640,2*Math.round(VH*innerWidth/Math.max(1,innerHeight-kh)/2)));
+  if(nw!==VW){VW=nw;cv.width=VW;cv.height=VH;lc.width=VW;lc.height=VH;if(typeof viewW!=='undefined')viewW=VW;}
   let s=Math.min(innerWidth/VW,(innerHeight-kh)/VH);
   if(s>=2)s=Math.floor(s);
   wrap.style.width=cv.style.width=Math.floor(VW*s)+'px';
@@ -63,6 +66,15 @@ const keys={},pressed={};let lastDir='down';
 const KEYMAP={ArrowUp:'up',w:'up',W:'up',ArrowDown:'down',s:'down',S:'down',ArrowLeft:'left',a:'left',A:'left',
   ArrowRight:'right',d:'right',D:'right',f:'flash',F:'flash',m:'map',M:'map',p:'pause',P:'pause',Escape:'pause',
   Enter:'start',' ':'fire',x:'fire',X:'fire',e:'use',E:'use',t:'tomato',T:'tomato',h:'help',H:'help',r:'scores',R:'scores'};
+// ---- PASSWORD HIDES (solo jail + island): typing the password eats every key until you finish or press ESC
+let PW=null;
+addEventListener('keydown',e=>{
+  if(!PW)return;e.preventDefault();e.stopImmediatePropagation();initAudio();
+  if(e.key==='Escape'){PW=null;say('YOU GAVE UP ON THE LOCK',1.5);sfx.deny();return;}
+  if(e.key==='Backspace'){PW.typed=PW.typed.slice(0,-1);return;}
+  if(e.key==='Enter'){pwSubmit();return;}
+  if(e.key.length===1&&PW.typed.length<60){PW.typed+=e.key;beep(900+Math.random()*300,.03,'square',.02);if(pwNorm(PW.typed)===pwNorm(PW.phrase))pwSubmit();}
+},true);
 addEventListener('keydown',e=>{
   const k=KEYMAP[e.key];if(!k)return;e.preventDefault();initAudio();
   if(!keys[k])pressed[k]=true;keys[k]=true;
@@ -685,7 +697,8 @@ function addHardCops(){
 // ===== per-night HIGH SCORES: fewest hearts lost wins (0 is perfect), then most money =====
 let nightHurt=0,testMode=false; // nightHurt counts thirds of a heart
 const NIGHT_NAMES={1:'THE BANK',2:'THE JAIL',3:'THE MUSEUM',4:'THE STORM',5:'ISLAND PRISON',6:'THE GAUNTLET'};
-function loseHP(n){
+let godMode=false; // TEST cheat: nothing can hurt you (cars, cops, bullets, lasers, lightning...)
+function loseHP(n){if(godMode)return;
   if(plates>0&&n>0){plates--;sfx.cp();if(typeof floatTxt==='function'&&P&&state==='city')floatTxt(P.x+8,P.y-10,'BLOCKED!','#c0c5cf');else if(BP&&state==='bank')floatTxt(BP.x+5,BP.y-8,'BLOCKED!','#c0c5cf');return;} // armor plate soaks the whole hit
   hp-=n;nightHurt+=n;}
 function fmtH(t){const w=Math.floor(t/3),r=t%3;return w||!r?(w+(r?' '+r+'/3':'')):r+'/3';}
@@ -778,28 +791,46 @@ function genCity(jail,nPieces=1){
 // night 4: a quiet NEIGHBORHOOD instead of the downtown. The same street grid, but every block is lawns with
 // tiny houses (porch doors to hide in), trees, and dark backyards to sneak through. The station is in the corner.
 function genSuburb(){
-  const g=new Uint8Array(CW*CH),dark=new Uint8Array(CW*CH),blk=new Int16Array(CW*CH).fill(-1),tree=new Uint8Array(CW*CH),hcol=new Uint8Array(CW*CH);
-  for(let y=0;y<CH;y++)for(let x=0;x<CW;x++){const mx=x%12,my=y%11,i=y*CW+x;
-    g[i]=mx<=1||my<=1?TR:mx===2||mx===11||my===2||my===10?TS:TA;} // TA = lawn
+  const g=new Uint8Array(CW*CH).fill(TA),dark=new Uint8Array(CW*CH),blk=new Int16Array(CW*CH).fill(-1),tree=new Uint8Array(CW*CH),hid=new Int16Array(CW*CH).fill(-1),houses=[];
+  const S=(x,y,v)=>{if(x>=0&&y>=0&&x<CW&&y<CH)g[y*CW+x]=v;};
+  // streets: a few through-streets (the cars use these) and quiet side streets that dead-end
+  const carRows=[0,4,7],carCols=[0,5,9],side=[['v',2,0,4],['v',7,4,7],['h',2,5,9],['h',6,0,5]];
+  const road=(ax,k,a,b)=>{if(ax==='h'){const y=11*k;for(let x=12*a;x<=Math.min(CW-1,12*b+1);x++){S(x,y,TR);S(x,y+1,TR);}}
+    else{const x=12*k;for(let y=11*a;y<=Math.min(CH-1,11*b+1);y++){S(x,y,TR);S(x+1,y,TR);}}};
+  for(const k of carRows)road('h',k,0,NBX);for(const k of carCols)road('v',k,0,NBY);for(const [ax,k,a,b] of side)road(ax,k,a,b);
+  for(let y=0;y<CH;y++)for(let x=0;x<CW;x++){if(g[y*CW+x]!==TA)continue; // a sidewalk along every street
+    let nr=false;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const xx=x+dx,yy=y+dy;if(xx>=0&&yy>=0&&xx<CW&&yy<CH&&g[yy*CW+xx]===TR)nr=true;}if(nr)g[y*CW+x]=TS;}
   for(let y=BK0Y;y<=BK1Y;y++)for(let x=BK0X;x<=BK1X;x++)g[y*CW+x]=TK;
   g[BK1Y*CW+BK0X+3]=TKD;g[BK1Y*CW+BK0X+4]=TKD;
-  let hid=0;
-  for(let by=0;by<NBY;by++)for(let bx=0;bx<NBX;bx++){
-    if(bx===BKX&&by===BKY)continue;const ox=12*bx,oy=11*by;
-    for(const [y0,doorY] of [[oy+3,oy+3],[oy+8,oy+9]]){ // a row of houses facing the street above, and one facing the street below
-      let x=ox+3+rI(2);
-      while(true){const w=2+rI(2);if(x+w-1>ox+10)break;
-        if(Math.random()<.85){hid++;for(let yy=y0;yy<=y0+1;yy++)for(let xx=x;xx<x+w;xx++){g[yy*CW+xx]=TB;hcol[yy*CW+xx]=hid%5;}
-          g[doorY*CW+x+rI(w)]=TD;}
-        x+=w+1+rI(2);}
-    }
-    for(let y=oy+5;y<=oy+7;y++)for(let x=ox+3;x<=ox+10;x++){const i=y*CW+x;if(g[i]!==TA)continue;
-      if(y===oy+6&&Math.random()<.22)g[i]=TB,tree[i]=1;else dark[i]=1;} // backyards: trees + shadows
+  const free=(x0,y0,x1,y1)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(x<0||y<0||x>=CW||y>=CH||g[y*CW+x]!==TA)return false;return true;};
+  const nearStation=(x,y)=>x>=BK0X-3&&x<=BK1X+3&&y>=BK0Y-3&&y<=BK1Y+3;
+  // the CORNER STORE: a real building on a street, bigger than the houses. Its welcome mat (on the sidewalk) opens the shop
+  let shop=null;
+  for(let tr=0;tr<6000&&!shop;tr++){const w=6,h=4,x=2+rI(CW-w-4),y=2+rI(CH-h-4),ex=x+(w>>1);
+    if(nearStation(x,y)||nearStation(x+w,y+h)||Math.abs(x-2)+Math.abs(y-2)<14||!free(x-1,y-1,x+w,y+h-1)||g[(y+h)*CW+ex]!==TS)continue;
+    const id=houses.length;houses.push({x,y,w,h,col:0,shop:true});for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++){g[yy*CW+xx]=TB;hid[yy*CW+xx]=id;}
+    shop={tx:ex,ty:y+h};}
+  // houses of all sizes dotted around the lawns: each with a porch (hide there) and its own front walk to the street
+  for(let tr=0;tr<8000&&houses.length<80;tr++){
+    const big=Math.random()<.3,w=big?4+rI(2):2+rI(2),h=big?3+rI(2):2+rI(2),x=1+rI(CW-w-2),y=1+rI(CH-h-2);
+    if(nearStation(x,y)||nearStation(x+w,y+h)||!free(x-1,y-1,x+w,y+h))continue;
+    let best=null;
+    for(const [dx,dy] of DIRS){const px=dx>0?x+w:dx<0?x-1:x+rI(w),py=dy>0?y+h:dy<0?y-1:y+rI(h),path=[];let ok=false;
+      for(let k=1;k<14;k++){const qx=px+dx*k,qy=py+dy*k;if(qx<0||qy<0||qx>=CW||qy>=CH)break;const t=g[qy*CW+qx];if(t===TS||t===TR){ok=true;break;}if(t!==TA)break;path.push([qx,qy]);}
+      if(ok&&(!best||path.length<best.path.length))best={px,py,dx,dy,path};}
+    if(!best)continue;
+    const id=houses.length;houses.push({x,y,w,h,col:rI(HOUSE_COL.length),chim:Math.random()<.5});
+    for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++){g[yy*CW+xx]=TB;hid[yy*CW+xx]=id;}
+    S(best.px,best.py,TD);for(const [qx,qy] of best.path)S(qx,qy,TS);
+    // the backyard (the side away from the street) is in deep shadow
+    for(let k=1;k<=1;k++){if(best.dx){const bx=best.dx>0?x-k:x+w-1+k;for(let yy=y-1;yy<=y+h;yy++)if(bx>=0&&bx<CW&&yy>=0&&yy<CH&&g[yy*CW+bx]===TA)dark[yy*CW+bx]=1;}
+      else{const by=best.dy>0?y-k:y+h-1+k;for(let xx=x-1;xx<=x+w;xx++)if(by>=0&&by<CH&&xx>=0&&xx<CW&&g[by*CW+xx]===TA)dark[by*CW+xx]=1;}}
   }
-  const lights=[];
-  for(let i=0;i<=NBX;i++)for(let j=0;j<=NBY;j++)for(const [x,y] of [[12*i+2,11*j+2],[12*i-1,11*j-1]]){
-    if(x<0||y<0||x>=CW||y>=CH||g[y*CW+x]!==TS)continue;if(Math.random()<.5)lights.push({x:x*T+8,y:y*T+8});}
-  return {g,dark,blk,alleys:[],key:null,keys:[],lights,jail:false,cell:null,suburb:true,tree,hcol};
+  // trees, never boxing anything in
+  for(let tr=0;tr<5000;tr++){const x=1+rI(CW-2),y=1+rI(CH-2),i=y*CW+x;if(g[i]!==TA||nearStation(x,y)||Math.random()>.05)continue;
+    let ok=true;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)if(g[(y+dy)*CW+x+dx]!==TA)ok=false;if(ok){g[i]=TB;tree[i]=1;}}
+  const lights=[];for(let i=0;i<CW*CH;i++)if(g[i]===TS&&Math.random()<.035)lights.push({x:(i%CW)*T+8,y:((i/CW)|0)*T+8});
+  return {g,dark,blk,alleys:[],key:null,keys:[],lights,jail:false,cell:null,suburb:true,tree,hid,houses,carRows,carCols,shop};
 }
 const HOUSE_COL=[['#8a3a2e','#6e2c22'],['#3a5a7a','#2c465e'],['#6a6a72','#52525a'],['#7a5a2e','#5e4422'],['#4a6a3a','#38522c']];
 const PAL_BLD=[['#6b2f2f','#4f2121'],['#2f4a6b','#223853'],['#5a4630','#43341f'],['#3d5a35','#2c4426'],['#56355e','#3f2546'],['#5e5e66','#45454c']];
@@ -817,13 +848,16 @@ function renderCity(){
       if(rain&&r()<.12){R(X+3+rI(5),Y+4+rI(6),7,3,'#34405a');R(X+5,Y+5,3,1,'#5a6a8a');} // puddles
       const inter=mx<=1&&my<=1;
       if(!inter){
-        if(my<=1&&(mx===2||mx===11)){for(let i=1;i<16;i+=4)R(X+2,Y+i,12,2,'#cfcfcf');}
+        if(C.suburb&&(mx===2||mx===11||my===2||my===10)&&!(my<=1&&mx<=1)){}
+        else if(my<=1&&(mx===2||mx===11)){for(let i=1;i<16;i+=4)R(X+2,Y+i,12,2,'#cfcfcf');}
         else if(mx<=1&&(my===2||my===10)){for(let i=1;i<16;i+=4)R(X+i,Y+2,2,12,'#cfcfcf');}
         else if(my===0&&mx>1){for(let i=1;i<16;i+=8)R(X+i,Y+15,5,1,'#e8c547');}
         else if(my===1&&mx>1){for(let i=1;i<16;i+=8)R(X+i,Y,5,1,'#e8c547');}
         else if(mx===0&&my>1){for(let i=1;i<16;i+=8)R(X+15,Y+i,1,5,'#e8c547');}
         else if(mx===1&&my>1){for(let i=1;i<16;i+=8)R(X,Y+i,1,5,'#e8c547');}
       }
+    }else if(t===TS&&C.suburb&&![[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]].some(([a,b])=>ct(x+a,y+b)===TR)){
+      R(X,Y,T,T,(x+y)%2?'#2e5a32':'#2a5430');R(X+2,Y+2,5,5,'#a89c84');R(X+9,Y+9,5,5,'#a89c84');R(X+2,Y+6,5,1,'#7a705c');R(X+9,Y+13,5,1,'#7a705c');
     }else if(t===TS){
       R(X,Y,T,T,'#74747e');R(X,Y,T,1,'#62626b');R(X,Y,1,T,'#62626b');
       if(ct(x,y-1)===TR)R(X,Y,T,2,'#a3a3ad');
@@ -837,11 +871,16 @@ function renderCity(){
     }else if(C.suburb&&t===TB){
       const i=y*CW+x;
       if(C.tree[i]){R(X,Y,T,T,'#1e3a22');R(X+2,Y+12,12,4,'rgba(0,0,0,.35)');R(X+1,Y+2,14,11,'#1f4a26');R(X+3,Y,10,14,'#245a2c');R(X+4,Y+2,5,4,'#2f6e38');}
-      else{const c=HOUSE_COL[C.hcol[i]],top=!(ct(x,y-1)===TB&&!C.tree[i-CW]),left=!(ct(x-1,y)===TB&&!C.tree[i-1]&&C.hcol[i-1]===C.hcol[i]),right=!(ct(x+1,y)===TB&&!C.tree[i+1]&&C.hcol[i+1]===C.hcol[i]);
+      else if(C.houses[C.hid[i]].shop){const H=C.houses[C.hid[i]],rx=x-H.x,ry=y-H.y;
+        R(X,Y,T,T,'#5e626c');R(X,Y+7,T,1,'#52565e');if((rx+ry)%3===0){R(X+4,Y+4,6,5,'#7a7e88');R(X+5,Y+5,4,1,'#3a3e46');} // flat roof + vents
+        if(ry===0)R(X,Y,T,2,'#8a8e98');if(rx===0)R(X,Y,2,T,'rgba(0,0,0,.3)');if(rx===H.w-1)R(X+14,Y,2,T,'rgba(0,0,0,.3)');
+        if(ry===H.h-1){for(let k=0;k<4;k++)R(X+k*4,Y+6,4,10,k%2?'#fff':'#e0303a');R(X,Y+15,T,1,'#7a1018');}} // striped awning over the windows
+      else{const H=C.houses[C.hid[i]],c=HOUSE_COL[H.col],rx=x-H.x,ry=y-H.y,half=H.h/2,top=ry<half;
         R(X,Y,T,T,top?c[0]:c[1]);for(let k=3;k<16;k+=4)R(X,Y+k,T,1,'rgba(0,0,0,.18)'); // shingles
-        if(top)R(X,Y+14,T,2,'#2a1a14');else R(X,Y,T,2,'rgba(255,255,255,.12)'); // the ridge between the two roof halves
-        if(left)R(X,Y,2,T,'rgba(0,0,0,.3)');if(right)R(X+14,Y,2,T,'rgba(0,0,0,.3)');
-        if(top&&left&&r()<.5){R(X+3,Y+2,4,5,'#5a4a42');R(X+3,Y+2,4,1,'#3a2e28');}} // chimney
+        if(H.h%2===0&&ry===half-1)R(X,Y+14,T,2,'#2a1a14');else if(H.h%2&&ry===Math.floor(half))R(X,Y+7,T,2,'#2a1a14'); // roof ridge
+        if(ry===0)R(X,Y,T,1,'rgba(255,255,255,.15)');if(ry===H.h-1)R(X,Y+13,T,3,'rgba(0,0,0,.35)'); // eaves
+        if(rx===0)R(X,Y,2,T,'rgba(0,0,0,.3)');if(rx===H.w-1)R(X+14,Y,2,T,'rgba(0,0,0,.3)');
+        if(H.chim&&rx===H.w-1&&ry===0){R(X+8,Y+2,4,6,'#5a4a42');R(X+8,Y+2,4,1,'#3a2e28');}}
     }else if(t===TB){
       const p=pal[C.blk[y*CW+x]]||PAL_BLD[0];
       const below=ct(x,y+1);
@@ -884,6 +923,9 @@ function renderCity(){
   }
   const bcx=(BK0X+4)*T,bcy=(BK0Y+2)*T;
   g.textAlign='center';g.textBaseline='middle';
+  if(C.suburb)for(const H of C.houses)if(H.shop){const sx=(H.x+H.w/2)*T,sy=(H.y+1.2)*T; // the store sign on the roof
+    g.fillStyle='#1a1a22';g.fillRect(sx-36,sy-9,72,18);g.fillStyle='#ff5fb4';g.fillRect(sx-36,sy-9,72,2);g.fillRect(sx-36,sy+7,72,2);
+    g.font='8px '+FONT;g.fillStyle='#ffd400';g.fillText('CORNER',sx,sy-3);g.fillText('STORE',sx,sy+4);}
   if(rain){
     g.fillStyle='#c8a070';g.beginPath();g.arc(bcx,bcy+10,14,0,7);g.fill();g.fillStyle='#f4ecd8';g.beginPath();g.arc(bcx,bcy+10,11,0,7);g.fill(); // station clock
     g.fillStyle='#222';g.fillRect(bcx-1,bcy+2,2,9);g.fillRect(bcx,bcy+9,7,2);
@@ -1167,12 +1209,14 @@ function initCity(){
   if(isMuseum()){initGallery();return;}
   if(isGauntlet()){initRoofs();return;}
   for(let i=0;i<=NBY;i++)for(let l=0;l<2;l++){
+    if(C.suburb&&!C.carRows.includes(i))continue; // the neighborhood: cars only on the through-streets
     const row=11*i+l,d=l===0?-1:1,sp=45+Math.random()*35,off=Math.random()*WW;
     lanes.push({id:'h'+row,ax:'x',d,y:row*T+2});
-    for(let k=0;k<(C.suburb?(Math.random()<.5?1:0):2);k++)cars.push({lane:'h'+row,ax:'x',d,sp,x:(off+k*WW/2)%WW,y:row*T+2,w:20,h:12,col:pick(COLS)});
+    for(let k=0;k<(C.suburb?1:2);k++)cars.push({lane:'h'+row,ax:'x',d,sp,x:(off+k*WW/2)%WW,y:row*T+2,w:20,h:12,col:pick(COLS)});
   }
   for(let j=0;j<=NBX;j++)for(let l=0;l<2;l++){
-    const col=12*j+l,d=l===0?1:-1,sp=45+Math.random()*35,off=Math.random()*WH,n=C.suburb?(Math.random()<.5?1:0):Math.random()<.5?1:2;
+    if(C.suburb&&!C.carCols.includes(j))continue;
+    const col=12*j+l,d=l===0?1:-1,sp=45+Math.random()*35,off=Math.random()*WH,n=C.suburb?1:Math.random()<.5?1:2;
     lanes.push({id:'v'+col,ax:'y',d,x:col*T+2});
     for(let k=0;k<n;k++)cars.push({lane:'v'+col,ax:'y',d,sp,x:col*T+2,y:(off+k*WH/2)%WH,w:12,h:20,col:pick(COLS)});
   }
@@ -1185,7 +1229,8 @@ function initCity(){
   }
   // the pink shop truck
   truck={truck:true,col:'#ff5fb4',sp:48,mode:'drive',t:3};
-  cars.push(truck);placeTruck(18);
+  if(C.suburb&&C.shop){truck={mode:'leave',x:-9999,y:-9999,w:1,h:1};C.trader={tx:C.shop.tx,ty:C.shop.ty,corner:true};} // night 4: the corner store, no truck
+  else{cars.push(truck);placeTruck(18);}
   cops=[];
   const mkCop=(x,y)=>cops.push({tx:x,ty:y,x:x*T,y:y*T,ttx:x,tty:y,dx:1,dy:0,moving:false,state:'patrol',lost:0,alert:0,shootT:1,anim:0,role:0});
   let tries=0;
@@ -1224,9 +1269,10 @@ function updRunner(dt){
   if(r.tired>0)r.tired-=dt;
   else if(flee){r.stam-=dt;if(r.stam<=0){r.tired=2.6;r.stam=4;floatTxt(r.x+8,r.y-6,'HUFF... PUFF...','#9fd3ff');}}
   else r.stam=Math.min(4,r.stam+dt);
-  const sp=r.tired>0?30:flee?72:40;
-  if(r.moving)stepMover(r,sp,dt);
-  if(!r.moving){
+  r.stunT=(r.stunT||0)-dt;r.slowT=(r.slowT||0)-dt;
+  const sp=r.stunT>0?0:Math.min(r.slowT>0?30:99,r.tired>0?30:flee?72:40); // zapped = stuck, splatted = slow
+  if(r.moving&&sp>0)stepMover(r,sp,dt);
+  if(!r.moving&&sp>0){
     const opts=[];for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]])if(walkC(r.tx+dx,r.ty+dy))opts.push([r.tx+dx,r.ty+dy,dx,dy]);
     const deg=(x,y)=>[[1,0],[-1,0],[0,1],[0,-1]].filter(([a,b])=>walkC(x+a,y+b)).length,back=o=>o[2]===-r.dx&&o[3]===-r.dy;
     let o=null;
@@ -1241,11 +1287,24 @@ function updRunner(dt){
     else{r.hasKey=false;r.leaveT=1.2;hasKey=true;sfx.key();floatTxt(r.x+8,r.y-14,'LOCKER KEY','#5ff');say("YOU GRABBED VINNIE'S LOCKER KEY!|NOW SNEAK TO THE TRAIN STATION",4);}
     floatTxt(r.x+8,r.y-4,'HEY!','#ffb000');});
 }
+// a tomato or a stun bolt that hits the runner
+function hitRunner(x,y,zap){const r=C&&C.runner;if(!r||!r.hasKey||Math.abs(r.x+8-x)>=10||Math.abs(r.y+8-y)>=10)return false;
+  if(zap){r.stunT=2.5;sfx.zap();floatTxt(r.x+8,r.y-6,'ZAPPED!','#7ff');}else{r.slowT=3;sfx.splat();floatTxt(r.x+8,r.y-6,'SPLAT! SLOWED','#f55');}return true;}
+const runnerTarget=()=>C&&C.runner&&C.runner.hasKey?[C.runner]:[];
 // thunder rumbles 2 seconds before each lightning flash
 function stormTick(dt){
   if(C.theme!=='rain')return;C.flash-=dt;C.thunder-=dt;
-  if(C.thunder<2&&!C.rumbled){C.rumbled=true;beep(45,1.4,'triangle',.06,-10);if(!C.lTip&&!C.race){C.lTip=true;say('THUNDER! LIGHTNING IS COMING.|COPS SEE FAR IN THE FLASH. HIDE!',3);}}
-  if(C.thunder<=0){C.thunder=10+Math.random()*6;C.flash=.6;C.rumbled=false;beep(55,.9,'sawtooth',.07,-25);}
+  if(C.thunder<2&&!C.rumbled){C.rumbled=true;beep(45,1.4,'triangle',.06,-10);if(!C.lTip&&!C.race){C.lTip=true;say('THUNDER! LIGHTNING IN 2 SECONDS!|GET ON A PORCH (HIDE) OR GET ZAPPED!',3);}}
+  for(const k of C.strikes||[])k.t-=dt;if(C.strikes)C.strikes=C.strikes.filter(k=>k.t>0);
+  if(C.thunder<=0){C.thunder=11+Math.random()*5;C.flash=.6;C.rumbled=false;beep(55,.9,'sawtooth',.07,-25);
+    // anyone out in the open has a 75% chance of being struck. A HIDE spot (porch) is 100% safe. Vinnie is never struck.
+    if(isStorm())runnerThieves().forEach(q=>{if(q.hidden||q.inv>0||Math.random()>=.75)return;
+      (C.strikes||(C.strikes=[])).push({x:q.x+8,y:q.y+8,t:.45});sfx.zap();shake=.4;
+      if(C.race&&GRACE)grCaught(q,'STRUCK BY LIGHTNING!');else hurtCity('STRUCK BY LIGHTNING!');});
+    // police can't hide from it either: same 75% chance each. A struck cop is stunned for a few seconds (stars)
+    if(isStorm())for(const c of cops){if(c.dog||Math.random()>=.75)continue;
+      c.blind=Math.max(c.blind||0,2.8);c.confused=false;c.slip=false;c.state='patrol';c.alert=0;c.lost=0;
+      (C.strikes||(C.strikes=[])).push({x:c.x+8,y:c.y+8,t:.45});floatTxt(c.x+8,c.y-6,'ZAPPED!','#fff8a0');}}
 }
 // night 5: the rooftops. SWAT (they see in a cone AND shoot), police helicopters with
 // spotlights, 3 power boxes to sabotage, rooftop water tanks to hide in, a drone delivery pad
@@ -1299,6 +1358,42 @@ function initGallery(){
   bullets=[];bolts=[];lostPiles=[];shopBlock=false;cityTime=0;floaters=[];lastSeenG=null;copsSee=false;
 }
 // jail: no cars, no shop. guards carry cash; the warden carries the gate keycard
+const PASSWORDS=['I am a cookie.','Where is my lunchbox?','My sneakers smell bad.','I tricked you!','Once upon a time, I entered a candyland.',
+  'The pickle is in charge.','Bananas wear pajamas.','My cat can drive a bus.','Do not feed the dragon.','Socks are just foot hats.',
+  'Penguins love spaghetti.','The moon is made of cheese.','I lost my left shoe.','Seven sleepy sloths.','Pizza for breakfast!',
+  'My goldfish is the boss.','Tacos on Tuesday.','The toaster is my friend.','Jellybeans in my pocket.','Knock knock, who is there?',
+  'Never trust a sneaky raccoon.','Bubblegum rainbow sandwich.','My robot does my homework.','Grandma has a jetpack.','Purple cows say moo too.',
+  'The floor is lava!','Unicorns eat broccoli.','I can hear the cupcakes.','Hot dogs need jackets.','The snowman stole my hat.',
+  'Wiggle your toes twice.','Ducks are secret spies.','My pillow is a marshmallow.','Nobody likes soggy cereal.','Dinosaurs dance at midnight.',
+  'Oink oink, Im a piggy.','I slept seventeen hours last last night.','I\'m going to blast off like a rocket.'];
+const pwNorm=t=>t.toLowerCase().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim(); // capitals and punctuation don't matter
+// lock 5-10 of the hiding spots with a password (never your own cell, never the store)
+function pickLocks(){
+  C.locks={};const cands=[];
+  for(let i=0;i<CW*CH;i++){if(C.g[i]!==TD)continue;const x=i%CW,y=(i/CW)|0;
+    if(C.cell&&x===C.cell[0]&&y===C.cell[1])continue;if(C.trader&&x===C.trader.tx&&y===C.trader.ty)continue;cands.push(i);}
+  const want=Math.min(cands.length,5+rI(6)),pool=PASSWORDS.slice();
+  for(let n=0;n<want;n++){const i=cands.splice(rI(cands.length),1)[0];C.locks[i]=pool.splice(rI(pool.length),1)[0];}
+}
+function pwStart(i){for(const k in keys)keys[k]=false;PW={i,phrase:C.locks[i],typed:'',t:0,hp0:hp,px:P.tx,py:P.ty};sfx.click();}
+function pwSubmit(){
+  if(!PW)return;
+  if(pwNorm(PW.typed)!==pwNorm(PW.phrase)){sfx.deny();PW.bad=.5;return;}
+  const i=PW.i;delete C.locks[i];PW=null;sfx.key();const x=i%CW,y=(i/CW)|0;floatTxt(x*T+8,y*T-6,'UNLOCKED!','#7dff7d');
+  if(!P.moving){P.ttx=x;P.tty=y;P.moving=true;P.dx=Math.sign(x-P.tx);P.dy=Math.sign(y-P.ty);} // step right in
+}
+function drawPW(){
+  const ph=PW.phrase.toUpperCase(),ty=PW.typed.toUpperCase(),sz=ph.length>30?6:8,w=300,x=10,y=60;
+  ctx.fillStyle='rgba(8,8,20,.95)';ctx.fillRect(x,y,w,96);ctx.fillStyle=PW.bad>0?'#ff3030':'#ffd400';ctx.fillRect(x,y,w,2);ctx.fillRect(x,y+94,w,2);
+  ctx.fillStyle='#d4a017';ctx.fillRect(x+12,y+12,10,8);ctx.fillRect(x+14,y+7,2,6);ctx.fillRect(x+18,y+7,2,6);ctx.fillRect(x+14,y+6,6,2); // padlock
+  txt('LOCKED HIDE! TYPE THE PASSWORD:',x+30,y+10,'#ffd400','left',6);
+  txt(ph,VW/2,y+30,'#9fd3ff','center',sz);
+  // what you typed: green while it matches so far, red once it goes wrong
+  const okSoFar=pwNorm(PW.phrase).startsWith(pwNorm(PW.typed));
+  ctx.fillStyle='#000';ctx.fillRect(x+10,y+48,w-20,16);txt(ty+(Math.floor(gameT*3)%2?'_':' '),VW/2,y+52,okSoFar?'#7dff7d':'#ff6b6b','center',ty.length>30?6:8);
+  txt('ENTER = TRY   BACKSPACE = FIX   ESC = GIVE UP',VW/2,y+72,'#889','center',6);
+  txt('THE COPS ARE STILL MOVING!',VW/2,y+83,'#ff6b6b','center',6);
+}
 function initJail(){
   C=genCity(true);C.theme=isIsland()?'island':'jail';C.img=isIsland()?renderIsland():renderJail();const lvl=nightLvl();
   const [sx,sy]=C.cell;
@@ -1423,7 +1518,7 @@ function sig(){const m=cityTime%8;return{h:m<3,v:m>=4&&m<7};}
 function carCanGo(c){
   const s=sig(),green=c.ax==='x'?s.h:s.v;
   const sirens=c.cop&&wanted(),rush=c.truck&&c.mode==='leave';
-  if(!green&&!sirens&&!rush&&!c.cart){
+  if(!green&&!sirens&&!rush&&!c.cart&&!C.suburb){
     if(c.ax==='x'){
       const front=c.d>0?c.x+c.w:c.x;
       for(let j=0;j<=NBX;j++){const a=j*192,b=a+32;const d=c.d>0?a-front:front-b;if(d>=0&&d<6)return false;}
@@ -1542,19 +1637,38 @@ function addK9s(){
 const k9Nose=(c,d)=>c.k9&&!(dogTreatT>0)&&d<=K9_NOSE; // the dog smells you, whichever way the officer faces
 // door guards stay near their post when they patrol
 // friendly fire: a cop's bullet that hits another cop knocks him flat on his back.
-// He blinks a few times, vanishes, then turns up somewhere else on the map.
+// He blinks a few times and vanishes for good (only a key-carrying warden comes back somewhere else).
 function copHitByBullet(b){
   for(const c of cops)if(c!==b.own&&!c.dog&&Math.abs(c.x+8-b.x)<6&&Math.abs(c.y+8-b.y)<7){
-    cops.splice(cops.indexOf(c),1);c.moving=false;
-    (C.downCops||(C.downCops=[])).push({c,t:2.4,side:b.vx>0||(!b.vx&&b.vy>0)?1:-1});
+    cops.splice(cops.indexOf(c),1);c.moving=false;c.tend=null;c.sit=false;
+    const d={c,t:DOWN_T,side:b.vx>0||(!b.vx&&b.vy>0)?1:-1};(C.downCops||(C.downCops=[])).push(d);
     floatTxt(c.x+8,c.y-6,'FRIENDLY FIRE!','#ffb000');beep(120,.22,'triangle',.1,-70);
+    // drama: the cop who fired (or the closest one) rushes over and sits with him until he vanishes
+    const near=q=>!q.dog&&!q.tend&&Math.abs(q.x-c.x)+Math.abs(q.y-c.y)<=12*T;
+    let h=cops.includes(b.own)&&near(b.own)?b.own:null;
+    if(!h){let bd=1e9;for(const q of cops)if(near(q)){const dd=Math.abs(q.x-c.x)+Math.abs(q.y-c.y);if(dd<bd){bd=dd;h=q;}}}
+    if(h){h.tend=d;h.sit=false;floatTxt(h.x+8,h.y-6,'OH NO!','#ffd400');}
     return true;}
   return false;
+}
+const DOWN_T=5; // how long a cop lies there before blinking away
+// a cop looking after a friendly-fire victim: walk over, sit down beside him, get up when he's gone. Returns true while busy
+function tendStep(c,dt){
+  const d=c.tend;if(!d)return false;
+  if(!(d.t>0)){c.tend=null;c.sit=false;c.state='patrol';c.lost=0;floatTxt(c.x+8,c.y-6,'HUH? WHERE DID HE GO?','#9fd3ff');return false;}
+  c.sees=false;c.state='tend';c.shootT=Math.max(c.shootT||0,1);
+  if(c.sit)return true;
+  if(c.moving){stepMover(c,64,dt);return true;}
+  const tx=Math.round(d.c.x/T),ty=Math.round(d.c.y/T);
+  if(Math.abs(c.tx-tx)+Math.abs(c.ty-ty)<=1){c.sit=true;c.dx=Math.sign(tx-c.tx);c.dy=Math.sign(ty-c.ty);floatTxt(c.x+8,c.y-6,'ARE YOU OK?!','#ffd400');beep(500,.12,'triangle',.04,-200);return true;}
+  const st=bfsStep(c.tx,c.ty,tx,ty);if(st){c.dx=st[0]-c.tx;c.dy=st[1]-c.ty;c.ttx=st[0];c.tty=st[1];c.moving=true;}else c.sit=true;
+  return true;
 }
 function updDownCops(dt){
   if(!C)return;for(const c of cops)if(c.popT>0)c.popT-=dt; // a respawned cop flickers in
   if(!C.downCops||!C.downCops.length)return;
-  for(const d of C.downCops){d.t-=dt;if(d.t<=0)respawnCop(d.c);}
+  // a cop knocked out by friendly fire is gone for good, except the one carrying the keycard / boat key (the level needs him)
+  for(const d of C.downCops){d.t-=dt;if(d.t<=0&&(d.c.hasKeyCard||d.c.warden))respawnCop(d.c);}
   C.downCops=C.downCops.filter(d=>d.t>0);
 }
 function respawnCop(c){
@@ -1564,7 +1678,7 @@ function respawnCop(c){
     const sc=d>=12&&d<=30?100+Math.random():Math.min(d,12); // not right on top of a player, not miles away either
     if(sc>bs){bs=sc;best=[x,y];}}
   if(best)Object.assign(c,{tx:best[0],ty:best[1],ttx:best[0],tty:best[1],x:best[0]*T,y:best[1]*T});
-  Object.assign(c,{moving:false,state:'patrol',lost:0,alert:0,blind:0,confused:false,slip:false,shootT:1.2,popT:.6});
+  Object.assign(c,{moving:false,state:'patrol',lost:0,alert:0,blind:0,confused:false,slip:false,shootT:1.2,popT:.6,tend:null,sit:false});
   cops.push(c);
 }
 function patrolNext(c){
@@ -1583,7 +1697,7 @@ function relocateKey(avoid){
 // no time limits anywhere: clocks are BONUS timers. Beat one = hearts back (they also count for your stars)
 function timeBonus(hearts){badge('clock');hp=Math.min(MAXHP,hp+hearts*3);nightHurt=Math.max(0,nightHurt-hearts*3);sfx.win();return hearts;}
 function hurtCity(why,caught,soft){
-  if(P.inv>0)return;
+  if(P.inv>0||godMode)return;
   sfx.hurt();shake=.35;hurtFlash=.4;
   loseHP(armor?1:3);P.inv=2;
   if(hp<=0){ // out of hearts: only NOW do the cops take the keycard and hide it somewhere new
@@ -1727,8 +1841,9 @@ function updLock(dt){
       LK.layer++;sfx.jump();floatTxt(LOCK_CX,LOCK_CY-lockR(LK.layer-1)-4,'CLICK!','#7dff7d');
       if(LK.layer>=LK.n){LK.openT=1.6;sfx.win();if(LK.alarm>0){timeBonus(1);say('THE LOCK OPENS!|FAST! BONUS: +1 HEART',2.5);}else say('THE LOCK OPENS!',2);}
     }else{
-      loseHP(armor?1:3);sfx.hurt();LK.shake=.3;hurtFlash=.35;
-      if(hp<=0){hp=MAXHP;LK.layer=0;say('OUT OF HEARTS! START AGAIN|FROM THE OUTSIDE',3);}
+      if(godMode){beep(200,.08,'square',.04);}else{
+      loseHP(armor?1:3);sfx.hurt();LK.shake=.3;hurtFlash=.35;}
+      if(godMode){}else if(hp<=0){hp=MAXHP;LK.layer=0;say('OUT OF HEARTS! START AGAIN|FROM THE OUTSIDE',3);}
       else{LK.layer=Math.max(0,LK.layer-2);say('CLANG! BACK 2 RINGS|'+(armor?'-1/3 HEART':'-1 HEART'),1.8);}
     }
   }
@@ -1828,7 +1943,7 @@ function flipCard(i){
 }
 // mouse: click a card to flip it, hover to highlight it
 function cardAt(e){
-  const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*VW/r.width,y=(e.clientY-r.top)*VH/r.height;
+  const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*VW/r.width-BOXOX(),y=(e.clientY-r.top)*VH/r.height;
   for(let i=0;i<8;i++){const cx=70+(i%4)*48,cy=82+Math.floor(i/4)*52;if(x>=cx-2&&x<cx+34&&y>=cy-2&&y<cy+44)return i;}
   return -1;
 }
@@ -1869,9 +1984,9 @@ function updBoat(dt){
   for(const w of b.pools){const dy=sy(w)-BOAT_Y,dx=w.x-b.x,dist=Math.hypot(dx,dy);
     if(dist<w.r*2.2){b.x+=Math.sign(dx)*55*dt*(1-dist/(w.r*2.2))*1.6;sp*=.6;if(dist<w.r*.6&&!b.spun){b.spun=1;say('WHIRLPOOL! STEER OUT!',1.2);}}else if(dist>w.r*3)b.spun=0;}
   b.d+=sp*dt;b.x=clamp(b.x+steer*130*dt,14,VW-14);
-  const hit=why=>{if(b.inv>0)return;loseHP(armor?1:3);b.inv=1.5;sfx.hurt();shake=.3;hurtFlash=.4;
+  const hit=why=>{if(b.inv>0||godMode)return;loseHP(armor?1:3);b.inv=1.5;sfx.hurt();shake=.3;hurtFlash=.4;
     if(hp<=0){hp=MAXHP;say('OUT OF HEARTS! BACK TO THE DOCK',3);startBoat();helpOpen=false;return;}else say(why+(armor?' -1/3 HEART':' -1 HEART'),1.8);};
-  for(const r of b.rocks){if(r.hit)continue;const y=sy(r);if(b.inv<=0&&Math.abs(y-BOAT_Y)<r.r+6&&Math.abs(r.x-b.x)<r.r+5){r.hit=true;startMatch();return;}}
+  for(const r of b.rocks){if(r.hit)continue;const y=sy(r);if(b.inv<=0&&!godMode&&Math.abs(y-BOAT_Y)<r.r+6&&Math.abs(r.x-b.x)<r.r+5){r.hit=true;startMatch();return;}}
   for(const l of b.logs){l.x+=l.vx*dt;if(l.x<l.w/2||l.x>VW-l.w/2)l.vx*=-1;const y=sy(l);if(Math.abs(y-BOAT_Y)<8&&Math.abs(l.x-b.x)<l.w/2+5)hit('CRASHED INTO A LOG!');}
   for(const k of b.sharks){const y=sy(k);if(y>-60&&y<VH)k.x+=Math.sign(b.x-k.x)*38*dt+Math.sin(b.t*3+k.ph)*20*dt;k.d+=40*dt; // sharks swim after you
     if(Math.abs(sy(k)-BOAT_Y)<10&&Math.abs(k.x-b.x)<11)hit('A SHARK BIT THE BOAT!');}
@@ -1931,6 +2046,7 @@ function updCity(dt){
   cityTime+=dt;lockMsgT-=dt;P.inv-=dt;fireCD-=dt;
   // --- player
   let want=keys[lastDir]?lastDir:['up','down','left','right'].find(k=>keys[k]);
+  if(PW){want=null;PW.bad=(PW.bad||0)-dt;if(hp<PW.hp0||P.tx!==PW.px||P.ty!==PW.py){PW=null;say('OUCH! YOU LOST YOUR PLACE.|TRY THE LOCK AGAIN',2);}}
   const pSpeed=74+14*speedLvl+10*upLvl('shoes')+(boostT>0?30:0);
   disguiseT-=dt;boostT-=dt;
   if(P.moving){
@@ -1943,6 +2059,7 @@ function updCity(dt){
     const nx=P.tx+dx,ny=P.ty+dy;
     if(ct(nx,ny)===TKD&&!hasKey&&keyTaken&&!isJail()&&lockMsgT<=0){say('BANK LOCKED! THE COPS TOOK YOUR|KEYCARD. FIND IT AGAIN (MAP / ARROW)',3);sfx.deny();lockMsgT=2.5;}
     else if(ct(nx,ny)===TKD&&!hasKey){if(lockMsgT<=0){say(isJail()?(isIsland()?'THE BOAT IS BROKEN! DIG UP|ALL 4 BURIED BOAT PARTS FIRST':'GATE LOCKED! PICKPOCKET THE|WARDEN\'S KEYCARD (GOLD CAP)'):(isMuseum()?'VAULT WING LOCKED! FIND ALL 3|BLUEPRINT PIECES (MAP CIRCLES)':(isRoof()?'HATCH LOCKED! CUT ALL 3|POWER BOXES FIRST (MAP)':'BANK LOCKED! FIND THE KEYCARD|CHECK YOUR MAP [M]')));sfx.deny();lockMsgT=2.5;}}
+    else if(ct(nx,ny)===TD&&C.locks&&C.locks[ny*CW+nx]){if(!PW)pwStart(ny*CW+nx);}
     else if(walkP(nx,ny)){P.ttx=nx;P.tty=ny;P.moving=true;}
   }
   const ptx=Math.round(P.x/T),pty=Math.round(P.y/T);
@@ -1981,7 +2098,7 @@ function updCity(dt){
     if(tomatoes<=0){say(isJail()?'THE GUARDS TOOK YOUR GEAR!':'NO TOMATOES! BUY 20 AT THE|PINK SHOP TRUCK ($230)',2);sfx.deny();}
     else if(tomCD<=0&&!P.hidden){
       tomatoes--;tomCD=.25;sfx.toss();
-      const a=aimAng(P.x+8,P.y+8,180,P.dx,P.dy);toms.push({x:P.x+8,y:P.y+8,vx:Math.cos(a)*170,vy:Math.sin(a)*170,life:1.1,hit:new Set()});
+      const a=aimAng(P.x+8,P.y+8,180,P.dx,P.dy,runnerTarget());toms.push({x:P.x+8,y:P.y+8,vx:Math.cos(a)*170,vy:Math.sin(a)*170,life:1.1,hit:new Set()});
     }
   }
   if(pressed.fire){
@@ -1989,7 +2106,7 @@ function updCity(dt){
     else if(ammo<=0){say('OUT OF AMMO! FIND THE|PINK SHOP TRUCK',2);sfx.deny();}
     else if(fireCD<=0&&!P.hidden){
       ammo--;fireCD=.3;sfx.zapGun();
-      const base=aimAng(P.x+8,P.y+8,200,P.dx,P.dy),angs=weapon==='spread'?[base-.25,base,base+.25]:[base];
+      const base=aimAng(P.x+8,P.y+8,200,P.dx,P.dy,runnerTarget()),angs=weapon==='spread'?[base-.25,base,base+.25]:[base];
       for(const a of angs)bolts.push({x:P.x+8,y:P.y+8,vx:Math.cos(a)*230,vy:Math.sin(a)*230,life:.9});
     }
   }
@@ -2105,6 +2222,7 @@ function updCity(dt){
   for(const c of cops){
     c.cx=Math.round(c.x/T);c.cy=Math.round(c.y/T);
     c.dist=Math.abs(c.cx-ptx)+Math.abs(c.cy-pty);
+    if(c.tend){c.sees=false;continue;} // busy with a fallen buddy
     // guards: only inside their view cone (fooled by a uniform). dogs: sniff all around, short range
     if(c.dog&&dogTreatT>0){c.sees=false;continue;} // busy with a treat
     const nose=k9Nose(c,c.dist),looking=c.dog||nose||(!c.guard&&!c.cone)||facesTile(c,ptx,pty),fooled=c.guard&&disguiseT>0&&!nose;
@@ -2136,6 +2254,7 @@ function updCity(dt){
   cops.filter(c=>c.state==='chase').sort((a,b)=>a.dist-b.dist).forEach((c,i)=>c.role=i);
   for(const c of cops){
     c.alert-=dt;
+    if(tendStep(c,dt))continue;
     if(c.blind>0){c.blind-=dt;c.shootT=Math.max(c.shootT,.8);
       if(c.confused){c.spinT-=dt;if(c.spinT<=0){c.spinT=.45;const d=DIRS[rI(4)];c.dx=d[0];c.dy=d[1];}
         if(c.blind<=0){c.confused=false;if(c.noiseAt){c.state='investigate';c.inv=c.noiseAt;c.invT=5;}}}
@@ -2189,6 +2308,7 @@ function updCity(dt){
     b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
     if(solidCity(ct(Math.floor(b.x/T),Math.floor(b.y/T))))b.life=0;
     if(b.life<=0)continue;
+    if(hitRunner(b.x,b.y,true)){b.life=0;continue;}
     for(const c of cops)if(Math.abs(c.x+8-b.x)<9&&Math.abs(c.y+8-b.y)<9){zapCop(c);b.life=0;break;}
   }
   bolts=bolts.filter(b=>b.life>0);
@@ -2207,6 +2327,7 @@ function updCity(dt){
     }
     if(solidCity(ct(Math.floor(t.x/T),Math.floor(t.y/T)))){t.life=0;if(!t.soap)splats.push({x:t.x-t.vx*dt,y:t.y-t.vy*dt,t:1.5});sfx.splat();}
     if(t.life<=0)continue;
+    if(!t.soap&&hitRunner(t.x,t.y,false)){t.life=0;splats.push({x:t.x,y:t.y,t:1.5});continue;}
     for(const c of cops)if(!t.hit.has(c)&&Math.abs(c.x+8-t.x)<9&&Math.abs(c.y+8-t.y)<9){
       t.hit.add(c);c.blind=hardMode?3:4;if(!t.soap)stat('splat',1,25,'splat');c.slip=!!t.soap;c.alert=0;c.state='patrol';sfx.splat();
       floatTxt(c.x+8,c.y-4,t.soap?'SLIP!':'SPLAT!',t.soap?'#cff':'#f55');
@@ -2276,6 +2397,7 @@ function updShop(){
     if(C.trader&&C.trader.machine)say(m+'|*CLUNK* THE MACHINE DROPS IT OUT',3);
     else if(C.trader&&C.trader.store)say(m+'|THE CLERK SLIDES IT UNDER THE GLASS',3);
     else if(C.trader&&C.trader.drone)say(m+'|A DRONE ZIPS IN AND DROPS IT OFF',3);
+    else if(C.trader&&C.trader.corner)say(m+'|THE SHOPKEEPER BAGS IT UP',3);
     else if(C.trader){moveTrader(18);say(m+(isJail()?'|THE TRADER SNEAKS TO ANOTHER CELL':'|THE DEALER SLIPS AWAY...'),3.5);}
     else{truck.mode='leave';truck.t=3.5;say(m+'|THE TRUCK DRIVES OFF...',3.5);}
   }
@@ -2286,7 +2408,7 @@ function drawShop(){
   ctx.fillStyle='#1a0a14';ctx.fillRect(x,y,w,h);
   ctx.fillStyle='#ff5fb4';ctx.fillRect(x,y,w,2);ctx.fillRect(x,y+h-2,w,2);ctx.fillRect(x,y,2,h);ctx.fillRect(x+w-2,y,2,h);
   for(let i=0;i<w;i+=16){ctx.fillStyle=(i/16)%2?'#fff':'#ff5fb4';ctx.fillRect(x+i,y+2,16,6);}
-  txt(isIsland()?'SNACK MACHINE':isJail()?'COMMISSARY':isRoof()?'DRONE DELIVERY':isGallery()?'BLACK MARKET DEALER':'PINK SHOP TRUCK',VW/2,y+14,isIsland()?'#ff6b6b':isJail()?'#ff8cc8':isRoof()?'#9fd3ff':isGallery()?'#c9a0ff':'#ff8cc8','center');
+  txt(isIsland()?'SNACK MACHINE':isJail()?'COMMISSARY':isRoof()?'DRONE DELIVERY':isGallery()?'BLACK MARKET DEALER':C.trader&&C.trader.corner?'CORNER STORE':'PINK SHOP TRUCK',VW/2,y+14,isIsland()?'#ff6b6b':isJail()?'#ff8cc8':isRoof()?'#9fd3ff':isGallery()?'#c9a0ff':'#ff8cc8','center');
   txt('CASH $'+cash,VW/2,y+28,'#7dff7d','center');
   shopList().forEach((it,i)=>{
     const rh=shopList().length>6?19:22,yy=y+42+i*rh,sel=i===shopSel,cost=it.cost();
@@ -2335,7 +2457,8 @@ function copTop(x,y,c){
   }
   const f=c.moving?(Math.floor(c.anim*8)%2):0;
   R(3,14,10,2,'rgba(0,0,0,.35)');
-  R(5,11,2,f?4:3,'#141a33');R(9,11,2,f?3:4,'#141a33');
+  if(c.sit){R(3,13,10,2,'#141a33');R(2,12,3,3,'#141a33');R(11,12,3,3,'#141a33');y+=2;} // sitting cross-legged
+  else{R(5,11,2,f?4:3,'#141a33');R(9,11,2,f?3:4,'#141a33');}
   const uni=c.courier?'#d9822b':c.swat?'#1e1e24':c.guard?'#5d6470':'#2a52b5',cap=c.courier?'#5a3a10':c.swat?'#0a0a0e':c.guard?'#1b1d22':'#0f1d4d';
   if(c.swat){R(4,6,8,6,uni);R(5,7,6,1,'#3a3a44');}
   R(4,6,8,6,uni);R(4,10,8,1,'#111');R(5,7,2,2,'#ffd400');
@@ -2442,7 +2565,7 @@ function drawKeycard(cx,cy){
 }
 function glow(x,y,r,rgb,a){const gr=ctx.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,`rgba(${rgb},${a})`);gr.addColorStop(1,`rgba(${rgb},0)`);ctx.fillStyle=gr;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();}
 // arrow on the screen edge pointing at an off-screen target
-let viewW=320; // width of the current view (160 in split screen)
+let viewW=VW; // width of the current view (half in split screen)
 function edgeArrow(wx,wy,cx,cy,col,label){
   const VW=viewW,sx=wx-cx,sy=wy-cy;
   if(sx>8&&sx<VW-8&&sy>20&&sy<VH-8)return;
@@ -2461,7 +2584,7 @@ function drawCity(){
   ctx.fillStyle='#000';ctx.fillRect(0,0,VW,VH);
   ctx.drawImage(C.img,-cx,-cy);
   const s=sig();
-  if(!isJail()&&!isGallery())for(let i=0;i<=NBX;i++)for(let j=0;j<=NBY;j++){
+  if(!isJail()&&!isGallery()&&!C.suburb)for(let i=0;i<=NBX;i++)for(let j=0;j<=NBY;j++){
     const x=(12*i+2)*T-cx,y=(11*j+2)*T-cy;
     if(x<-16||y<-16||x>VW||y>VH||12*i+2>=CW||11*j+2>=CH)continue;
     ctx.fillStyle='#111';ctx.fillRect(x+1,y+1,4,8);
@@ -2479,6 +2602,9 @@ function drawCity(){
     ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(X+5,Y+9,6,2);
     ctx.fillStyle='#c0c5cf';ctx.fillRect(X+5,Y-3+hv,6,3);const r=Math.floor(gameT*20)%2;ctx.fillStyle='#e8e8e8';ctx.fillRect(r?X+1:X+3,Y-5+hv,4,1);ctx.fillRect(r?X+11:X+9,Y-5+hv,4,1);
     ctx.fillStyle=Math.floor(gameT*4)%2?'#3cf':'#135';ctx.fillRect(X+7,Y-2+hv,2,1);
+  }else if(C.trader&&C.trader.corner){ // night 4: the corner store's door + welcome mat
+    const t=C.trader,X=t.tx*T-cx,Y=t.ty*T-cy;ctx.fillStyle='#7a2a3a';ctx.fillRect(X+2,Y+3,12,10);ctx.fillStyle='#a8404f';ctx.fillRect(X+3,Y+4,10,8);
+    ctx.fillStyle='#2a3a4a';ctx.fillRect(X+4,Y-6,8,6);ctx.fillStyle=Math.floor(gameT*2)%2?'#ff5fb4':'#7a2a5a';ctx.fillRect(X+2,Y-12,12,4);
   }else if(C.trader&&C.trader.truck){ // 2-player: the pink shop truck parked on the sidewalk
     const t=C.trader,X=t.tx*T-cx-6,Y=t.ty*T-cy+2;ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(X+2,Y+11,28,3);
     ctx.fillStyle='#ff5fb4';ctx.fillRect(X,Y,28,12);ctx.fillStyle='#fff';ctx.fillRect(X+2,Y+2,16,4);ctx.fillStyle='#9fd3ff';ctx.fillRect(X+21,Y+2,5,5);ctx.fillStyle='#111';ctx.fillRect(X+4,Y+11,5,2);ctx.fillRect(X+19,Y+11,5,2);
@@ -2514,14 +2640,14 @@ function drawCity(){
     ctx.fillStyle='#8a8f99';ctx.beginPath();ctx.arc(x+8,y+8,7,0,7);ctx.fill();ctx.fillStyle='#c0c5cf';ctx.beginPath();ctx.arc(x+8,y+8,4,0,7);ctx.fill();
     ctx.fillStyle=Math.floor(gameT*6)%2?'#f33':'#900';ctx.fillRect(x+7+b.dx*4,y+7+b.dy*4,2,2);}
   for(const d of C.downCops||[]){if(d.t<1.3&&Math.floor(d.t*10)%2)continue; // blinks before vanishing
-    const x=Math.round(d.c.x)-cx+8,y=Math.round(d.c.y)-cy+9,fall=Math.min(1,(2.4-d.t)/.18);
+    const x=Math.round(d.c.x)-cx+8,y=Math.round(d.c.y)-cy+9,fall=Math.min(1,(DOWN_T-d.t)/.18);
     ctx.save();ctx.translate(x,y);ctx.rotate(d.side*fall*Math.PI/2);copTop(-8,-9,Object.assign({},d.c,{moving:false,blind:0,dx:0,dy:1}));ctx.restore();
     if(fall>=1){const a=gameT*7;for(let i=0;i<2;i++){ctx.fillStyle='#ffd400';ctx.fillRect(x-1+Math.round(Math.cos(a+i*Math.PI)*6),y-9+Math.round(Math.sin(a+i*Math.PI)*2),2,2);}}}
   for(const c of cops){if(c.popT>0&&Math.floor(c.popT*12)%2)continue;copTop(Math.round(c.x)-cx,Math.round(c.y)-cy,c);}
   {const r=C.runner;if(r&&(r.hasKey||r.leaveT>0)&&!(r.popT>0&&Math.floor(r.popT*12)%2)&&!(!r.hasKey&&Math.floor(r.leaveT*10)%2)){const x=Math.round(r.x)-cx,y=Math.round(r.y)-cy;
     if(C.race)copTop(x,y,{courier:true,dx:r.dx,dy:r.dy,moving:r.moving,anim:r.anim});else thiefTop(x,y,r.dir,r.anim,r.moving,false,true);
     if(r.hasKey){const bob=Math.round(Math.sin(gameT*5)*1.5);ctx.fillStyle='#000';ctx.fillRect(x+3,y-9+bob,10,7);ctx.fillStyle='#5ff';ctx.fillRect(x+4,y-8+bob,8,5);ctx.fillStyle='#d4a017';ctx.fillRect(x+9,y-6+bob,2,2);
-      if(r.tired>0)txt('PUFF',x+8,y-18,'#9fd3ff','center',6);}}}
+      if(r.stunT>0)txt('ZAPPED',x+8,y-18,'#7ff','center',6);else if(r.slowT>0)txt('SPLAT',x+8,y-18,'#f55','center',6);else if(r.tired>0)txt('PUFF',x+8,y-18,'#9fd3ff','center',6);}}}
   if(!(P.inv>0&&Math.floor(P.inv*12)%2))thiefTop(Math.round(P.x)-cx,Math.round(P.y)-cy,P.dir,P.anim,P.moving,P.hidden,P.vinnie);
   const OT=C.race&&GRACE?GRACE.other:null;
   if(OT&&!(OT.inv>0&&Math.floor(OT.inv*12)%2))thiefTop(Math.round(OT.x)-cx,Math.round(OT.y)-cy,OT.dir,OT.anim,OT.moving,OT.hidden,OT.vinnie);
@@ -2530,8 +2656,8 @@ function drawCity(){
   lx.fillStyle=isGallery()?'rgba(4,4,24,.42)':'rgba(4,4,24,.62)';lx.fillRect(0,0,VW,VH);
   lx.fillStyle='rgba(0,0,0,.93)';
   const t0x=Math.floor(cx/T),t0y=Math.floor(cy/T);
-  for(let ty=t0y;ty<=t0y+15;ty++)for(let tx=t0x;tx<=t0x+21;tx++){
-    if(tx<0||ty<0||tx>=CW||ty>=CH)continue;if(C.dark[ty*CW+tx]){if(C.suburb)lx.fillStyle='rgba(0,0,0,.6)';lx.fillRect(tx*T-cx,ty*T-cy,T,T);if(C.suburb)lx.fillStyle='rgba(0,0,0,.93)';}
+  for(let ty=t0y;ty<=t0y+15;ty++)for(let tx=t0x;tx<=t0x+Math.ceil(VW/T)+1;tx++){
+    if(tx<0||ty<0||tx>=CW||ty>=CH)continue;if(C.dark[ty*CW+tx]){if(C.suburb)lx.fillStyle='rgba(0,0,0,.42)';lx.fillRect(tx*T-cx,ty*T-cy,T,T);if(C.suburb)lx.fillStyle='rgba(0,0,0,.93)';}
   }
   lx.globalCompositeOperation='destination-out';
   for(const l of C.lights){const x=l.x-cx,y=l.y-cy;if(x>-60&&y>-60&&x<VW+60&&y<VH+60)radial(lx,x,y,46,.85);}
@@ -2565,6 +2691,9 @@ function drawCity(){
     else if(isStorm()&&C.thunder<2&&Math.floor(gameT*6)%2){const mx=(typeof viewW!=='undefined'?viewW:VW)/2; // lightning is about to strike: hide!
       ctx.fillStyle='rgba(0,0,0,.75)';ctx.fillRect(mx-46,30,92,13);ctx.fillStyle='#ffe066';ctx.beginPath();ctx.moveTo(mx-40,31);ctx.lineTo(mx-44,37);ctx.lineTo(mx-41,37);ctx.lineTo(mx-43,42);ctx.lineTo(mx-37,35);ctx.lineTo(mx-40,35);ctx.closePath();ctx.fill();
       txt('LIGHTNING!',mx+5,33,'#ffe066','center');}
+    for(const k of C.strikes||[]){const x=k.x-cx,y=k.y-cy;ctx.strokeStyle='#fff8a0';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+rI(20)-10,y-140);
+      for(let s=1;s<=6;s++)ctx.lineTo(x+(s<6?rI(16)-8:0),y-140+s*140/6);ctx.stroke();ctx.lineWidth=1;ctx.strokeStyle='#fff';ctx.stroke();
+      ctx.globalCompositeOperation='lighter';glow(x,y,22,'255,250,160',.8);ctx.globalCompositeOperation='source-over';}
   }
   // ---- post-light: sirens, keycard, bullets, labels
   ctx.globalCompositeOperation='lighter';
@@ -2627,7 +2756,9 @@ function drawCity(){
     }
     if(near&&!P.hidden&&msgT<=0)txt(viewW<VW?'HIDE IN THE COFFIN':'WALK INTO THE COFFIN TO HIDE',viewW/2,VH-22,'#5f5','center');
   }
-  if(C.trader)txt(C.trader.machine?'SNACKS':C.trader.store?'STORE':C.trader.drone?'DRONE':C.trader.truck?'SHOP':isJail()?'TRADE':'DEALER',C.trader.tx*T+8-cx,C.trader.ty*T-12-cy+Math.round(Math.sin(gameT*4)),C.trader.machine?'#ff6b6b':C.trader.store?'#ff8cc8':C.trader.drone?'#9fd3ff':isJail()?'#ffb070':'#c9a0ff','center');
+  if(C.locks)for(const k in C.locks){const i=+k,x=(i%CW)*T-cx,y=((i/CW)|0)*T-cy;if(x<-16||y<-16||x>VW||y>VH)continue;
+    ctx.fillStyle='#000';ctx.fillRect(x+3,y+4,10,9);ctx.fillStyle='#d4a017';ctx.fillRect(x+4,y+7,8,5);ctx.fillRect(x+5,y+4,2,4);ctx.fillRect(x+9,y+4,2,4);ctx.fillRect(x+5,y+3,6,2);ctx.fillStyle='#000';ctx.fillRect(x+7,y+8,2,2);}
+  if(C.trader)txt(C.trader.machine?'SNACKS':C.trader.store?'STORE':C.trader.drone?'DRONE':C.trader.truck||C.trader.corner?'SHOP':isJail()?'TRADE':'DEALER',C.trader.tx*T+8-cx,C.trader.ty*T-12-cy+Math.round(Math.sin(gameT*4)),C.trader.machine?'#ff6b6b':C.trader.store?'#ff8cc8':C.trader.drone?'#9fd3ff':isJail()?'#ffb070':'#c9a0ff','center');
   if(C.mounds)for(const m of C.mounds){ // dirt pile with a shovel and a stick X: faintly visible even in the dark, twinkles now and then
     if(m.dug||(m.x===Math.round(P.x/T)&&m.y===Math.round(P.y/T)))continue;const x=m.x*T-cx,y=m.y*T-cy;if(x<-20||y<-20||x>VW+20||y>VH+20)continue;
     ctx.globalAlpha=.75;
@@ -3227,6 +3358,7 @@ function lzRect(l){
 }
 function bankDie(why,laser){
   const p=BP;if(laser&&p.inv>0)return;
+  if(godMode){if(!laser)Object.assign(p,{x:respawn.x,y:respawn.y,vx:0,vy:0,inv:1,crouch:false,h:22,onG:true});return;} // falling still puts you back on the flag
   loseHP(armor?1:3);laser?sfx.zap():sfx.hurt();shake=.35;hurtFlash=.45;
   if(hp<=0){hp=MAXHP;say(why+'|OUT OF HEARTS! BACK TO THE FLAG',3);}
   else say(why+(armor?' -1/3 HEART':' -1 HEART'));
@@ -3345,6 +3477,7 @@ const TITLE_BOX=[0,1,2,3,4,5].map(i=>[40,54+i*20,240,18]);
 const NSEL_BOX=[0,1,2,3,4,5].map(i=>[30,32+i*26,260,24]).concat([[70,18,180,13]]);
 // reset everything for a fresh run (story mode, night select or 2-player race)
 function resetRun(){
+  PW=null;
   testMode=false;vinnieWon=false;RACE=null;GRACE=null;twoP=false;hardMode=false;dailyMode=false;sideMode=null;sideDoneNight=0;comboN=0;comboT=0;slowT=0;SEASON=[0,0];endChoice=null;RES=null;LK=null;BTS=null;
   cash=0;cityCash=0;spent=0;stolen=0;nightLog=[];paused=false;
   speedLvl=0;weapon=null;ammo=0;shopOpen=false;tomatoes=0;armor=false;plates=0;
@@ -3407,7 +3540,7 @@ function updChoose(){
   if(rawPressed.Digit1||rawPressed.Numpad1)pickMode(0);else if(rawPressed.Digit2||rawPressed.Numpad2)pickMode(1);
   else if(pressed.start||pressed.fire)pickMode(modePick);
 }
-const boxAt=e=>{const L=menuBoxes();if(!L||helpOpen||showScores)return -1;const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*VW/r.width,y=(e.clientY-r.top)*VH/r.height;
+const boxAt=e=>{const L=menuBoxes();if(!L||helpOpen||showScores)return -1;const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*VW/r.width-BOXOX(),y=(e.clientY-r.top)*VH/r.height;
   return L.findIndex(([bx,by,bw,bh])=>x>=bx&&x<bx+bw&&y>=by&&y<by+bh);};
 cv.addEventListener('mousedown',e=>{if(state==='title'&&!helpOpen&&!showScores){initAudio();state='menu';titleSel=0;sfx.click();return;}const i=boxAt(e);if(i>=0){initAudio();menuPick(i);}});
 cv.addEventListener('mousemove',e=>{const i=boxAt(e);if(i>=0)menuHover(i);});
@@ -3428,7 +3561,7 @@ function startTopRace(n){
   let need=1,total=1;
   if(kind==='key'||kind==='courier'){cars=cars.filter(c=>!c.truck);truck={mode:'leave',x:-9999,y:-9999,w:1,h:1};
     // the pink shop truck parks on a sidewalk, not too far from the start, so both of you can find it
-    for(let tr=0;tr<4000;tr++){const x=rI(CW),y=rI(CH),d=Math.abs(x-s1[0])+Math.abs(y-s1[1]);if(C.g[y*CW+x]!==TS||d<8||d>18||cops.some(c=>c.tx===x&&c.ty===y))continue;C.trader={tx:x,ty:y,truck:true};break;}}
+    if(!(C.trader&&C.trader.corner))for(let tr=0;tr<4000;tr++){const x=rI(CW),y=rI(CH),d=Math.abs(x-s1[0])+Math.abs(y-s1[1]);if(C.g[y*CW+x]!==TS||d<8||d>18||cops.some(c=>c.tx===x&&c.ty===y))continue;C.trader={tx:x,ty:y,truck:true};break;}}
   if(kind==='pieces'){ // 5 blueprint pieces: first to 3
     const far=(x,y)=>Math.abs(x-s1[0])+Math.abs(y-s1[1])>16&&C.pieces.every(k=>Math.abs(k.x-x)+Math.abs(k.y-y)>14)&&!picks.some(k=>k.x===x&&k.y===y);
     for(let tr=0;tr<5000&&C.pieces.length<5;tr++){const x=rI(CW),y=rI(CH);if((C.g[y*CW+x]===TR||C.g[y*CW+x]===TS)&&far(x,y)){const o={x,y,type:'piece',val:0,ph:Math.random()*6,got:false};picks.push(o);C.pieces.push(o);}}
@@ -3448,8 +3581,9 @@ const RSHOP=[
   {name:'SPEED SNEAKERS',desc:'RUN FAST FOR 15 SEC',cost:300,buy:pl=>{pl.boostT=Math.max(0,pl.boostT)+15;return 'ZOOM! FAST FOR 15 SEC';}},
   {name:'COP DISGUISE',desc:'COPS IGNORE YOU 12 SEC',cost:400,buy:pl=>{pl.disguiseT=Math.max(0,pl.disguiseT)+12;return 'DISGUISED! 12 SEC';}},
   {name:'EXTRA HEART',desc:'+1 HEART',cost:350,buy:pl=>{if(pl.hp>=MAXHP)return null;pl.hp=Math.min(MAXHP,pl.hp+3);return '+1 HEART!';}},
+  {name:'STUN ZAPPER',desc:'+5 ZAPS: STUNS RIVAL OR COP',cost:450,buy:pl=>{pl.zaps=(pl.zaps||0)+5;return 'ZAPPER: '+pl.zaps+' ZAPS! [F / /]';}},
   {name:'TOMATO CRATE',desc:'FAST THROWS FOR 20 SEC',cost:250,buy:pl=>{pl.rapidT=Math.max(0,pl.rapidT)+20;return 'RAPID TOMATOES! 20 SEC';}}];
-const shopName=()=>!C.trader?'SHOP':C.trader.machine?'SNACK MACHINE':C.trader.store?'COMMISSARY':C.trader.drone?'DRONE DELIVERY':C.trader.truck?'PINK SHOP TRUCK':'BLACK MARKET DEALER';
+const shopName=()=>!C.trader?'SHOP':C.trader.machine?'SNACK MACHINE':C.trader.store?'COMMISSARY':C.trader.drone?'DRONE DELIVERY':C.trader.truck?'PINK SHOP TRUCK':C.trader.corner?'CORNER STORE':'BLACK MARKET DEALER';
 function updRaceShop(pl,i,K){
   const n=RSHOP.length+1,sh=pl.shop;
   if(rawPressed[K.up]){sh.sel=(sh.sel+n-1)%n;sfx.click();}
@@ -3463,7 +3597,7 @@ function updRaceShop(pl,i,K){
     pl.cash-=it.cost;sfx.buy();grSay(pl,m,2);}
 }
 function drawRaceShop(pl,i){
-  const sh=pl.shop,W2=160,rows=RSHOP.length+1,h=30+rows*16,y0=24;
+  const sh=pl.shop,W2=VW>>1,rows=RSHOP.length+1,h=30+rows*16,y0=24;
   ctx.fillStyle='rgba(8,8,20,.94)';ctx.fillRect(4,y0,W2-8,h);ctx.fillStyle='#ff5fb4';ctx.fillRect(4,y0,W2-8,2);ctx.fillRect(4,y0+h-2,W2-8,2);
   txt(shopName(),W2/2,y0+5,'#ff8cc8','center',6);txt('$'+pl.cash,W2/2,y0+14,'#7dff7d','center',6);
   RSHOP.concat([{name:'LEAVE',desc:'',cost:0}]).forEach((it,k)=>{const y=y0+24+k*16,sel=sh.sel===k;
@@ -3473,7 +3607,7 @@ function drawRaceShop(pl,i){
     if(it.desc)txt(it.desc,14,y+7,'#9fd3ff','left',6);});
   txt(i?'ENTER BUY  SHIFT LEAVE':'Q BUY   E LEAVE',W2/2,y0+h+3,'#ffd400','center',6);
 }
-const GR_KEYS=[{up:'KeyW',down:'KeyS',left:'KeyA',right:'KeyD',thr:['KeyQ'],wh:['KeyE']},{up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight',thr:['Enter','NumpadEnter'],wh:['ShiftRight','Slash']}];
+const GR_KEYS=[{up:'KeyW',down:'KeyS',left:'KeyA',right:'KeyD',thr:['KeyQ'],wh:['KeyE'],zap:['KeyF']},{up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight',thr:['Enter','NumpadEnter'],wh:['ShiftRight'],zap:['Slash','Period']}];
 const hit1=L=>L.some(c=>rawPressed[c]);
 function grSay(pl,t,d){pl.msg=t;pl.msgT=d||2.5;}
 const pname=i=>i?'VINNIE':'VINAE';
@@ -3482,7 +3616,7 @@ function grBanner(text,col){if(GRACE)GRACE.banner={text,col,t:2.6};}
 // put a collected objective back where it came from
 function dropObj(w){if(w.kind==='pick'&&w.k.type==='key'){const kp=keyPick;keyPick=w.k;relocateKey(GRACE.pl.map(p=>[Math.round(p.x/T),Math.round(p.y/T)]));keyPick=kp;}else if(w.kind==='pick')w.k.got=false;else if(w.kind==='warden')w.k.hasKeyCard=true;else if(w.kind==='runner')placeRunner(GRACE.pl.map(p=>[Math.round(p.x/T),Math.round(p.y/T)]),14,30);else if(w.kind==='mound')w.k.dug=false;else if(w.kind==='box')w.k.cut=false;}
 function grCaught(pl,why,c){
-  if(pl.inv>0)return;
+  if(pl.inv>0||godMode)return;
   pl.inv=2.2;pl.hitT=1;beep(pl.vinnie?300:200,.3,'sawtooth',.06,-120); // no freeze: while you blink you can run for it
   if(c){c.blind=2.5;c.slip=true;c.state='patrol';}
   pl.hp-=3;pl.hurt=.45;pl.digT=0;pl.cutT=0;
@@ -3512,9 +3646,9 @@ function grGot(pl,i,w,label){
 }
 function updGalRace(dt){
   cityTime+=dt;flashOn=false;const G=GRACE;stormTick(dt);if(C.runner)updRunner(dt);if(G.banner){G.banner.t-=dt;if(G.banner.t<=0)G.banner=null;}
-  if(G.winner){G.winT-=dt;if(G.winT<=0&&!trans){const w=G.winner,hps=G.pl.map(p=>Math.min(MAXHP,p.hp+3));startTrans(()=>startInterior(w,hps));G.winT=99;}return;}
+  if(G.winner){G.winT-=dt;if(G.winT<=0&&!trans){const w=G.winner,hps=G.pl.map(p=>Math.min(MAXHP,p.hp+3)),zs=G.pl.map(p=>p.zaps||0);startTrans(()=>{startInterior(w,hps);if(RACE&&state==='bank'){RACE.p1.zaps=zs[0];RACE.p2.zaps=zs[1];}});G.winT=99;}return;}
   G.pl.forEach((pl,i)=>{
-    const K=GR_KEYS[i],o=G.pl[1-i];pl.inv-=dt;pl.hurt=(pl.hurt||0)-dt;pl.thrCD=(pl.thrCD||0)-dt;pl.whCD=(pl.whCD||0)-dt;pl.stealCD=(pl.stealCD||0)-dt;pl.stun-=dt;pl.hitT=(pl.hitT||0)-dt;pl.msgT-=dt;
+    const K=GR_KEYS[i],o=G.pl[1-i];pl.inv-=dt;pl.hurt=(pl.hurt||0)-dt;pl.thrCD=(pl.thrCD||0)-dt;pl.whCD=(pl.whCD||0)-dt;pl.stealCD=(pl.stealCD||0)-dt;pl.stun-=dt;pl.hitT=(pl.hitT||0)-dt;pl.zapCD=(pl.zapCD||0)-dt;pl.msgT-=dt;
     pl.boostT-=dt;pl.disguiseT-=dt;pl.rapidT-=dt;
     if(pl.shop){updRaceShop(pl,i,K);return;} // shopping: frozen in place, hidden from the cops
     for(const d of ['up','down','left','right'])if(rawPressed[K[d]])pl.lastDir=d;
@@ -3538,6 +3672,9 @@ function updGalRace(dt){
     if(atShop&&!pl.shopBlock&&pl.stun<=0){const t=C.trader;Object.assign(pl,{tx:t.tx,ty:t.ty,ttx:t.tx,tty:t.ty,x:t.tx*T,y:t.ty*T,moving:false});pl.shop={sel:0};pl.hidden=true;sfx.coin();return;}
     // THROW a rotten tomato: stuns the other thief (or blinds a guard)
     if(hit1(K.thr)){if(pl.thrCD>0||pl.hidden||pl.stun>0)sfx.deny();else{pl.thrCD=pl.rapidT>0?1:3;sfx.toss();const a=aimAng(pl.x+8,pl.y+8,150,pl.dx,pl.dy,o.hidden?[]:[o]);toms.push({x:pl.x+8,y:pl.y+8,vx:Math.cos(a)*170,vy:Math.sin(a)*170,life:.9,hit:new Set(),race:true,owner:i});}}
+    // ZAP (bought in the shop): a fast bolt that stuns the other thief, a cop, or the courier
+    if(hit1(K.zap)){if(!(pl.zaps>0)){sfx.deny();grSay(pl,'NO ZAPS! BUY A STUN ZAPPER|AT THE SHOP',1.5);}else if((pl.zapCD||0)>0||pl.hidden||pl.stun>0)sfx.deny();
+      else{pl.zaps--;pl.zapCD=.5;sfx.zapGun();const a=aimAng(pl.x+8,pl.y+8,200,pl.dx,pl.dy,(o.hidden?[]:[o]).concat(runnerTarget()));bolts.push({x:pl.x+8,y:pl.y+8,vx:Math.cos(a)*240,vy:Math.sin(a)*240,life:.9,owner:i});}}
     // WHISTLE: guards near the other thief go to check on them
     if(hit1(K.wh)){if(pl.whCD>0){sfx.deny();grSay(pl,'WHISTLE IN '+Math.ceil(pl.whCD)+'S',1);}else{pl.whCD=10;beep(1800,.12,'sine',.06,600);beep(2400,.18,'sine',.05,-400,.13);let n=0;
       for(const c of cops)if(!(c.blind>0)&&c.state!=='chase'&&Math.abs(c.tx-o.ptx)+Math.abs(c.ty-o.pty)<=10){c.state='investigate';c.inv=nearestWalk(o.ptx,o.pty)||[o.ptx,o.pty];c.invT=6;c.alert=1;n++;}
@@ -3588,6 +3725,7 @@ function updGalRace(dt){
   for(const t of toms){t.x+=t.vx*dt;t.y+=t.vy*dt;t.life-=dt;
     if(solidCity(ct(Math.floor(t.x/T),Math.floor(t.y/T)))){t.life=0;splats.push({x:t.x-t.vx*dt,y:t.y-t.vy*dt,t:1.5});sfx.splat();continue;}
     if(t.life<=0)continue;
+    if(hitRunner(t.x,t.y,false)){t.life=0;splats.push({x:t.x,y:t.y,t:1.5});continue;}
     const v=G.pl[1-t.owner];
     if(!v.hidden&&v.inv<=0&&Math.abs(v.x+8-t.x)<9&&Math.abs(v.y+8-t.y)<9){t.life=0;v.stun=1.3;v.inv=.6;v.digT=0;v.cutT=0;RSTATS.hits[t.owner]++;splats.push({x:t.x,y:t.y,t:1.5});sfx.splat();floatTxt(v.x+8,v.y-8,'SPLAT!','#f55');grSay(v,'SPLAT! A TOMATO!',1.5);continue;}
     for(const c of cops)if(Math.abs(c.x+8-t.x)<9&&Math.abs(c.y+8-t.y)<9){t.life=0;c.blind=2;c.state='patrol';sfx.splat();floatTxt(c.x+8,c.y-4,'SPLAT!','#f55');break;}}
@@ -3629,6 +3767,7 @@ function updGalRace(dt){
   // cops / guards / dogs / SWAT: each one goes after the nearest thief it can see
   for(const c of cops){
     c.cx=Math.round(c.x/T);c.cy=Math.round(c.y/T);c.alert-=dt;
+    if(tendStep(c,dt))continue;
     if(c.blind>0){c.blind-=dt;
       if(c.confused){c.spinT-=dt;if(c.spinT<=0){c.spinT=.45;const d=DIRS[rI(4)];c.dx=d[0];c.dy=d[1];}if(c.blind<=0){c.confused=false;if(c.noiseAt){c.state='investigate';c.inv=c.noiseAt;c.invT=5;}}}
       continue;}
@@ -3656,6 +3795,13 @@ function updGalRace(dt){
     for(const pl of G.pl)if(vis(pl)&&(seen===pl||(c.state==='chase'&&c.tgt===pl))&&Math.abs(c.x-pl.x)<10&&Math.abs(c.y-pl.y)<10)
       grCaught(pl,c.dog?'CAUGHT BY A GUARD DOG!':c.k9?'CAUGHT BY A K9 UNIT!':c.swat?'GRABBED BY SWAT!':c.guard?'CAUGHT BY A GUARD!':'TACKLED BY A COP!',c);
   }
+  for(const b of bolts){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt; // 2-player zaps
+    if(solidCity(ct(Math.floor(b.x/T),Math.floor(b.y/T)))){b.life=0;continue;}
+    if(hitRunner(b.x,b.y,true)){b.life=0;continue;}
+    const v=G.pl[1-b.owner];
+    if(!v.hidden&&v.inv<=0&&Math.abs(v.x+8-b.x)<9&&Math.abs(v.y+8-b.y)<9){b.life=0;v.stun=1.6;v.inv=.6;v.digT=0;v.cutT=0;RSTATS.hits[b.owner]++;sfx.zap();floatTxt(v.x+8,v.y-8,'ZAPPED!','#7ff');grSay(v,'ZAPPED! STUNNED',1.5);continue;}
+    for(const c of cops)if(Math.abs(c.x+8-b.x)<9&&Math.abs(c.y+8-b.y)<9){b.life=0;c.blind=3;c.state='patrol';sfx.zap();floatTxt(c.x+8,c.y-4,'ZAPPED!','#7ff');break;}}
+  bolts=bolts.filter(b=>b.life>0);
   updDownCops(dt);
   for(const b of bullets){b.x+=b.vx*dt;b.y+=b.vy*dt;b.life-=dt;
     for(const pl of G.pl)if(vis(pl)&&b.x>pl.x+3&&b.x<pl.x+13&&b.y>pl.y+2&&b.y<pl.y+15){b.life=0;grCaught(pl,'SHOT BY POLICE!');}
@@ -3713,8 +3859,8 @@ function nightEnd2P(){
       ['IT\'S A TIE! '+SEASON[0]+' - '+SEASON[1],'','YOU BOTH GRAB THE MOONSTONE.','IT SNAPS IN HALF.','','"FIFTY-FIFTY?" VINNIE SAYS.','','PARTNERS AFTER ALL.'],()=>toEnd('win'),null,[['ONE YEAR LATER...',['BACK IN THE CITY, THE MOONSTONE','MONEY IS ALL GONE.','','THE PHONE RINGS. VINNIE:','"THE BIG BANK\'S GUARDS ARE ON','STRIKE TONIGHT. REMATCH?"','','NEXT: NIGHT 1 - THE BANK']]]);}
 }
 function drawGalRace(){
-  const W2=160,saveP=P,G=GRACE,saveKP=keyPick;
-  for(const [i,vx] of [[0,0],[1,160]]){
+  const W2=VW>>1,saveP=P,G=GRACE,saveKP=keyPick;
+  for(const [i,vx] of [[0,0],[1,W2]]){
     const pl=G.pl[i],o=G.pl[1-i];P=pl;G.other=o;hasKey=grReady(pl);viewW=W2;
     if(keyPick&&keyPick.got)keyPick=null;
     if(C.mounds)C.digT=pl.digT;if(C.boxes){C.cutT=pl.cutT;C.cutBox=pl.cutBox;}
@@ -3731,24 +3877,24 @@ function drawGalRace(){
     if(pl.msgT>0){const lines=pl.msg.split('|'),h=lines.length*10+6;ctx.fillStyle='rgba(0,0,0,.8)';ctx.fillRect(2,VH-h-4,W2-4,h);
       lines.forEach((l,j)=>txt(l,W2/2,VH-h+j*10,'#ffd400','center',l.length>19?6:8));}
     if(pl.hurt>0){ctx.fillStyle=`rgba(255,0,0,${pl.hurt*.6})`;ctx.fillRect(0,0,W2,VH);}
-    if(pl.stun>0)txt('SPLAT!',W2/2,40,'#ff6b6b','center');else if(pl.hitT>0)txt('RUN!',W2/2,40,'#ffd400','center');
-    {const fx=[pl.boostT>0?'FAST '+Math.ceil(pl.boostT):'',pl.disguiseT>0?'DISGUISED '+Math.ceil(pl.disguiseT):'',pl.rapidT>0?'TOMATOES '+Math.ceil(pl.rapidT):''].filter(Boolean).join(' ');
+    if(pl.stun>0)txt('STUNNED!',W2/2,40,'#ff6b6b','center');else if(pl.hitT>0)txt('RUN!',W2/2,40,'#ffd400','center');
+    {const fx=[pl.zaps>0?'ZAP x'+pl.zaps:'',pl.boostT>0?'FAST '+Math.ceil(pl.boostT):'',pl.disguiseT>0?'DISGUISED '+Math.ceil(pl.disguiseT):'',pl.rapidT>0?'TOMATOES '+Math.ceil(pl.rapidT):''].filter(Boolean).join(' ');
       ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(2,16,W2-4,9);txt('$'+pl.cash,4,17,'#7dff7d','left',6);if(fx)txt(fx,W2-4,17,'#ffd400','right',6);}
     if(pl.shop)drawRaceShop(pl,i);
     ctx.restore();keyPick=saveKP;
   }
   P=saveP;G.other=null;hasKey=false;viewW=VW;if(C.mounds)C.digT=0;if(C.boxes)C.cutT=0;
-  ctx.fillStyle='#000';ctx.fillRect(158,0,4,VH);ctx.fillStyle='#ffd400';ctx.fillRect(159,0,2,VH);
+  ctx.fillStyle='#000';ctx.fillRect(W2-2,0,4,VH);ctx.fillStyle='#ffd400';ctx.fillRect(W2-1,0,2,VH);
   ctx.fillStyle='#000';ctx.fillRect(0,0,VW,14);
   const box=(pl,x,col,label)=>{txt(label,x,3,col);const hx=x+label.length*8+4;for(let k=0;k<MAXL;k++)heart(hx+k*8,4,clamp(pl.hp/3-k,0,1));
     const bx=hx+28;for(let k=0;k<G.need;k++){ctx.fillStyle=k<pl.pieces?'#9fd3ff':'#223';ctx.fillRect(bx+k*10,4,8,7);}
     if(G.need===1)txt(pl.pieces?'HAS KEY':'-',bx+12,3,pl.pieces?'#5ff':'#556');
     else txt(grReady(pl)?(G.open?'OPEN!':'GO!'):pl.pieces+'/'+G.need,bx+G.need*10+2,3,grReady(pl)?'#7dff7d':'#9fd3ff');};
-  box(G.pl[0],4,'#ffffff','VINAE');box(G.pl[1],164,'#c8a070','VINNIE');
+  box(G.pl[0],4,'#ffffff','VINAE');box(G.pl[1],W2+4,'#c8a070','VINNIE');
   if(G.banner&&!G.winner){const b=G.banner,a=Math.min(1,b.t*3),sz=b.text.length>36?6:8,w=Math.min(VW-8,b.text.length*sz+16);
     ctx.globalAlpha=a;ctx.fillStyle='rgba(0,0,0,.85)';ctx.fillRect((VW-w)/2,22,w,18);ctx.fillStyle=b.col;ctx.fillRect((VW-w)/2,22,w,2);ctx.fillRect((VW-w)/2,38,w,2);
     txt(b.text,VW/2,sz===6?28:27,b.col,'center',sz);ctx.globalAlpha=1;}
-  if(G.winner){ctx.fillStyle='rgba(0,0,0,.8)';ctx.fillRect(20,80,280,52);ctx.fillStyle='#ffd400';ctx.fillRect(20,80,280,2);ctx.fillRect(20,130,280,2);
+  if(G.winner){const wx=(VW-280)>>1;ctx.fillStyle='rgba(0,0,0,.8)';ctx.fillRect(wx,80,280,52);ctx.fillStyle='#ffd400';ctx.fillRect(wx,80,280,2);ctx.fillRect(wx,130,280,2);
     txt(G.winner==='p1'?'VINAE REACHED THE '+DOORN[night]+'!':'VINNIE GOT THERE FIRST!',VW/2,92,G.winner==='p1'?'#7dff7d':'#ff6b6b','center');
     txt('NEXT: RACE TO THE '+FINN[night],VW/2,110,'#fff','center');}
 }
@@ -3782,6 +3928,7 @@ function updLockRace(dt){
     if((i?rawPressed.ArrowUp:rawPressed.KeyW)&&q.jumpT<=0&&r){q.jumpT=.22;q.from=q.layer;
       if(Math.abs(angDiff(lockGap(r),-Math.PI/2))<r.gap){q.layer++;sfx.jump();floatTxt(LOCK_CX+(i?16:-16),LOCK_CY-lockR(q.layer-1)-4,'CLICK!',i?'#c8a070':'#7dff7d');
         if(q.layer>=LK.n){LK.winner=i?'p2':'p1';LK.winT=2;sfx.win();say((i?'VINNIE':'VINAE')+' OPENED THE LOCK!',2);}}
+      else if(godMode){beep(200,.08,'square',.04);}
       else{q.hp-=3;q.hurt=.4;sfx.hurt();LK.shake=.3;
         if(q.hp<=0){q.hp=MAXHP;q.layer=0;floatTxt(LOCK_CX+(i?60:-60),40,'OUT OF HEARTS!','#f55');}
         else{q.layer=Math.max(0,q.layer-2);floatTxt(LOCK_CX+(i?60:-60),40,'CLANG! -1','#f55');}}}
@@ -3805,7 +3952,7 @@ function updBoatRace(dt){
     for(const w of W.pools){const dy=sy(w)-BOAT_Y,dx=w.x-b.x,dist=Math.hypot(dx,dy);
       if(dist<w.r*2.2){b.x+=Math.sign(dx)*55*dt*(1-dist/(w.r*2.2))*1.6;sp*=.6;if(dist<w.r*.6&&!b.spun){b.spun=1;b.msg='WHIRLPOOL! STEER OUT!';b.msgT=1.2;}}else if(dist>w.r*3)b.spun=0;}
     b.d+=sp*dt;b.x=clamp(b.x+steer*130*dt,14,VW-14);
-    const hit=why=>{if(b.inv>0)return;b.hp-=3;b.inv=1.5;b.hurt=.4;sfx.hurt();
+    const hit=why=>{if(b.inv>0||godMode)return;b.hp-=3;b.inv=1.5;b.hurt=.4;sfx.hurt();
       if(b.hp<=0){b.hp=MAXHP;b.d=Math.max(0,b.d-500);b.msg='OUT OF HEARTS!|PUSHED BACK';}else b.msg=why+'|-1 HEART';b.msgT=2;};
     for(const r of W.rocks){const y=sy(r);if(!r['hit'+i]&&Math.abs(y-BOAT_Y)<r.r+6&&Math.abs(r.x-b.x)<r.r+5){r['hit'+i]=true;hit('CRASHED INTO A ROCK!');}}
     for(const l of W.logs){const y=sy(l);if(Math.abs(y-BOAT_Y)<8&&Math.abs(l.x-b.x)<l.w/2+5)hit('CRASHED INTO A LOG!');}
@@ -3850,6 +3997,9 @@ function drawBoatRace(){
 function racerStep(p,inp,dt){
   p.hurt=(p.hurt||0)-dt;p.slow=(p.slow||0)-dt;p.thrCD=(p.thrCD||0)-dt;
   if(p.wait>0){p.wait-=dt;return;}
+  p.stunT=(p.stunT||0)-dt;p.zapCD=(p.zapCD||0)-dt;
+  if(p.stunT>0)inp={}; // zapped: can't move for a moment
+  if(inp.zap){if(!(p.zaps>0)||p.zapCD>0)sfx.deny();else{p.zaps--;p.zapCD=.5;sfx.zapGun();const o=p.vinnie?RACE.p1:RACE.p2,fx=Math.abs(o.x-p.x)<300?(o.x>=p.x?1:-1):p.face;(RACE.zaps=RACE.zaps||[]).push({x:p.x+5+fx*8,y:p.y+(p.crouch?4:9),vx:fx*320,life:.8,owner:p.vinnie?1:0});}}
   if(inp.thr){if(p.thrCD>0)sfx.deny();else{p.thrCD=3;sfx.toss();const o=p.vinnie?RACE.p1:RACE.p2,fx=Math.abs(o.x-p.x)<240?(o.x>=p.x?1:-1):p.face;RACE.toms.push({x:p.x+5+fx*8,y:p.y+(p.crouch?4:8),vx:fx*230,life:.8,owner:p.vinnie?1:0});}}
   p.inv-=dt;p.dropT-=dt;p.wallLock-=dt;
   const foot=tb(Math.floor((p.x+p.w/2)/T),Math.floor((p.y+p.h+1)/T));
@@ -3875,7 +4025,7 @@ function racerStep(p,inp,dt){
     if(tv===6){p.vy=-520;p.onG=false;p.coy=0;beep(220,.25,'square',.05,700);}}
   if(Math.abs(p.vx)>5&&p.onG)p.anim+=dt;
   // in the race, a hazard sends you back to your last flag (no hearts lost)
-  const back=why=>{if(p.inv>0&&why!=='FELL!')return false;beep(p.vinnie?900:1400,.2,'sawtooth',.05,-900);
+  const back=why=>{if(p.inv>0&&why!=='FELL!')return false;if(godMode&&why!=='FELL!')return false;if(godMode){Object.assign(p,{x:p.rx,y:p.ry,vx:0,vy:0,inv:1,crouch:false,h:22,onG:true});return true;}beep(p.vinnie?900:1400,.2,'sawtooth',.05,-900);
     p.hp-=3;p.hurt=.45;
     if(p.hp<=0){p.hp=MAXHP;floatTxt(p.x+5,p.y-6,'OUT OF HEARTS! HEARTS REFILLED','#f55');} // always back to YOUR last flag, never the start
     else floatTxt(p.x+5,p.y-6,why+' -1','#f55');
@@ -3907,14 +4057,17 @@ function updRace(dt){
       if(on(RACE.p1)||on(RACE.p2))B.broken[i]=.2;else B.g[i]=3;}}}
   if(B.shots)updShots(dt);
   if(B.sensors)sideWorld(dt);
-  const i1={left:rawKeys.KeyA,right:rawKeys.KeyD,up:rawKeys.KeyW,down:rawKeys.KeyS,upP:rawPressed.KeyW,downP:rawPressed.KeyS,thr:rawPressed.KeyQ};
-  const i2={left:rawKeys.ArrowLeft,right:rawKeys.ArrowRight,up:rawKeys.ArrowUp,down:rawKeys.ArrowDown,upP:rawPressed.ArrowUp,downP:rawPressed.ArrowDown,thr:rawPressed.Enter||rawPressed.NumpadEnter};
+  const i1={left:rawKeys.KeyA,right:rawKeys.KeyD,up:rawKeys.KeyW,down:rawKeys.KeyS,upP:rawPressed.KeyW,downP:rawPressed.KeyS,thr:rawPressed.KeyQ,zap:rawPressed.KeyF};
+  const i2={left:rawKeys.ArrowLeft,right:rawKeys.ArrowRight,up:rawKeys.ArrowUp,down:rawKeys.ArrowDown,upP:rawPressed.ArrowUp,downP:rawPressed.ArrowDown,thr:rawPressed.Enter||rawPressed.NumpadEnter,zap:rawPressed.Slash||rawPressed.Period};
   const r1=racerStep(RACE.p1,i1,dt),r2=racerStep(RACE.p2,i2,dt);
   for(const t of RACE.toms){t.x+=t.vx*dt;t.life-=dt;
     if(SOL(tb(Math.floor(t.x/T),Math.floor(t.y/T)))){t.life=0;sfx.splat();continue;}
     const v=t.owner?RACE.p1:RACE.p2;
     if(v.inv<=0&&t.x>v.x&&t.x<v.x+v.w&&t.y>v.y&&t.y<v.y+v.h){t.life=0;v.slow=1.6;RSTATS.hits[t.owner]++;sfx.splat();floatTxt(v.x+5,v.y-6,'SPLAT! SLOWED','#f55');}}
   RACE.toms=RACE.toms.filter(t=>t.life>0);
+  for(const z of RACE.zaps||[]){z.x+=z.vx*dt;z.life-=dt;if(SOL(tb(Math.floor(z.x/T),Math.floor(z.y/T)))){z.life=0;continue;}
+    const v=z.owner?RACE.p1:RACE.p2;if(v.inv<=0&&z.x>v.x&&z.x<v.x+v.w&&z.y>v.y&&z.y<v.y+v.h){z.life=0;v.stunT=1.4;RSTATS.hits[z.owner]++;sfx.zap();floatTxt(v.x+5,v.y-6,'ZAPPED! STUNNED','#7ff');}}
+  if(RACE.zaps)RACE.zaps=RACE.zaps.filter(z=>z.life>0);
   if(r1==='win'||r2==='win'){RACE.winner=r1==='win'?'p1':'p2';RACE.winT=2.5;sfx.win();}
 }
 // 2-player vault races: split TOP / BOTTOM (Vinae on top, Vinnie below), so each of you sees the full width ahead
@@ -3926,7 +4079,9 @@ function drawRace(){
     p.camLead=approach(p.camLead||0,40*(p.face||1),2);cam.x=clamp(p.x+5-VW/2+p.camLead,0,B.W*T-VW);const ty=clamp(p.y+11-86,0,B.H*T-RH);p.camY=p.camY===undefined||Math.abs(p.camY-ty)>120?ty:p.camY+(ty-p.camY)*.18;cam.y=Math.round(p.camY); // look a bit ahead of where you're running
     ctx.save();ctx.beginPath();ctx.rect(0,vy,VW,RH);ctx.clip();ctx.translate(0,vy);drawBank();
     for(const t of RACE.toms){const x=Math.round(t.x-cam.x),y=Math.round(t.y-cam.y);ctx.fillStyle='#c81e1e';ctx.fillRect(x-2,y-2,5,5);ctx.fillStyle='#ff6b5b';ctx.fillRect(x-1,y-1,2,2);ctx.fillStyle='#3a8a2a';ctx.fillRect(x,y-3,2,1);}
-    if(p.slow>0)txt('SLOWED!',VW/2,30,'#ff6b6b','center');
+    for(const z of RACE.zaps||[]){const x=Math.round(z.x-cam.x),y=Math.round(z.y-cam.y);ctx.fillStyle='rgba(120,255,255,.45)';ctx.fillRect(x-5,y-3,10,6);ctx.fillStyle='#fff';ctx.fillRect(x-2,y-1,5,2);}
+    if(p.stunT>0)txt('STUNNED!',VW/2,30,'#7ff','center');else if(p.slow>0)txt('SLOWED!',VW/2,30,'#ff6b6b','center');
+    if(p.zaps>0)txt('ZAP x'+p.zaps,VW-34,2,'#7ff','right',6);
     if(p.hurt>0){ctx.fillStyle=`rgba(255,0,0,${p.hurt*.6})`;ctx.fillRect(0,0,VW,RH);}
     // this player's own bar: name, hearts, how far along they are
     const me=p===RACE.p1,col=me?'#ffffff':'#c8a070',label=me?'VINAE':'VINNIE',hx=4+label.length*8+4,bx=hx+MAXL*8+6,bw=VW-bx-30,f=clamp(p.x/goal,0,1),of=clamp(o.x/goal,0,1);
@@ -4152,10 +4307,10 @@ function drawMap(){
   const bl=Math.floor(gameT*4)%2;
   if(state==='city'){
     const jail=isJail();
-    txt(jail?(isIsland()?'ISLAND MAP':'JAIL MAP'):isGallery()?'MUSEUM MAP':isRoof()?'ROOFTOP MAP':'CITY MAP',8,4,'#ffd400');txt('[M] CLOSE',VW-8,4,'#889','right');
+    txt(jail?(isIsland()?'ISLAND MAP':'JAIL MAP'):isGallery()?'MUSEUM MAP':isRoof()?'ROOFTOP MAP':C.suburb?'NEIGHBORHOOD MAP':'CITY MAP',8,4,'#ffd400');txt('[M] CLOSE',VW-8,4,'#889','right');
     const s=Math.min((VW-16)/CW,(VH-40)/CH),ox=Math.floor((VW-CW*s)/2),oy=16;
     const mr=(x,y,w,h)=>{const x0=Math.floor(ox+x*s),y0=Math.floor(oy+y*s);ctx.fillRect(x0,y0,Math.max(1,Math.floor(ox+(x+w)*s)-x0),Math.max(1,Math.floor(oy+(y+h)*s)-y0));};
-    const COL={[TR]:'#3a3a48',[TS]:'#6a6a74',[TB]:'#26304a',[TA]:'#5a3a1a',[TD]:'#3f3',[TK]:isIsland()?'#1a4a7a':'#b8941a',[TKD]:isIsland()?'#a06a30':'#ffd400'};
+    const COL={[TR]:'#3a3a48',[TS]:'#6a6a74',[TB]:'#26304a',[TA]:C.suburb?'#1f4a26':'#5a3a1a',[TD]:'#3f3',[TK]:isIsland()?'#1a4a7a':'#b8941a',[TKD]:isIsland()?'#a06a30':'#ffd400'};
     for(let y=0;y<CH;y++)for(let x=0;x<CW;x++){ctx.fillStyle=COL[C.g[y*CW+x]];mr(x,y,1,1);}
     for(const k of picks)if(!k.got&&k.type!=='key'){ctx.fillStyle=k.type==='bag'?'#ffd400':'#7dff7d';mr(k.x,k.y,1,1);}
     if(!C.door&&!jail)txt('$',ox+(BK0X+3)*s,oy+(BK0Y+1)*s,'#000');
@@ -4168,7 +4323,7 @@ function drawMap(){
     if(C.boxes)for(const b of C.boxes){ctx.fillStyle=b.cut?'#555':bl?'#ffd400':'#fff';mr(b.x-.5,b.y-.5,2,2);}
     if(C.helis)for(const h of C.helis){ctx.fillStyle='#fff6a0';mr(h.x/T-1,h.y/T-1,2,2);}
     if(isGallery()||isRoof()){if(C.trader){ctx.fillStyle=bl?(C.trader.drone?'#9fd3ff':'#c9a0ff'):'#fff';mr(C.trader.tx-.5,C.trader.ty-.5,2,2);}for(const cm of C.cams){ctx.fillStyle='#aab';mr(cm.tx,cm.ty,1,1);}}
-    else if(!jail){ctx.fillStyle=bl?'#ff5fb4':'#fff';mr(truck.x/T-.5,truck.y/T-.5,2.5,2.5);}
+    else if(!jail){ctx.fillStyle=bl?'#ff5fb4':'#fff';if(C.trader&&C.trader.corner)mr(C.trader.tx-1,C.trader.ty-2,3,3);else mr(truck.x/T-.5,truck.y/T-.5,2.5,2.5);}
     else{ctx.fillStyle='#ff7a1a';mr(C.cell[0]-.5,C.cell[1]-.5,2,2);if(C.trader){ctx.fillStyle=bl?(C.trader.machine?'#ff6b6b':C.trader.store?'#ff8cc8':'#ffb070'):'#fff';mr(C.trader.tx-.5,C.trader.ty-.5,2,2);}
       for(const k of picks)if(k.type==='uniform'&&!k.got){ctx.fillStyle='#c0c5cf';mr(k.x,k.y,1,1);}
       if(C.gulls)for(const gl of C.gulls)if(gl.state==='sit'){ctx.fillStyle='#fff';mr(gl.x/T-.5,gl.y/T-.5,1,1);}
@@ -4183,7 +4338,7 @@ function drawMap(){
                   :jail?[['#fff','YOU'],['#f33','GUARD'],['#5ff','WARDEN'],['#3f3','HIDE'],['#ff8cc8','STORE'],['#ffd400','EXIT']]
                   :isRoof()?[['#fff','YOU'],['#f33','SWAT'],['#3f3','HIDE'],['#ffd400','POWER'],['#9fd3ff','DRONE'],['#d8d4c4','RESERVE']]
                   :isMuseum()?[['#fff','YOU'],['#f33','GUARD'],['#3f3','HIDE'],['#9fd3ff','PLANS'],['#b8941a','VAULT'],['#c9a0ff','DEALER']]
-                  :[['#fff','YOU'],['#f33','COP'],['#3f3','HIDE'],['#5ff','KEY'],['#ffd400','BANK'],['#ff5fb4','SHOP']];
+                  :C.suburb?[['#fff','YOU'],['#f33','COP'],['#3f3','PORCH'],['#5ff','VINNIE'],['#ffd400','STATION'],['#ff5fb4','SHOP']]:[['#fff','YOU'],['#f33','COP'],['#3f3','HIDE'],['#5ff','KEY'],['#ffd400','BANK'],['#ff5fb4','SHOP']];
     let lx0=6;for(const [c,l] of leg){ctx.fillStyle=c;ctx.fillRect(lx0,ly+1,5,5);txt(l,lx0+7,ly,'#ccd');lx0+=(jail||isMuseum()||isRoof()?10:13)+l.length*8;}
   }else{
     txt(B.kind==='museum'?'MUSEUM FLOOR PLAN':'BANK FLOOR PLAN',8,6,'#ffd400');txt('[M] CLOSE',VW-8,6,'#889','right');
@@ -4370,8 +4525,8 @@ const HELP={
   storm:{t:'NIGHT 4: THE STORM',l:[
     ['GOAL: CATCH VINNIE (FOLLOW THE',G],['ARROW) AND GRAB HIS LOCKER KEY.',G],['THEN WALK INTO THE STATION.',G],
     ['HE SPRINTS, THEN GETS TIRED',Y],['("PUFF"): THAT IS YOUR CHANCE!',Y],['',W],
-    ['THUNDER RUMBLES = LIGHTNING IN',R],['2 SECONDS. IN THE FLASH, COPS',R],['SEE YOU FROM FAR AWAY. HIDE ON',R],['A PORCH (GREEN DOOR)!',GR],
-    ['DARK BACKYARDS HIDE YOU TOO.',GR],['PINK TRUCK = SHOP.',W]]},
+    ['THUNDER = LIGHTNING IN 2 SEC.',R],['OUT IN THE OPEN: 75% CHANCE IT',R],['ZAPS YOU (-1 HEART)! COPS SEE FAR.',R],['ON A PORCH (GREEN DOOR) = SAFE!',GR],
+    ['DARK BACKYARDS HIDE YOU TOO.',GR],['HIT HIM: TOMATO SLOWS, ZAP FREEZES',W]]},
   station:{t:'THE TRAIN STATION',l:[
     ['GOAL: REACH LOCKER 13 (FAR',G],['RIGHT) AND TAKE THE MOONSTONE.',G],['',W],
     ['TRACKS: A BELL RINGS AND THE',R],['LIGHTS FLASH, THEN A TRAIN',R],['ROARS PAST. WAIT, OR STAND',R],['ON A LEDGE ABOVE THE TRACKS.',GR],
@@ -4410,7 +4565,7 @@ const HELP={
   race_courier:{t:'NIGHT 4 RACE: THE STORM',l:[
     ['A COURIER (ORANGE COAT) HAS THE',G],['LOCKER KEY. CATCH HIM, THEN',G],['REACH THE TRAIN STATION FIRST.',G],
     ['        VINAE      VINNIE',W],['MOVE    W A S D    ARROWS',W],['THROW   Q          ENTER',W],['WHISTLE E          R-SHIFT',W],
-    ['SNEAK BEHIND = STEAL THE KEY',Y],['LIGHTNING: COPS SEE FAR. HIDE!',R],['0 HEARTS = THE COURIER GETS IT',R]]},
+    ['SNEAK BEHIND = STEAL THE KEY',Y],['LIGHTNING ZAPS YOU! HIDE ON A PORCH',R],['0 HEARTS = THE COURIER GETS IT',R]]},
   race_pieces:{t:'NIGHT 3 RACE: THE MUSEUM',l:[
     ['3 PLANS BETWEEN YOU OPEN THE',G],['VAULT WING FOR BOTH. THEN RACE:',G],['FIRST ONE IN WINS!',G],
     ['        VINAE      VINNIE',W],['MOVE    W A S D    ARROWS',W],['THROW   Q          ENTER',W],['WHISTLE E          R-SHIFT',W],
@@ -4499,6 +4654,7 @@ function startNight(n){
     say(isIsland()?"NIGHT 5: ISLAND PRISON! DIG UP 4|BURIED BOAT PARTS, THEN THE DOCK":"NIGHT "+n+": LOCKED UP! PICKPOCKET|GUARDS. STEAL THE WARDEN'S KEY!",5);
   }
   addGoalGuards();addK9s();if(hardMode&&!twoP)addHardCops();maybeRare();
+  PW=null;if(isJail()&&!twoP)pickLocks();else if(C)C.locks=null;
   state='city';showHelp();
 }
 function update(dt){
@@ -4535,21 +4691,39 @@ function update(dt){
   for(const f of floaters)f.t-=dt*1.2;floaters=floaters.filter(f=>f.t>0);
   if(state==='city'&&C&&C.race)updGalRace(dt);else if(state==='city')updCity(dt);else if(state==='bank'&&B&&B.race)updRace(dt);else if(state==='bank')updBank(dt);else if(state==='lock')updLock(dt);else if(state==='boat')updBoat(dt);
 }
+// draw a screen designed for 320 pixels in the middle of a wider canvas; the sides get filled (no black bars)
+const BOXOX=()=>(VW-320)>>1;
+function boxed(fn,side){
+  if(VW===320){fn();return;}const ox=BOXOX(),sv=VW;ctx.save();ctx.translate(ox,0);VW=320;try{fn();}finally{VW=sv;ctx.restore();}
+  if(side){ctx.fillStyle=side;ctx.fillRect(0,0,ox,VH);ctx.fillRect(ox+320,0,VW-ox-320,VH);}
+}
+const NIGHT_BG='#07070f';
 function draw(){
-  if(state==='title'){drawTitle();if(helpOpen)drawHelp();if(showScores)drawScores();return;}
-  if(state==='story'){drawStory();return;}
-  if(state==='choose'){drawChoose();return;}
-  if(state==='menu'){drawMenu();if(helpOpen)drawHelp();return;}
-  if(state==='hideout'){drawHideout();return;}
-  if(state==='dailyres'){drawDailyRes();return;}
-  if(state==='badges'){drawBadges();return;}
-  if(state==='nightsel'){drawNightSel();return;}
-  if(state==='results'){drawResults();return;}
-  const racing=state==='city'&&C&&C.race?drawGalRace:state==='bank'&&B&&B.race?drawRace:state==='lock'&&LK&&LK.race?drawLock:state==='boat'&&BTS&&BTS.race?drawBoatRace:null;
-  if(racing){racing();if(showMap&&(state==='city'||state==='bank'))drawMap();if(paused)drawPause();if(trans){ctx.fillStyle=`rgba(0,0,0,${1-Math.abs(trans.t-.5)*2})`;ctx.fillRect(0,0,VW,VH);}if(helpOpen)drawHelp();return;}
-  if(state==='lock'&&LK)drawLock();else if(state==='boat'&&BTS)drawBoat();else if(B)drawBank();else if(C)drawCity();
+  if(state==='title'){boxed(()=>{drawTitle();if(helpOpen)drawHelp();if(showScores)drawScores();},NIGHT_BG);return;}
+  if(state==='story'){boxed(drawStory,NIGHT_BG);return;}
+  if(state==='choose'){boxed(drawChoose,NIGHT_BG);return;}
+  if(state==='menu'){boxed(()=>{drawMenu();if(helpOpen)drawHelp();},NIGHT_BG);return;}
+  if(state==='hideout'){boxed(drawHideout,'#120c08');return;}
+  if(state==='dailyres'){boxed(drawDailyRes,NIGHT_BG);return;}
+  if(state==='badges'){boxed(drawBadges,NIGHT_BG);return;}
+  if(state==='nightsel'){boxed(drawNightSel,NIGHT_BG);return;}
+  if(state==='results'){boxed(drawResults,NIGHT_BG);return;}
+  const racing=state==='city'&&C&&C.race?drawGalRace:state==='bank'&&B&&B.race?drawRace:state==='lock'&&LK&&LK.race?()=>boxed(drawLock,'#0a0c14'):state==='boat'&&BTS&&BTS.race?()=>boxed(drawBoatRace,'#0a2a2a'):null;
+  if(racing){racing();if(showMap&&(state==='city'||state==='bank'))boxed(drawMap,'rgb(0,0,12)');if(paused)boxed(drawPause,'rgba(0,0,0,.7)');if(trans){ctx.fillStyle=`rgba(0,0,0,${1-Math.abs(trans.t-.5)*2})`;ctx.fillRect(0,0,VW,VH);}if(helpOpen)boxed(drawHelp,'rgba(0,0,10,.92)');return;}
+  if(state==='lock'&&LK)boxed(drawLock,'#0a0c14');else if(state==='boat'&&BTS)boxed(drawBoat,'#0a2a2a');else if(B)drawBank();else if(C)drawCity();
   if(hurtFlash>0){ctx.fillStyle=`rgba(255,0,0,${hurtFlash*.6})`;ctx.fillRect(0,0,VW,VH);}
   drawHUD();
+  boxed(drawBanners);
+  if(PW&&state==='city')boxed(drawPW);
+  if(shopOpen)boxed(drawShop,'rgba(0,0,0,.6)');
+  if(showMap&&(state==='city'||state==='bank'))boxed(drawMap,'rgb(0,0,12)');
+  if(paused)boxed(drawPause,'rgba(0,0,0,.7)');
+  if(trans){ctx.fillStyle=`rgba(0,0,0,${1-Math.abs(trans.t-.5)*2})`;ctx.fillRect(0,0,VW,VH);}
+  if(state==='win')boxed(drawEnd,'rgba(0,0,0,.85)');
+  if(helpOpen)boxed(drawHelp,'rgba(0,0,10,.92)');
+  if(showScores)boxed(drawScores,'rgba(0,0,10,.95)');
+}
+function drawBanners(){
   if(banner&&banner.lost&&state==='city'){ // the cops took your keycard: impossible to miss
     const a=Math.min(1,banner.t*2,(3-banner.t)*6),y=Math.round(60-(1-a)*20);ctx.globalAlpha=a;
     ctx.fillStyle='rgba(30,4,4,.92)';ctx.fillRect(30,y,260,52);ctx.fillStyle='#ff3030';ctx.fillRect(30,y,260,2);ctx.fillRect(30,y+50,260,2);
@@ -4570,19 +4744,13 @@ function draw(){
     txt(banner.got>=4?'NOW GO TO THE DOCK!':'KEEP DIGGING...',VW/2,y+58,banner.got>=4?'#7dff7d':'#9fd3ff','center');
     ctx.globalAlpha=1;
   }
-  if(shopOpen)drawShop();
-  if(showMap&&(state==='city'||state==='bank'))drawMap();
-  if(paused)drawPause();
-  if(trans){ctx.fillStyle=`rgba(0,0,0,${1-Math.abs(trans.t-.5)*2})`;ctx.fillRect(0,0,VW,VH);}
-  if(state==='win')drawEnd();
-  if(helpOpen)drawHelp();
-  if(showScores)drawScores();
 }
 let last=performance.now();
 function frame(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
   let gdt=dt;if(slowT>0){slowT-=dt;gdt=dt*.35;}
-  update(gdt);draw();drawToasts(dt);musicTick();
+  update(gdt);draw();boxed(()=>drawToasts(dt));musicTick();
+  if(godMode&&!['title','menu','story','win','choose'].includes(state)){ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(VW/2-38,VH-11,76,10);txt('INVINCIBLE',VW/2,VH-10,Math.floor(gameT*3)%2?'#ffd400':'#ff5fb4','center',6);}
   {const mb=document.getElementById('muteBtn'),want=muted?'SOUND: OFF':!actx||actx.state!=='running'?'SOUND: CLICK TO START':'SOUND: ON';if(mb.textContent!==want)mb.textContent=want;}
   upd2pKeys();
   if(!scoresAllowed())showScores=false;
@@ -4592,18 +4760,18 @@ function frame(now){
   for(const k in rawPressed)delete rawPressed[k];
   requestAnimationFrame(frame);
 }
-// 2-player controls bar at the bottom middle, always visible during a race
+// 2-player controls box at the bottom middle: shown together with the help card (press H)
 let keysMode='';
 function upd2pKeys(){
-  const m=!twoP?'':state==='city'&&GRACE?'top':state==='bank'&&RACE?'vault':state==='lock'&&LK&&LK.race?'lock':state==='boat'&&BTS&&BTS.race?'boat':'';
+  const m=!twoP||!helpOpen?'':state==='city'&&GRACE?'top':state==='bank'&&RACE?'vault':state==='lock'&&LK&&LK.race?'lock':state==='boat'&&BTS&&BTS.race?'boat':'';
   if(m===keysMode)return;keysMode=m;const kb=document.getElementById('keys2p');
-  const rows={top:[['MOVE','WASD','ARROWS'],['THROW TOMATO','Q','ENTER'],['WHISTLE COP','E','RIGHT SHIFT'],['SHOP: BUY / LEAVE','Q / E','ENTER / SHIFT'],['MAP','M','M']],
-    vault:[['MOVE / JUMP','A D / W','\u2190 \u2192 / \u2191'],['CROUCH','S','\u2193'],['THROW TOMATO','Q','ENTER'],['MAP','M','M']],
+  const rows={top:[['MOVE','WASD','ARROWS'],['THROW TOMATO','Q','ENTER'],['ZAP (BUY AT SHOP)','F','/'],['WHISTLE COP','E','RIGHT SHIFT'],['SHOP: BUY / LEAVE','Q / E','ENTER / SHIFT'],['MAP','M','M']],
+    vault:[['MOVE / JUMP','A D / W','\u2190 \u2192 / \u2191'],['CROUCH','S','\u2193'],['THROW TOMATO','Q','ENTER'],['ZAP (IF YOU HAVE ONE)','F','/'],['MAP','M','M']],
     lock:[['JUMP','W','\u2191']],boat:[['STEER','A D','\u2190 \u2192'],['SPEED UP','W','\u2191']]}[m];
   if(rows){const td='padding:1px 8px;text-align:center';
     kb.innerHTML='<table style="border-collapse:collapse"><tr><td style="'+td+'"></td><td style="'+td+';color:#fff">VINAE</td><td style="'+td+';color:#c8a070">VINNIE</td></tr>'+
       rows.map(r=>'<tr><td style="'+td+';color:#ffd400;text-align:right">'+r[0]+'</td><td style="'+td+'">'+r[1]+'</td><td style="'+td+'">'+r[2]+'</td></tr>').join('')+'</table>';}
-  kb.style.display=rows?'':'none';fit();
+  kb.style.display=rows?'':'none';
 }
 // scores can only be viewed on the title screen and the final screen, never while playing
 const scoresAllowed=()=>state==='title'||state==='win';
@@ -4648,6 +4816,7 @@ document.getElementById('helpBtn').onclick=e=>{initAudio();if(helpOpen)helpOpen=
     ['GIVE $5000',()=>{cash+=5000;}],
     ['GIVE KEY / PLANS / PARTS',()=>{hasKey=true;if(C&&C.pieces)for(const k of C.pieces)k.got=true;if(C&&C.mounds){for(const m of C.mounds)m.dug=true;if(C.parts)for(const pt of C.parts)pt.got=true;}if(C&&C.boxes)for(const b of C.boxes)b.cut=true;if(cops)for(const c of cops)c.hasKeyCard=false;if(C&&C.runner&&!(GRACE&&C.race))C.runner.hasKey=false;
       if(GRACE&&C&&C.race){const p=GRACE.pl[0];while(p.pieces<GRACE.need){p.got.push({kind:'none',k:{}});p.pieces++;}}}],
+    ['INVINCIBLE: ON / OFF',()=>{godMode=!godMode;toast(godMode?'INVINCIBLE: ON':'INVINCIBLE: OFF',godMode?'NOTHING CAN HURT YOU':'BACK TO NORMAL');}],
     ['FULL HEARTS',()=>{hp=MAXHP;if(GRACE)for(const p of GRACE.pl)p.hp=MAXHP;}],
     ['UNLOCK ALL NIGHTS (SELECT)',()=>{try{localStorage.setItem('nh_unlocked','6');}catch(e){}}],
     ['TITLE SCREEN',()=>{resetRun();state='title';}]
