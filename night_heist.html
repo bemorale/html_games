@@ -42,7 +42,7 @@ function fit(){
   const kh=0; // (the 2-player controls box only shows over the help card, so it takes no room)
   // the game is always 224 pixels tall; on a wide window it gets wider (up to 640) instead of leaving black bars
   const nw=Math.max(320,Math.min(640,2*Math.round(VH*innerWidth/Math.max(1,innerHeight-kh)/2)));
-  if(nw!==VW){VW=nw;cv.width=VW;cv.height=VH;lc.width=VW;lc.height=VH;if(typeof viewW!=='undefined')viewW=VW;}
+  if(nw!==VW){VW=nw;cv.width=VW;cv.height=VH;lc.width=VW;lc.height=VH;try{viewW=VW;}catch(e){}} // (viewW doesn't exist yet on the very first call)
   let s=Math.min(innerWidth/VW,(innerHeight-kh)/VH);
   if(s>=2)s=Math.floor(s);
   wrap.style.width=cv.style.width=Math.floor(VW*s)+'px';
