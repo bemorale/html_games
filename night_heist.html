@@ -465,14 +465,63 @@ const UPGRADES=[
 ];
 // after everything is bought: GOLD TROPHIES, forever (+2% money each, a bit pricier every time)
 const TROPHY={k:'trophy',name:'GOLD TROPHY',get cost(){return Array(upLvl('trophy')+1).fill(0).map((_,i)=>20000+Math.round(50000*Math.pow(1.35,i)/1000)*1000);},desc:l=>'#'+(l+1)+': +2% MONEY FOREVER',endless:true};
-// ===== EVERY UPGRADE HAS A CATCH ("BUT: ..."), and the catch grows with its level.
-// [kind of catch, how much per level]. All the catches of one kind add up (each kind has a limit)
-const TRADEOFF={heart:['slow',0.04],shoes:['loud',0.25],battery:['slow',0.02],kit:['pay',0.03],gloves:['sight',.5],vest:['slow',0.06],plates:['slow',0.02],charm:['cash',0.05],combo:['xp',0.05],hands:['drain',0.1],pockets:['pay',0.04],tomatobag:['slow',0.02],soapbar:['price',0.03],cocobag:['slow',0.02],magnet:['drain',0.1],turbo:['loud',0.25],lockpick:['xp',0.05],hull:['price',0.03],solar:['cash',0.04],safecracker:['sight',.5],hustle:['pay',0.04],learner:['cash',0.04],heart2:['slow',0.05],cardpack:['price',0.04],treats:['copspd',0.03],uniform:['price',0.04],energy:['drain',0.12],aim:['fire',0.1],stealth:['pay',0.06],coupon:['xp',0.06],engine:['cash',0.03],interest:['xp',0.06],heart3:['slow',0.06],nestegg:['cash',0.05],springs:['loud',0.2],hardhat:['slow',0.03],coolhead:['copspd',0.04],clover:['price',0.05],sticky:['loud',0.2],firstaid:['pay',0.05],stunt:['price',0.04],stopwatch:['xp',0.05],widebeam:['drain',0.12],softsoles:['slow',0.03],luckycoin:['cash',0.05],bounty:['copspd',0.04],getaway:['sight',.5],trophy:['xp',.01]};
-const TR_MAX={slow:.35,price:1,sight:3,pay:.5,xp:.5,copspd:.3,drain:2,cash:.4,loud:1.5,fire:1};
-function tradeoff(kind){if(twoP)return 0;let t=0;for(const k in TRADEOFF){const [kk,a]=TRADEOFF[k];if(kk===kind)t+=a*upLvl(k);}return Math.min(TR_MAX[kind],t);}
-function catchText(k,l){const d=TRADEOFF[k];if(!d)return '';const [kind,a]=d,v=a*l,pc=Math.round(v*100);
+// ===== EVERY UPGRADE HAS A CATCH ("BUT: ..."): each LEVEL has its own catch, and it fits what the upgrade does
+// (Wide Beam: level 1 drains the battery, level 2 lures police...). [kind, how much] per level. Catches of one kind add up (with a limit).
+// Running slower is only for heavy things (armor) and the sugar crash after Energy Bars.
+const TRADEOFF={
+  heart:[['chase',1]],heart2:[['shoot',.08]],heart3:[['copspd',.04]],vest:[['slow',.05]],
+  shoes:[['sight',.5],['copspd',.03],['chase',1]],
+  battery:[['price',.03],['beam',2],['fire',.1],['beam',2],['fire',.1]],
+  kit:[['pay',.03],['shoot',.06],['radio',2],['shoot',.06]],
+  gloves:[['chase',1],['sight',.5],['radio',2],['copspd',.03],['sight',.5]],
+  plates:[['slow',.02],['loud',.25],['shoot',.06],['loud',.25],['slow',.02]],
+  charm:[['xp',.04],['price',.03],['cash',.03],['cash',.03]],
+  combo:[['loud',.2],['chase',1],['loud',.2],['sight',.5],['chase',1]],
+  hands:[['loud',.2],['gspd',.05],['loud',.2],['gspd',.05]],
+  pockets:[['sight',.5],['chase',1],['pay',.04],['copspd',.03]],
+  tomatobag:[['chase',1],['radio',2],['shoot',.05],['chase',1],['radio',2]],
+  soapbar:[['chase',1],['loud',.2],['price',.03],['chase',1],['loud',.2]],
+  cocobag:[['shoot',.05],['radio',2],['chase',1],['shoot',.05],['radio',2]],
+  magnet:[['drain',.1],['sight',.5],['drain',.1],['loud',.2]],
+  turbo:[['loud',.3],['sight',.5],['loud',.3]],
+  lockpick:[['gspd',.05],['sensor',.1],['gspd',.05],['sensor',.1]],
+  hull:[['price',.03],['pay',.03],['price',.03],['pay',.03],['price',.03]],
+  solar:[['drain',.1],['drain',.1],['beam',2],['drain',.1]],
+  safecracker:[['laser',.05],['sensor',.08],['gspd',.05],['laser',.05],['sensor',.08],['gspd',.05]],
+  hustle:[['gspd',.05],['sensor',.08],['gspd',.05],['sensor',.08],['gspd',.05]],
+  learner:[['cash',.03],['price',.03],['cash',.03],['price',.03],['cash',.03]],
+  cardpack:[['chase',1],['radio',2],['chase',1],['radio',2]],
+  treats:[['dog',1],['copspd',.03],['dog',1],['copspd',.03],['dog',1]],
+  uniform:[['sight',.5],['radio',2],['sight',.5],['radio',2],['sight',.5]],
+  energy:[['slow',.02],['loud',.2],['xp',.03],['loud',.2],['slow',.02]],
+  aim:[['fire',.1],['shoot',.05],['fire',.1],['shoot',.05],['fire',.1]],
+  stealth:[['chase',1],['radio',2],['copspd',.04]],
+  coupon:[['pay',.03],['xp',.03],['pay',.03],['xp',.03]],
+  engine:[['sight',.5],['copspd',.03],['sight',.5],['copspd',.03],['sight',.5]],
+  interest:[['price',.03],['xp',.03],['price',.03],['xp',.03],['price',.03]],
+  nestegg:[['cash',.03],['price',.03],['cash',.03],['price',.03],['cash',.03]],
+  springs:[['loud',.3],['gspd',.05],['loud',.3]],
+  hardhat:[['laser',.05],['gspd',.05],['laser',.05],['gspd',.05]],
+  coolhead:[['copspd',.04],['shoot',.05],['copspd',.04],['radio',2]],
+  clover:[['shoot',.06],['price',.03],['shoot',.06],['price',.03],['shoot',.06]],
+  sticky:[['sensor',.08],['laser',.05],['sensor',.08]],
+  firstaid:[['chase',1],['shoot',.05],['copspd',.04]],
+  stunt:[['laser',.05],['shoot',.05],['laser',.05],['shoot',.05]],
+  stopwatch:[['laser',.06],['gspd',.05],['laser',.06]],
+  widebeam:[['drain',.12],['beam',3],['drain',.12],['beam',3]],
+  softsoles:[['sight',.5],['sensor',.08],['sight',.5],['sensor',.08]],
+  luckycoin:[['cash',.03],['price',.03],['cash',.03],['price',.03],['cash',.03]],
+  bounty:[['radio',2],['chase',1],['shoot',.05],['radio',2],['chase',1]],
+  getaway:[['sight',.5],['copspd',.03],['sight',.5],['copspd',.03],['sight',.5]],
+  trophy:[['xp',.01]]};
+const TR_MAX={slow:.2,price:1,sight:3,pay:.5,xp:.5,copspd:.3,drain:2,cash:.4,loud:1.5,fire:1,beam:10,chase:5,radio:10,shoot:.45,dog:3,gspd:.3,sensor:.5,laser:.3};
+const trList=k=>TRADEOFF[k]||[],trAt=(k,l)=>{const a=trList(k);return a[Math.min(l,a.length)-1];}; // the catch of level l (the trophy repeats its one)
+function tradeoff(kind){if(twoP)return 0;let t=0;for(const k in TRADEOFF){const l=upLvl(k);for(let i=1;i<=l;i++){const c=trAt(k,i);if(c&&c[0]===kind)t+=c[1];}}return Math.min(TR_MAX[kind],t);}
+function catchText(k,l){const c=l>0&&trAt(k,l);if(!c)return '';const [kind,a]=c,pc=Math.round(a*100),n=Math.round(a);
   return 'BUT: '+({slow:'YOU RUN '+pc+'% SLOWER',price:'SHOPS COST '+pc+'% MORE',sight:'POLICE SPOT YOU FROM FARTHER',pay:'STASH PAY '+pc+'% LESS',xp:pc+'% LESS THIEF XP',
-    copspd:'POLICE RUN '+pc+'% FASTER',drain:'FLASHLIGHT DRAINS '+pc+'% FASTER',cash:pc+'% LESS LOOT',loud:'SQUEAKY FLOORS '+pc+'% LOUDER',fire:'STUN GUN RELOADS '+pc+'% SLOWER'})[kind];}
+    copspd:'POLICE RUN '+pc+'% FASTER',drain:'FLASHLIGHT DRAINS '+pc+'% FASTER',cash:pc+'% LESS LOOT',loud:'SQUEAKY FLOORS '+pc+'% LOUDER',fire:'STUN GUN RELOADS '+pc+'% SLOWER',
+    beam:'YOUR LIGHT LURES POLICE FROM FARTHER',chase:'POLICE CHASE YOU '+n+' SEC LONGER',radio:'POLICE RADIO FOR HELP FROM FARTHER',shoot:'POLICE SHOOT '+pc+'% MORE OFTEN',
+    dog:'DOGS SMELL YOU FROM FARTHER',gspd:'VAULT GUARDS WALK '+pc+'% FASTER',sensor:'SENSORS STAY RED '+pc+'% LONGER',laser:'VAULT LASERS MOVE '+pc+'% FASTER'})[kind];}
 const HSLOTS=5;
 function shownUps(){const a=UPGRADES.filter(u=>upLvl(u.k)<u.cost.length).map((u,i)=>[u,u.cost[upLvl(u.k)],i]).sort((x,y)=>x[1]-y[1]||x[2]-y[2]).slice(0,HSLOTS).map(x=>x[0]); // the 5 cheapest next upgrades: a mix of different kinds, not one thing over and overif(a.length<HSLOTS)a.push(TROPHY); // one trophy slot, then your maxed upgrades
   const done=UPGRADES.filter(u=>upLvl(u.k)>=u.cost.length).reverse();while(a.length<HSLOTS&&done.length)a.push(done.shift());return a;}
@@ -745,7 +794,7 @@ function buildSide(sd){
     alarms:{},drones:[],sensors,cases,guards,squeak,slots,trains,crack:new Float32Array(W*H),broken:new Float32Array(W*H)};
 }
 // sensor state: 0 green, 1 warning (yellow), 2 red
-function sensorState(s){const m=(bankT+s.phase)%s.period,red=s.on,warnT=.6;return m<red?2:m>s.period-warnT?1:0;}
+function sensorState(s){const m=(bankT+s.phase)%s.period,red=Math.min(s.on*(1+tradeoff('sensor')),Math.max(s.on,s.period-1.2)),warnT=.6;return m<red?2:m>s.period-warnT?1:0;}
 const SLOT_SYM=['7','*','$','#','@','%'],SLOT_SPIN=3.6,SLOT_GRACE=.12; // symbols per second; a 7 that JUST rolled past still counts
 // the CROWN TOWER's ROYAL SEAL: same reels as the slot machine, but royal treasures. The CROWN takes the place of the 7
 function royalIcon(v,x,y){const F=(a,b,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(x+a,y+b,w,h);}; // 26x30 cell
@@ -778,10 +827,11 @@ function trainState(tr){const m=(bankT+tr.phase)%tr.period;return m<tr.on?2:m>tr
 function sideWorld(dt){
   B.sqCD=(B.sqCD||0)-dt;
   for(const g of B.guards){
-    g.alert-=dt;
+    g.alert-=dt;g.mining=(g.mining||0)-dt;
+    if(B.skin==='miner'&&g.alert<=0&&!(g.wait>0)&&!g.turn){g.mineCD=(g.mineCD??2+Math.random()*4)-dt;if(g.mineCD<=0){g.wait=g.mining=2;g.mineCD=4+Math.random()*4;}} // MINERS stop now and then to dig for a while
     if(g.wait>0)g.wait-=dt;
     else if(g.turn){g.turn=false;g.dir=-g.dir;g.wait=.4;} // looked around: NOW turn back
-    else{g.x+=g.dir*(g.alert>0?85:g.speed)*(impossibleMode?1.3:1)*dt;if(g.x<g.x0||g.x>g.x1){g.x=clamp(g.x,g.x0,g.x1);g.wait=1.6;g.turn=true;}} // reach the end: pause looking ahead, then turn
+    else{g.x+=g.dir*(g.alert>0?85:g.speed)*(impossibleMode?1.3:1)*(1+tradeoff('gspd'))*dt;if(g.x<g.x0||g.x>g.x1){g.x=clamp(g.x,g.x0,g.x1);g.wait=1.6;g.turn=true;}} // reach the end: pause looking ahead, then turn
   }
   for(const sl of B.slots){
     if(godMode&&!sl.open&&BP&&Math.abs(BP.x+5-(sl.gx*T+8))<56){sl.open=true;for(let y=1;y<=12;y++)B.g[y*B.W+sl.gx]=0;sfx.win();floatTxt(sl.gx*T+8,7*T,'INVINCIBLE: GATE OPEN','#ff7ad9');continue;} // INVINCIBLE cheat: the 777 gate opens by itself
@@ -816,7 +866,7 @@ function sideHit(p,dt,die,down,loot){
     const inBand=p.y+p.h>13*T-40,touching=Math.abs(p.x+5-gx)<9&&inBand&&(Math.sign(p.x+5-gx)===g.dir||g.alert>0);
     const inLight=inBand&&(lit(p.x)||lit(p.x+p.w));if(inLight)litNow=true;
     if(inLight&&!touching&&p.inv<=0&&(p.spotT||0)<(impossibleMode?.15:.35)){if(!(p.spotT>0))floatTxt(g.x+6,13*T-36,'!','#ff6b6b');continue;} // just spotted: a split second to get out of the light
-    if(p.inv<=0&&(touching||inLight)){p.spotT=0;g.alert=0;g.wait=1.2;if(die(B.elves?'AN ELF CAUGHT YOU!':B.pirates?'A PIRATE CAUGHT YOU!':B.divers?'A DIVER CAUGHT YOU!':({chef:'THE BAKER CAUGHT YOU!',keeper:'A ZOOKEEPER CAUGHT YOU!',mummy:'A MUMMY CAUGHT YOU!',robot:'A ROBOT CAUGHT YOU!',hench:'A HENCHMAN CAUGHT YOU!',royal:'A ROYAL GUARD CAUGHT YOU!'})[B.skin]||'A GUARD SPOTTED YOU!'))return true;}
+    if(p.inv<=0&&(touching||inLight)){p.spotT=0;g.alert=0;g.wait=1.2;if(die(B.elves?'AN ELF CAUGHT YOU!':B.pirates?'A PIRATE CAUGHT YOU!':B.divers?'A DIVER CAUGHT YOU!':({chef:'THE BAKER CAUGHT YOU!',keeper:'A ZOOKEEPER CAUGHT YOU!',mummy:'A MUMMY CAUGHT YOU!',robot:'A ROBOT CAUGHT YOU!',hench:'A HENCHMAN CAUGHT YOU!',royal:'A ROYAL GUARD CAUGHT YOU!',miner:'A MINER CAUGHT YOU!'})[B.skin]||'A GUARD SPOTTED YOU!'))return true;}
   }
   p.spotT=litNow?(p.spotT||0)+dt:0;
   // trains: anything on the floor of the crossing when one roars through. The platforms above are safe
@@ -837,15 +887,12 @@ function updSide(p,dt){
 function drawSide(cx,cy){
   for(const k in B.squeak){const i=+k,x=(i%B.W)*T-cx,y=((i/B.W)|0)*T-cy;if(x<-16||x>VW)continue;ctx.fillStyle='#5a3a1e';ctx.fillRect(x,y,T,4);ctx.fillStyle='#3a2410';ctx.fillRect(x+5,y,1,4);ctx.fillRect(x+11,y,1,4);}
   for(const s of B.sensors){const x0=s.x0-cx,x1=s.x1-cx;if(x1<-10||x0>VW+10)continue;const st=sensorState(s),col=st===2?'255,40,40':st===1?'255,210,0':'60,255,120';
-    // easy to see on ANY wall (even the red mansion and the purple tower): darken the zone first, then color it, mark its edges and the floor
-    const top=T-cy,hh=12*T,fl=13*T-cy;
-    ctx.fillStyle=`rgba(0,0,0,${st===2?.3:.18})`;ctx.fillRect(x0,top,x1-x0,hh);ctx.fillStyle=`rgba(${col},${st===2?.2:.08})`;ctx.fillRect(x0,top,x1-x0,hh);
-    for(const ex of [x0,x1-2]){ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(ex-1,top,4,hh);ctx.fillStyle=`rgba(${col},${st===2?1:.75})`;ctx.fillRect(ex,top,2,hh);} // bright edge lines
-    for(let x=x0+8;x<x1;x+=32){
-      if(st===2){const fk=.75+.25*Math.sin(gameT*40+x);ctx.fillStyle=`rgba(255,40,40,${(.35*fk).toFixed(2)})`;ctx.fillRect(x-3,top+8,6,fl-top-8);ctx.fillStyle=`rgba(255,200,200,${fk.toFixed(2)})`;ctx.fillRect(x-1,top+8,2,fl-top-8);} // RED: a real laser beam to the floor
-      else for(let y=top+10;y<fl;y+=8){ctx.fillStyle=`rgba(${col},.45)`;ctx.fillRect(x-1,y,2,4);} // green/yellow: a thin dashed beam
-      ctx.fillStyle='#111';ctx.fillRect(x-5,top,10,7);ctx.fillStyle='#3a3f48';ctx.fillRect(x-4,top,8,5);ctx.fillStyle=`rgb(${col})`;ctx.fillRect(x-2,top+5,4,3);}
-    ctx.fillStyle='#000';ctx.fillRect(x0,fl-4,x1-x0,4);ctx.fillStyle=`rgb(${col})`;ctx.fillRect(x0,fl-3,x1-x0,2); // a bright strip on the floor
+    // a glow over the zone that ADDS light, so it shows up brightly on any wall (even the red mansion and the purple tower)
+    const top=T-cy,hh=12*T;ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle=`rgba(${col},${st===2?.4:.15})`;ctx.fillRect(x0,top,x1-x0,hh);
+    for(let x=x0+8;x<x1;x+=32){const gr=ctx.createRadialGradient(x,top+7,1,x,top+7,14);gr.addColorStop(0,`rgba(${col},.9)`);gr.addColorStop(1,`rgba(${col},0)`);ctx.fillStyle=gr;ctx.fillRect(x-14,top-7,28,28);} // a halo around each lamp
+    ctx.globalCompositeOperation='source-over';
+    for(let x=x0+8;x<x1;x+=32){ctx.fillStyle='#3a3f48';ctx.fillRect(x-4,top,8,5);ctx.fillStyle=`rgb(${col})`;ctx.fillRect(x-2,top+5,4,3);ctx.fillStyle='#fff';ctx.fillRect(x-1,top+5,2,1);}
     if(st===2&&Math.floor(gameT*6)%2)txt('FREEZE!',(x0+x1)/2,Math.max(2*T-cy,16),'#ff6b6b','center');}
   for(const c of B.cases){if(c.got)continue;const x=c.tx*T-cx,y=c.ty*T-cy;if(x<-20||x>VW+20)continue;
     ctx.fillStyle='#5a4a3a';ctx.fillRect(x+1,y+10,14,6);ctx.fillStyle='rgba(170,220,255,.45)';ctx.fillRect(x+2,y,12,10);ctx.fillStyle='#e8f8ff';ctx.fillRect(x+2,y,12,1);
@@ -921,6 +968,14 @@ function drawSide(cx,cy){
       R(2,8,9,8,'#8a8f99');R(4,10,5,4,'#3a3f48');R(5,11,1,1,'#55ffff');R(7,11,1,1,'#7dff7d');R(3,16,3,6,'#6b7079');R(7,16,3,6,'#6b7079');R(10,10,4,2,'#c0c5cf');}
     else if(B.skin==='hench'){ // a volcano-lair HENCHMAN: orange jumpsuit, helmet with a visor
       R(2,0,9,3,'#3a3a3a');R(2,3,9,2,'#55ffff');R(3,5,7,3,'#e0ac69');R(2,8,9,8,'#ff6a1a');R(2,11,9,1,'#3a3a3a');R(5,9,3,2,'#ffd400');R(3,16,3,6,'#c84a0a');R(7,16,3,6,'#c84a0a');R(10,10,4,2,'#888');}
+    else if(B.skin==='miner'){ // a MINER (the diamond mine): yellow hard hat with a headlamp, overalls. Holds a flashlight; now and then stops to swing a pickaxe
+      R(2,-1,9,3,'#ffd400');R(1,2,11,1,'#d4a017');R(10,0,2,2,'#fff8a0');R(3,3,7,5,'#e0ac69');R(7,4,2,1,'#000');R(3,7,7,1,'#6b4423');
+      R(2,8,9,8,'#c84a1a');R(3,10,7,6,'#2a52b5');R(3,8,1,2,'#2a52b5');R(9,8,1,2,'#2a52b5');R(5,11,3,1,'#ffd400');
+      R(3,16,3,6,'#2a52b5');R(7,16,3,6,'#2a52b5');R(2,20,4,2,'#5a3a1a');R(7,20,4,2,'#5a3a1a');
+      if(g.mining>0&&g.alert<=0){const up=Math.floor(gameT*5)%2;R(15,17,7,5,'#6a5a4a');R(17,18,2,2,'#55ffff'); // a rock with a diamond in it
+        if(up){R(10,3,2,9,'#8a5a2a');R(7,2,8,2,'#9aa0aa');}else{R(11,10,7,2,'#8a5a2a');R(17,8,2,8,'#9aa0aa');R(19,15,1,1,'#ffd400');R(21,13,1,1,'#fff');R(16,14,1,1,'#ffd400');} // the pickaxe swings
+        if(!up&&Math.floor(gameT*2.5)%2===0)txt('CLINK!',x+6+g.dir*14,y-10,'#9fd3ff','center',6);}
+      else{R(10,10,5,3,'#555');R(14,10,1,3,'#fff8a0');}} // holding a flashlight
     else if(B.skin==='royal'){ // a ROYAL GUARD (the Crown Tower): tall black bearskin hat, red coat with gold buttons + epaulettes, white belt + gloves, a gold lantern
       R(2,-8,9,11,'#111');R(3,-7,2,8,'#2a2a2a');R(2,2,9,1,'#d4a017');R(3,3,7,5,'#e0ac69');R(7,4,2,1,'#000');R(3,7,7,1,'#d4a017');
       R(2,8,9,8,'#c81e1e');R(0,8,3,2,'#ffd400');R(10,8,3,2,'#ffd400');for(let k=0;k<3;k++)R(6,9+k*2,1,1,'#ffd400');R(2,13,9,1,'#f4f4f4');
@@ -1133,7 +1188,7 @@ const MORE_SIDES=[
  ['CLOCK TOWER',4,'THE GOLDEN POCKET WATCH',15000,['#14100a','#5a4a2a','#4a3a24','#a8946a','#d4a017'],'tech',{fx:'planks'},['PENDULUM BEAMS','CLOCK WATCHER','CREAKY GEAR FLOOR','TWO WATCHERS','THE BELL ROOM'],{n:'THE CLOCKMAKER',coat:'#4a3a24',hat:'#2a2014',beard:'#ccc',kind:'goggles'},[['A TINY GEAR','A NEW SPRING','FIXES CLOCKS ALL DAY'],[2,3,'TICK-TOCK HEADACHE, TIRED HANDS'],[0,1,'HIS HANDS SWING UP AND DOWN']],['watch','#d4a017','#f4f0e0']],
  ['TV STATION',4,'THE GOLDEN CAMERA',14600,['#0e0e18','#3a3a4a','#2a2a36','#5a5a6a','#ff3030'],'tech',{fx:'neon'},['STUDIO LIGHTS','STAGEHAND','SQUEAKY STAGE','TWO STAGEHANDS','THE CONTROL ROOM'],{n:'THE NEWS ANCHOR',coat:'#1a2a5a',hat:'#3a2a1a'},[['A BIG SCOOP','A GOLD MICROPHONE','WANTS A NEWS STORY'],[0,2,'SITS ALL DAY, BRIGHT-LIGHT HEAD'],[2,3,'CAMERAS TURN LEFT AND RIGHT']],['camera','#d4a017','#c81e1e']],
  ['OPERA HOUSE',5,'THE CRYSTAL CHANDELIER',17200,['#2a0a14','#d4a017','#8a1a2a','#e8dcc0','#ffd84a'],'portrait',{},['STAGE SPOTLIGHTS','USHER','CREAKY BALCONY','TWO USHERS','THE ROYAL BOX'],{n:'THE OPERA SINGER',coat:'#8a1a4a',hat:'#d4a017',kind:'crown'},[['A RED ROSE','A GOLD MICROPHONE','LOVES ROSES AND APPLAUSE'],[1,2,'BIG BELLY SINGER, LOUD HEAD'],[2,3,'SPOTLIGHT SWEEPS LEFT TO RIGHT']],['chandelier','#d4a017','#bcf0ff']],
- ['DIAMOND MINE',5,'THE GIANT DIAMOND',17600,['#120e0a','#5a4a3a','#4a3a2a','#6a5a4a','#55ffff'],'gems',{fx:'ore'},['DYNAMITE SENSORS','MINER','RATTLY MINE TRACKS','TWO MINERS','THE DIAMOND CAVE'],{n:'THE MINE BOSS',coat:'#5a4a3a',hat:'#ffd400',beard:'#6b4423'},[['A NEW PICKAXE','A HEADLAMP','DIGS FOR DIAMONDS'],[3,0,'DIGGING ARMS, ROCKY LEGS'],[2,3,'HEADLAMP LOOKS LEFT AND RIGHT']],['bigdiamond','#bcf0ff','#55d0ff']],
+ ['DIAMOND MINE',5,'THE GIANT DIAMOND',17600,['#120e0a','#5a4a3a','#4a3a2a','#6a5a4a','#55ffff'],'gems',{fx:'ore',skin:'miner'},['DYNAMITE SENSORS','MINER','RATTLY MINE TRACKS','TWO MINERS','THE DIAMOND CAVE'],{n:'THE MINE BOSS',coat:'#5a4a3a',hat:'#ffd400',beard:'#6b4423'},[['A NEW PICKAXE','A HEADLAMP','DIGS FOR DIAMONDS'],[3,0,'DIGGING ARMS, ROCKY LEGS'],[2,3,'HEADLAMP LOOKS LEFT AND RIGHT']],['bigdiamond','#bcf0ff','#55d0ff']],
  ['SCIENCE LAB',5,'THE GLOWING POTION',17900,['#0a1a14','#c0c5cf','#d8dce4','#e8f0ec','#7dff7d'],'tech',{fx:'bubbles'},['LASER BEAKERS','LAB ASSISTANT','SQUEAKY LAB FLOOR','TWO ASSISTANTS','THE SECRET LAB'],{n:'THE MAD SCIENTIST',coat:'#f4f4f4',hat:'#888',beard:'#ddd',kind:'goggles'},[['A RARE CHEMICAL','A NEW MICROSCOPE','LOVES EXPERIMENTS'],[2,1,'BUBBLY HEAD, SKIPPED LUNCH'],[0,1,'GOGGLES SEE UP AND DOWN']],['potion','#7dff7d','#d8f0ff']],
  ['AIRPORT HANGAR',5,'THE GOLDEN PROPELLER',17400,['#10141a','#5a6370','#3a3f48','#8a95a3','#ffd400'],'tech',{},['RUNWAY LIGHTS','MECHANIC','CLANKY HANGAR FLOOR','TWO MECHANICS','THE PRIVATE JET'],{n:'THE PILOT',coat:'#1a2a5a',hat:'#1a2a5a',kind:'goggles'},[['A PILOT BADGE','A NEW MAP','DREAMS OF FLYING'],[2,3,'JET-LAG HEAD, STIFF ARMS'],[0,1,'SCANS THE SKY UP AND DOWN']],['propeller','#d4a017','#5a6370']],
  ['DRAGON\'S LAIR',6,'THE DRAGON\'S RUBY',20800,['#1a0606','#4a1a10','#3a1a10','#6a2a1a','#ff6a1a'],'crown',{fx:'webs'},['FIRE BREATH BEAMS','DRAGON GUARD','CRUNCHY BONE FLOOR','TWO DRAGON GUARDS','THE HOARD'],{n:'THE DRAGON KEEPER',coat:'#5a5a66',hat:'#8a8f99',kind:'knight'},[['A PILE OF GOLD','A SHINY SHIELD','HOARDS SHINY TREASURE'],[1,0,'SOFT BELLY, SLOW LEGS'],[0,1,'WATCHES THE CAVE UP AND DOWN']],['ruby','#c81e1e','#ff8a8a']],
@@ -1215,6 +1270,7 @@ const hideoutOK=()=>!helpOpen&&!showScores&&!shopOpen&&!trans&&state!=='hideout'
 const sideBlock=()=>!HIDE.ret||HIDE.ret.state!=='story'||twoP?(HIDE.ret&&HIDE.ret.paused?'FINISH THIS NIGHT FIRST':'BETWEEN NIGHTS OF STORY MODE'):sideDoneNight===night?'ONE SIDE JOB PER NIGHT':'';
 function hideoutPick(i,dir){
   if(i===HSLOTS+3){openBackpack();return;}
+  if(i===HSLOTS+4){openBadges('hideout');return;}
   if(i===HSLOTS+1){ // side job row
     if(dir){sideSel=(sideSel+dir+SIDES.length)%SIDES.length;sfx.click();return;}
     const sd=SIDES[sideSel],why=sideBlock();if(why){sfx.deny();toast('NO SIDE JOB RIGHT NOW',why);return;}
@@ -1229,13 +1285,15 @@ function hideoutPick(i,dir){
   toast(u.endless?'GOLD TROPHY #'+(l+1)+'!':u.name+' '+'I'.repeat(l+1)+'!',nx&&nx!==u?'NEW UPGRADE: '+nx.name:'UPGRADE BOUGHT');if(upCount()>=25)badge('home');
 }
 function updHideout(){
-  const n=HSLOTS+3;
+  const n=HSLOTS+5; // (the last 2 = the BACKPACK and BADGES buttons; left/right switches between them)
+  if(HIDE.sel>=HSLOTS+3&&(pressed.left||pressed.right)){HIDE.sel=HIDE.sel===HSLOTS+3?HSLOTS+4:HSLOTS+3;sfx.click();}
   if(pressed.up){HIDE.sel=(HIDE.sel+n-1)%n;sfx.click();}if(pressed.down){HIDE.sel=(HIDE.sel+1)%n;sfx.click();}
   if((HIDE.sel===HSLOTS||HIDE.sel===HSLOTS+1)&&(pressed.left||pressed.right))hideoutPick(HIDE.sel,pressed.left?-1:1);
   if(rawPressed.KeyB){openBackpack();return;} // B = backpack
+  if(rawPressed.KeyG){openBadges('hideout');return;} // G = badges
   if(pressed.pause)hideoutPick(HSLOTS+2);else if(pressed.start||pressed.fire)hideoutPick(HIDE.sel);
 }
-const HIDE_BOX=[0,1,2,3,4,5,6,7].map(i=>[20,40+i*22,280,20]).concat([[100,211,120,12]]); // the last box = the BACKPACK button
+const HIDE_BOX=[0,1,2,3,4,5,6,7].map(i=>[20,40+i*22,280,20]).concat([[34,211,122,12],[164,211,122,12]]); // the last 2 boxes = the BACKPACK and BADGES buttons
 function drawHideout(){
   ctx.fillStyle='#120c08';ctx.fillRect(0,0,VW,VH);
   for(let x=0;x<VW;x+=32)for(let y=0;y<VH;y+=16){ctx.fillStyle=(x/32+y/16)%2?'#1a120c':'#160f0a';ctx.fillRect(x+((y/16)%2)*16,y,32,16);} // brick wall
@@ -1248,7 +1306,8 @@ function drawHideout(){
     txt((sel?'> ':'  ')+u.name+(u.endless&&l?' x'+l:''),x+4,y+2,sel?'#ffd400':'#fff');
     for(let k=0;k<max;k++){ctx.fillStyle=k<l?'#7dff7d':'#333348';ctx.fillRect(x+170+k*10,y+3,8,6);}
     txt(done?'MAXED':'$'+u.cost[l],x+w-4,y+2,done?'#7dff7d':afford?'#ffd400':'#ff6b6b','right');
-    const ct=catchText(u.k,done?l:l+1),showCatch=ct&&Math.floor(gameT/2)%2;
+    const ct=catchText(u.k,done?l:l+1);let showCatch=ct&&Math.floor(gameT/2)%2;
+    if(mouseBox===i){if(!HIDE.frz||HIDE.frz.i!==i)HIDE.frz={i,v:showCatch};showCatch=HIDE.frz.v;}else if(HIDE.frz&&HIDE.frz.i===i)HIDE.frz=null; // the mouse is on this row: it stops switching, so you can read it
     txt(showCatch?ct:done?'FULLY UPGRADED':u.desc(l),x+22,y+12,showCatch?'#ff6b6b':'#9fd3ff','left',6);});
   {const [x,y,w,h]=HIDE_BOX[5],sel=HIDE.sel===5,o=OUTFITS[save.outfit||0];
     ctx.fillStyle=sel?'#2a2a10':'rgba(20,20,42,.9)';ctx.fillRect(x,y,w,h);ctx.fillStyle=sel?'#ffd400':'#445';ctx.fillRect(x,y,w,1);ctx.fillRect(x,y+h-1,w,1);
@@ -1267,7 +1326,11 @@ function drawHideout(){
   {const [x,y,w,h]=HIDE_BOX[HSLOTS+3],sel=HIDE.sel===HSLOTS+3;ctx.fillStyle=sel?'#3a2a10':'#2a1a10';ctx.fillRect(x,y,w,h);ctx.fillStyle=sel?'#ffd400':'#8a6a3a';ctx.fillRect(x,y,w,1);ctx.fillRect(x,y+h-1,w,1);
     ctx.fillStyle='#8a5a2a';ctx.fillRect(x+6,y+3,8,7);ctx.fillStyle='#6a4020';ctx.fillRect(x+8,y+1,4,2);ctx.fillRect(x+6,y+6,8,1); // a little backpack icon
     txt((window.NH_APP?'':'[B] ')+'BACKPACK ('+SIDES.filter(sd=>sideCount(sd)>0).length+'/'+SIDES.length+')',x+w/2+6,y+3,sel?'#ffd400':'#fff','center',6);}
+  {const [x,y,w,h]=HIDE_BOX[HSLOTS+4],sel=HIDE.sel===HSLOTS+4;ctx.fillStyle=sel?'#3a2a10':'#2a1a10';ctx.fillRect(x,y,w,h);ctx.fillStyle=sel?'#ffd400':'#8a6a3a';ctx.fillRect(x,y,w,1);ctx.fillRect(x,y+h-1,w,1);
+    ctx.fillStyle='#ffd400';ctx.beginPath();ctx.arc(x+10,y+6,4,0,7);ctx.fill();ctx.fillStyle='#b8860b';ctx.fillRect(x+9,y+3,2,6); // a little gold badge icon
+    txt((window.NH_APP?'':'[G] ')+'BADGES ('+BADGES.filter(b=>save.badges[b[0]]).length+'/'+BADGES.length+')',x+w/2+6,y+3,sel?'#ffd400':'#fff','center',6);}
 }
+let mouseBox=-1; // which menu box the mouse is over (-1 = none)
 // ---- the BACKPACK: every side-job prize you've stolen, with its picture (the ones you still need are dark shapes)
 let bpSel=0;const PRIZE_PIC={};
 function prizePic(sd,dark){const key=sd.name+(dark?'#':'');if(PRIZE_PIC[key])return PRIZE_PIC[key];
@@ -1298,12 +1361,13 @@ function drawBackpack(){
   const [bx,by,bw,bh]=BP_BOX[SIDES.length];ctx.fillStyle='#2a1a10';ctx.fillRect(bx,by,bw,bh);ctx.fillStyle='#8a6a3a';ctx.fillRect(bx,by,bw,1);ctx.fillRect(bx,by+bh-1,bw,1);txt('< BACK',bx+bw/2,by+3,'#fff','center',6);
 }
 // ---- badges screen
-let badgeSel=0,badgeInfo=false;
+let badgeSel=0,badgeInfo=false,badgeRet='menu'; // (where BACK goes: the title menu or the hideout)
+function openBadges(from){badgeRet=from||'menu';badgeSel=0;badgeInfo=false;state='badges';sfx.click();}
 const BADGE_BOX=BADGES.map((b,i)=>[8+(i%2)*152,26+Math.floor(i/2)*14,150,14]).concat([[110,206,100,14]]); // the last box = BACK
-function badgePick(i){if(badgeInfo){badgeInfo=false;sfx.click();return;}if(i>=BADGES.length){state='menu';sfx.click();return;}badgeSel=i;badgeInfo=true;sfx.click();}
+function badgePick(i){if(badgeInfo){badgeInfo=false;sfx.click();return;}if(i>=BADGES.length){state=badgeRet;sfx.click();return;}badgeSel=i;badgeInfo=true;sfx.click();}
 function updBadges(){
   if(badgeInfo){if(pressed.pause||pressed.start||pressed.fire){badgeInfo=false;sfx.click();}return;}
-  if(pressed.pause){state='menu';sfx.click();return;}
+  if(pressed.pause||rawPressed.KeyG){state=badgeRet;sfx.click();return;}
   if(pressed.start||pressed.fire){badgeInfo=true;sfx.click();return;}
   if(pressed.down){badgeSel=Math.min(BADGES.length-1,badgeSel+2);sfx.click();}if(pressed.up){badgeSel=Math.max(0,badgeSel-2);sfx.click();}
   if(pressed.right&&badgeSel%2===0&&badgeSel+1<BADGES.length){badgeSel++;sfx.click();}if(pressed.left&&badgeSel%2){badgeSel--;sfx.click();}
@@ -2825,7 +2889,7 @@ function updCity(dt){
   // --- player
   let want=keys[lastDir]?lastDir:['up','down','left','right'].find(k=>keys[k]);
   if(PW){want=null;PW.bad=(PW.bad||0)-dt;if(hp<PW.hp0||P.tx!==PW.px||P.ty!==PW.py){PW=null;say('OUCH! YOU LOST YOUR PLACE.|TRY THE LOCK AGAIN',2);}}
-  const pSpeed=(74+14*speedLvl+10*upLvl('shoes')+8*upLvl('turbo')+(boostT>0?30:0))*(1-tradeoff('slow')); // (catch: slower)
+  const pSpeed=(86+14*speedLvl+10*upLvl('shoes')+8*upLvl('turbo')+(boostT>0?30:0))*(1-tradeoff('slow')); // (catch: slower)
   disguiseT-=dt;boostT-=dt;
   if(P.moving){
     if(want){const [wx,wy]=DV[want];
@@ -3010,7 +3074,7 @@ function updCity(dt){
     // guards: only inside their view cone (fooled by a uniform). dogs: sniff all around, short range
     if(c.dog&&dogTreatT>0){c.sees=false;continue;} // busy with a treat
     const nose=k9Nose(c,c.dist),looking=c.dog||nose||(!c.guard&&!c.cone)||facesTile(c,ptx,pty),fooled=c.guard&&disguiseT>0&&!nose;
-    c.sees=!(c.blind>0)&&!P.hidden&&looking&&!fooled&&c.dist<=(c.dog?3:c.k9?sightR+3:sightR)&&los(c.cx,c.cy,ptx,pty);
+    c.sees=!(c.blind>0)&&!P.hidden&&looking&&!fooled&&c.dist<=(c.dog?3+Math.round(tradeoff('dog')):c.k9?sightR+3:sightR)&&los(c.cx,c.cy,ptx,pty);
     if(c.k9&&c.sees&&!C.k9Tip&&!C.race){C.k9Tip=true;beep(320,.08,'square',.06,-120);beep(300,.1,'square',.06,-120,.14);say('WOOF! A K9 UNIT SAW YOU! IT IS FAST,|AND THE DOG SMELLS YOU UP CLOSE. HIDE!',3.5);}
     c.fresh=false;
     if(c.sees)copsSee=true;
@@ -3018,7 +3082,7 @@ function updCity(dt){
   // the flashlight beam attracts cops from far away, even around corners
   for(const c of cops){
     if(c.state==='investigate'){c.invT-=dt;if(c.invT<=0)c.state='patrol';}
-    if(flashOn&&!P.hidden&&c.state!=='chase'&&!(c.blind>0)&&c.dist<=(impossibleMode?30:18)){
+    if(flashOn&&!P.hidden&&c.state!=='chase'&&!(c.blind>0)&&c.dist<=(impossibleMode?30:18)+Math.round(tradeoff('beam'))){
       if(c.state!=='investigate')c.alert=0;
       c.state='investigate';c.inv=pGoal;c.invT=6;
     }
@@ -3026,9 +3090,9 @@ function updCity(dt){
   if(copsSee){
     lastSeenG=pGoal;
     // spotter radios nearby units; at most 5 cops chase at once
-    const team=cops.filter(c=>!(c.dog&&dogTreatT>0)&&(c.sees||c.state==='chase'||c.dist<=(impossibleMode?24:14))).sort((a,b)=>a.dist-b.dist).slice(0,impossibleMode?12:5);
+    const team=cops.filter(c=>!(c.dog&&dogTreatT>0)&&(c.sees||c.state==='chase'||c.dist<=(impossibleMode?24:14)+Math.round(tradeoff('radio')))).sort((a,b)=>a.dist-b.dist).slice(0,impossibleMode?12:5);
     let newAlarm=false;
-    for(const c of team){if(c.state!=='chase'){c.alert=1.2;newAlarm=true;}c.state='chase';c.lost=(impossibleMode?8:4)-.6*upLvl('coolhead');c.fresh=true;} // COOL HEAD: they give up sooner
+    for(const c of team){if(c.state!=='chase'){c.alert=1.2;newAlarm=true;}c.state='chase';c.lost=(impossibleMode?8:4)-.6*upLvl('coolhead')+tradeoff('chase');c.fresh=true;} // COOL HEAD: they give up sooner
     if(newAlarm)sfx.alarm();
   }
   for(const c of cops)if(c.state==='chase'&&!c.fresh){
@@ -3047,7 +3111,7 @@ function updCity(dt){
     if((!c.guard||c.swat||c.armed||c.k9||impossibleMode)&&!c.dog&&c.sees&&(c.cx===ptx||c.cy===pty)&&c.dist<=(impossibleMode?18:8)&&c.dist>0){
       c.shootT-=dt;
       if(c.shootT<=0){
-        c.shootT=(c.swat?1.1:1.8-.2*lvl)*(impossibleMode?.5:1);const vx=Math.sign(ptx-c.cx),vy=Math.sign(pty-c.cy);c.dx=vx;c.dy=vy;
+        c.shootT=(c.swat?1.1:1.8-.2*lvl)*(impossibleMode?.5:1)*(1-tradeoff('shoot'));const vx=Math.sign(ptx-c.cx),vy=Math.sign(pty-c.cy);c.dx=vx;c.dy=vy;
         bullets.push({x:c.x+8+vx*6,y:c.y+8+vy*6,vx:vx*(impossibleMode?240:155),vy:vy*(impossibleMode?240:155),life:impossibleMode?2.2:1.6,own:c});sfx.shoot();
       }
     }else c.shootT=Math.max(c.shootT,c.swat?.35:.8); // SWAT aim fast
@@ -3128,7 +3192,7 @@ function updCity(dt){
     const dark=pdark&&!flashOn;
     if(cm.cool<=0&&d<cm.range&&Math.abs(diff)<cm.half&&!P.hidden&&disguiseT<=0&&!dark&&(cm.noLos||los(cm.tx,cm.ty,ptx,pty))){
       cm.cool=4;sfx.alarm();say(cm.lighthouse?'THE LIGHTHOUSE BEAM FOUND YOU!|GUARDS ARE ON THEIR WAY':cm.tower?'A SEARCHLIGHT SPOTTED YOU!|GUARDS ARE ON THEIR WAY':'A CAMERA SPOTTED YOU!|GUARDS ARE ON THEIR WAY',2.5);
-      for(const c of cops)if(c.state!=='chase'&&!(c.blind>0)&&c.dist<=(impossibleMode?30:18)){c.state='investigate';c.inv=pGoal;c.invT=8;c.alert=1;}
+      for(const c of cops)if(c.state!=='chase'&&!(c.blind>0)&&c.dist<=(impossibleMode?30:18)+Math.round(tradeoff('beam'))){c.state='investigate';c.inv=pGoal;c.invT=8;c.alert=1;}
     }
   }
   for(const sp of splats)sp.t-=dt;splats=splats.filter(sp=>sp.t>0);
@@ -3468,7 +3532,7 @@ function drawCity(){
   }
   for(const c of cops){
     const x=c.x+8-cx,y=c.y+8-cy;if(x<-60||y<-60||x>VW+60||y>VH+60)continue;
-    if(!(c.blind>0)&&!c.dog)cone(lx,x,y,Math.atan2(c.dy,c.dx),c.k9?(copSight()+3)*T:c.guard||c.cone?copSight()*T:40,c.guard||c.cone?CONE_HALF:.45,.7);radial(lx,x,y,10,.5);
+    if(!(c.blind>0)&&!c.dog)cone(lx,x,y,Math.atan2(c.dy,c.dx),c.k9?(copSight()+3)*T:c.guard||c.cone?copSight()*T:40,c.guard||c.cone?CONE_HALF:.45,isMuseum()?.35:.7);radial(lx,x,y,10,isMuseum()?.25:.5); // (the museum has LOTS of police: their lights are dimmer there, so it doesn't get too bright)
   }
   if(keyPick&&!hasKey)radial(lx,keyPick.x*T+8-cx,keyPick.y*T+8-cy,40,.9);
   for(const k of picks)if(k.type==='rare'&&!k.got)radial(lx,k.x*T+8-cx,k.y*T+8-cy,24,.8);
@@ -3506,14 +3570,14 @@ function drawCity(){
   }
   if(truck.mode==='park'&&vis(truck))glow(truck.x+truck.w/2-cx,truck.y+truck.h/2-cy,30,'255,95,180',.3+.1*Math.sin(gameT*4));
   for(const c of cops){if(!c.k9||c.blind>0)continue;const x=c.x+8-cx,y=c.y+8-cy;if(x<-120||y<-120||x>VW+120||y>VH+120)continue;
-    const a=Math.atan2(c.dy,c.dx),ch=c.state==='chase';ctx.fillStyle=ch?'rgba(255,40,40,.16)':'rgba(255,150,60,.12)';
+    const a=Math.atan2(c.dy,c.dx),ch=c.state==='chase',dm=isMuseum()?.45:1;ctx.fillStyle=ch?`rgba(255,40,40,${.16*dm})`:`rgba(255,150,60,${.12*dm})`; // (dimmer in the crowded museum)
     ctx.beginPath();ctx.moveTo(x,y);ctx.arc(x,y,(copSight()+3)*T+8,a-CONE_HALF,a+CONE_HALF);ctx.closePath();ctx.fill();
     if(!(dogTreatT>0)){ctx.strokeStyle=ch?'rgba(255,60,60,.35)':'rgba(255,170,80,.3)';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.beginPath();ctx.arc(x,y,(K9_NOSE+.5)*T,0,7);ctx.stroke();ctx.setLineDash([]);}}
   if(isJail()||isGallery()||isRoof()){
     // guard view cones on the floor (red = chasing) and camera beams
     for(const c of cops){if(c.k9)continue;
       if(!(c.guard||c.cone)||c.blind>0)continue;const x=c.x+8-cx,y=c.y+8-cy;if(x<-80||y<-80||x>VW+80||y>VH+80)continue;
-      const a=Math.atan2(c.dy,c.dx);ctx.fillStyle=c.state==='chase'?'rgba(255,40,40,.16)':disguiseT>0?'rgba(120,255,120,.07)':'rgba(255,220,120,.11)';
+      const a=Math.atan2(c.dy,c.dx),dm=isMuseum()?.45:1;ctx.fillStyle=c.state==='chase'?`rgba(255,40,40,${.16*dm})`:disguiseT>0?`rgba(120,255,120,${.07*dm})`:`rgba(255,220,120,${.11*dm})`; // (dimmer in the crowded museum)
       ctx.beginPath();ctx.moveTo(x,y);ctx.arc(x,y,copSight()*T+8,a-CONE_HALF,a+CONE_HALF);ctx.closePath();ctx.fill();
     }
     for(const cm of C.cams){
@@ -4182,6 +4246,7 @@ function initBank(){
     else{MAXL=impossibleMode?2:3;MAXHP=MAXL*3;hp=Math.min(hp,MAXHP);}} // inside (bank, museum, station, side jobs): 3 hearts, even with extra hearts bought
   B.timer=isGauntlet()&&!sideMode?240+30*upLvl('stopwatch'):0;B.hats=twoP?0:upLvl('hardhat'); // STOPWATCH, HARD HAT
   B.hurt0=nightHurt;if(hardMode)for(const l of B.lasers)if(l.k==='m')l.speed*=impossibleMode?1.4:1.15;
+  {const lz=1+tradeoff('laser');if(lz>1)for(const l of B.lasers)if(l.k==='m')l.speed*=lz;} // a catch: vault lasers move faster
 }
 const tb=(tx,ty)=>(tx<0||tx>=B.W||ty<0)?1:ty>=B.H?0:B.g[ty*B.W+tx];
 const SOL=v=>v>=1&&v!==2; // floor/wall, glass, alarm floor, conveyor, spring (2 = one-way ledge)
@@ -4253,7 +4318,7 @@ function updBank(dt){
   else if(!wantC&&p.crouch&&canStand(p)){p.crouch=false;p.y-=8;p.h=22;}
   // run
   const ax=(keys.right?1:0)-(keys.left?1:0);
-  if(p.wallLock<=0){const max=(p.crouch?55:115+8*speedLvl+8*upLvl('shoes'))*(1-tradeoff('slow')),acc=p.onG?1400:800;p.vx=approach(p.vx,ax*max,acc*dt);if(ax)p.face=ax;}
+  if(p.wallLock<=0){const max=(p.crouch?62:130+8*speedLvl+8*upLvl('shoes'))*(1-tradeoff('slow')),acc=p.onG?1400:800;p.vx=approach(p.vx,ax*max,acc*dt);if(ax)p.face=ax;}
   // jump / wall jump
   if(pressed.up)p.jbuf=.13;else p.jbuf-=dt;
   if(p.onG)p.coy=.1;else p.coy-=dt;
@@ -4398,7 +4463,7 @@ function titlePick(i){sfx.click();
   else if(i===1)askDifficulty('STORY: WITH VINNIE',k=>newGame(true,k===1,k===2,k===3),true);
   else if(i===2){state='nightsel';nselSel=0;}
   else if(i===3)openHideout();
-  else if(i===4){state='badges';badgeSel=0;}
+  else if(i===4)openBadges('menu');
   else startDaily();
 }
 function updTitle(){
@@ -4434,7 +4499,7 @@ let storySel=0;const STORY_HIDE_BOX=[70,210,180,13];
 const storyHideBtn=()=>state==='story'&&story&&story.score&&!twoP&&hideoutOK();
 function menuBoxes(){if(state==='bank'&&B&&B.boss&&B.boss.ui)return B.boss.ui===1?BOSS_BOX1:BOSS_BOX2;return state==='story'?(storyHideBtn()?[STORY_HIDE_BOX]:null):state==='choose'?modeBox().slice(0,CHOICE.opts.length):state==='menu'?TITLE_BOX:state==='hideout'?HIDE_BOX:state==='nightsel'?NSEL_BOX:state==='badges'?(badgeInfo?[[0,0,320,224]]:BADGE_BOX):state==='backpack'?BP_BOX:state==='results'?[[90,186,140,20]]:null;}
 function menuPick(i){if(state==='bank'&&B&&B.boss&&B.boss.ui){bossPick(i);return;}if(state==='story'){storySel=0;openHideout();return;}if(state==='hideout'){HIDE.sel=i;hideoutPick(i);return;}if(state==='choose')pickMode(i);else if(state==='menu')titlePick(i);else if(state==='nightsel')nightPick(i);else if(state==='badges')badgePick(i);else if(state==='backpack')backpackPick(i);else if(state==='results')resultsDone();}
-function menuHover(i){if(state==='bank'&&B&&B.boss&&B.boss.ui)B.boss.sel=i;else if(state==='story')storySel=1;else if(state==='hideout')HIDE.sel=i;else if(state==='choose')modePick=i;else if(state==='menu')titleSel=i;else if(state==='nightsel')nselSel=i;else if(state==='badges'&&!badgeInfo&&i<BADGES.length)badgeSel=i;else if(state==='backpack'&&i<SIDES.length)bpSel=i;}
+function menuHover(i){if(state==='bank'&&B&&B.boss&&B.boss.ui)B.boss.sel=i;else if(state==='story'){}else if(state==='hideout')HIDE.sel=i;else if(state==='choose')modePick=i;else if(state==='menu')titleSel=i;else if(state==='nightsel')nselSel=i;else if(state==='badges'&&!badgeInfo&&i<BADGES.length)badgeSel=i;else if(state==='backpack'&&i<SIDES.length)bpSel=i;}
 const MODE_BOX2=[[34,70,252,52],[34,132,252,52]],MODE_BOX3=[[34,50,252,46],[34,98,252,46],[34,146,252,46]],MODE_BOX4=[[34,48,252,35],[34,86,252,35],[34,124,252,35],[34,162,252,35]];
 const modeBox=()=>!CHOICE?MODE_BOX2:CHOICE.opts.length>3?MODE_BOX4:CHOICE.opts.length>2?MODE_BOX3:MODE_BOX2;
 function drawChoose(){
@@ -4456,7 +4521,8 @@ function updChoose(){
 const boxAt=e=>{const L=menuBoxes();if(!L||helpOpen||showScores)return -1;const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*VW/r.width-BOXOX(),y=(e.clientY-r.top)*VH/r.height;
   return L.findIndex(([bx,by,bw,bh])=>x>=bx&&x<bx+bw&&y>=by&&y<by+bh);};
 cv.addEventListener('mousedown',e=>{if(window.NH_APP)return;if(state==='title'&&!helpOpen&&!showScores){initAudio();state='menu';titleSel=0;sfx.click();return;}const i=boxAt(e);if(i>=0){initAudio();menuPick(i);}});
-cv.addEventListener('mousemove',e=>{if(window.NH_APP)return;const i=boxAt(e);if(i>=0)menuHover(i);});
+cv.addEventListener('mousemove',e=>{if(window.NH_APP)return;const i=boxAt(e);mouseBox=i;if(i>=0)menuHover(i);});
+cv.addEventListener('mouseleave',()=>{mouseBox=-1;});
 // ---- part 1: race through the museum halls for the blueprint pieces (split screen, top-down)
 let GRACE=null,twoP=false,SEASON=[0,0],nselTwo=false;
 const DOORN={1:'BANK DOOR',2:'EXIT GATE',3:'VAULT WING',4:'STATION',5:'BOAT',6:'ROOF HATCH'};
@@ -4568,7 +4634,7 @@ function updGalRace(dt){
     const ready=grReady(pl);
     if(pl.moving){
       if(want){const [wx,wy]=DV[want];if(wx===-pl.dx&&wy===-pl.dy){const ox=pl.tx,oy=pl.ty;pl.tx=pl.ttx;pl.ty=pl.tty;pl.ttx=ox;pl.tty=oy;pl.dx=wx;pl.dy=wy;pl.dir=want;}}
-      if(stepMover(pl,74+(pl.boostT>0?30:0),dt)&&ct(pl.tx,pl.ty)===TKD){G.winner=i?'p2':'p1';G.winT=2;sfx.win();return;}
+      if(stepMover(pl,86+(pl.boostT>0?30:0),dt)&&ct(pl.tx,pl.ty)===TKD){G.winner=i?'p2':'p1';G.winT=2;sfx.win();return;}
     }
     if(!pl.moving&&want){
       const [dx,dy]=DV[want];pl.dir=want;pl.dx=dx;pl.dy=dy;const nx=pl.tx+dx,ny=pl.ty+dy,t=ct(nx,ny);
@@ -4928,7 +4994,7 @@ function racerStep(p,inp,dt){
   if(wantC&&!p.crouch){p.crouch=true;p.y+=8;p.h=14;}
   else if(!wantC&&p.crouch&&canStand(p)){p.crouch=false;p.y-=8;p.h=22;}
   const ax=(inp.right?1:0)-(inp.left?1:0);
-  if(p.wallLock<=0){const max=p.crouch?55:p.slow>0?60:115,acc=p.onG?1400:800;p.vx=approach(p.vx,ax*max,acc*dt);if(ax)p.face=ax;}
+  if(p.wallLock<=0){const max=p.crouch?62:p.slow>0?68:130,acc=p.onG?1400:800;p.vx=approach(p.vx,ax*max,acc*dt);if(ax)p.face=ax;}
   if(inp.upP)p.jbuf=.13;else p.jbuf-=dt;
   if(p.onG)p.coy=.1;else p.coy-=dt;
   if(p.jbuf>0){
@@ -5566,7 +5632,7 @@ function drawStory(){
     else if(sc.best)txt('BEST: LOST '+fmtH(sc.best.h)+'  $'+sc.best.m,VW/2,182,'#9fd3ff','center');}
   const hb=storyHideBtn();
   if(storyT>1&&(storySel===0||!hb)&&Math.floor(gameT*2)%2)txt(story.page<story.more.length?'PRESS ENTER (MORE...)':'PRESS ENTER',VW/2,hb?199:204,'#fff','center');
-  if(hb){const [x,y,w,h]=STORY_HIDE_BOX,sel=storySel===1;
+  if(hb){const [x,y,w,h]=STORY_HIDE_BOX,sel=storySel===1||mouseBox===0; // (lit up by the arrow keys, or while the mouse is on it)
     ctx.fillStyle=sel?'#3a2a10':'#1a1410';ctx.fillRect(x,y,w,h);ctx.fillStyle=sel?'#ffd400':'#ffb070';ctx.fillRect(x,y,w,1);ctx.fillRect(x,y+h-1,w,1);ctx.fillRect(x,y,1,h);ctx.fillRect(x+w-1,y,1,h);
     txt((sel?'> ':'')+'HIDEOUT  $'+(save.stash||0).toLocaleString('en-US'),VW/2,y+3,sel?'#ffd400':'#ffb070','center',(save.stash||0)>=1e6?6:8);
     if(!TOUCH_ON&&!sel&&storyT>1)txt('DOWN',x+w+4,y+4,'#556','left',6);}
