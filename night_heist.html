@@ -537,9 +537,9 @@ const BADGES=[
 // clicking a badge opens this: how to get it, step by step, and how far along you are
 const upCount=()=>Object.values(save.up||{}).reduce((a,b)=>a+(+b||0),0);
 const BADGE_HOW={
-  first:[['PLAY NIGHT 1 ON HARD, EXTREME OR','IMPOSSIBLE. FIND THE KEYCARD, THEN','ROB THE BIG BANK AND GET OUT.']],
+  first:[['PLAY NIGHT 1 ON HARD, EXTREME OR','IMPOSSIBLE. FIND THE KEYCARD HALVES,','ROB THE BIG BANK AND GET OUT.']],
   jail:[['PLAY NIGHT 2 ON HARD OR HARDER.','PICKPOCKET GUARDS, STEAL THE','WARDEN\'S KEY AND BREAK OUT.']],
-  moon:[['PLAY NIGHT 3 ON HARD OR HARDER.','FIND 3 BLUEPRINTS IN THE MUSEUM,','THEN STEAL THE MOONSTONE.']],
+  moon:[['PLAY NIGHT 3 ON HARD OR HARDER.','FIND 5 BLUEPRINTS IN THE MUSEUM,','THEN STEAL THE MOONSTONE.']],
   island:[['PLAY NIGHT 5 ON HARD OR HARDER.','DIG UP THE 4 BOAT PARTS AND','SAIL AWAY FROM THE ISLAND.']],
   story:[['BEAT ALL 6 STORY NIGHTS ON HARD,','EXTREME OR IMPOSSIBLE MODE.']],
   hard:[['BEAT ALL 6 STORY NIGHTS ON','EXTREME OR IMPOSSIBLE MODE.','ONLY THE BEST THIEVES DO THIS.']],
@@ -1033,14 +1033,80 @@ const BOSS_LOGIC={
 const BOSS_JUNK=['A SMELLY SOCK','A RUBBER DUCK','A ROCK','A BROCCOLI','A PAPER CLIP','A PINECONE','A USED TISSUE','A SPOON'];
 const BOSS_WIN={bribe:'TAKES IT AND WAVES YOU BY!',strike:'BONK! DOWN FOR THE COUNT!',sneak:'NEVER EVEN SAW YOU!'},BOSS_FAIL={bribe:"DIDN'T WANT THAT!",strike:'SHRUGS IT OFF!',sneak:'SPOTS YOU!'};
 const BOSS_HALF={bribe:'TAKES IT... BUT WANTS MORE!',strike:'STAGGERS... BUT GETS BACK UP!',sneak:'TURNS AROUND AND BLOCKS YOU!'}; // the boss must be beaten TWICE, a different way each time
-const BOSS_CATS=['bribe','strike','sneak'],BOSS_BOX1=[0,1,2].map(i=>[50,122+i*22,220,18]),BOSS_BOX2=[0,1,2,3].map(i=>[50,106+i*22,220,18]);
-function openBoss(){const b=B.boss,lg=BOSS_LOGIC[B.side.name];
-  const junk=BOSS_JUNK.slice().sort(()=>Math.random()-.5).slice(0,2),opts=[lg[0][0],lg[0][1],...junk].sort(()=>Math.random()-.5); // 2 good items + 2 junk, shuffled
-  b.opts=opts;b.ans={bribe:[opts.indexOf(lg[0][0]),opts.indexOf(lg[0][1])],strike:[lg[1][0],lg[1][1]],sneak:[lg[2][0],lg[2][1]]};b.clue={bribe:lg[0][2],strike:lg[1][2],sneak:lg[2][2]};b.ui=1;b.sel=Math.max(0,BOSS_CATS.findIndex(c=>!(b.used||[]).includes(c)));b.t=0;msgT=0;for(const k in keys)keys[k]=false;sfx.big();}
+const BOSS_CATS=['bribe','strike','sneak'],BOSS_BOX1=[0,1,2,3].map(i=>[50,112+i*21,220,18]),BOSS_BOX2=[0,1,2,3].map(i=>[50,106+i*22,220,18]);
+// ONE right answer per choice, with a tempting WRONG one next to it (only the clue tells them apart).
+// [right gift, decoy gift, bribe clue, strike (0 legs,1 belly,2 head,3 arms), strike clue, sneak (0 past left,1 past right,2 jump over,3 crawl under), sneak clue]
+// The clues are RIDDLES: they say what's going on, never the answer - you have to work it out (and you can still be wrong!).
+// Strike: what wore out / hurt his weak spot. Sneak: what he's watching (watching left = pass right, up = crawl under, down = jump over)
+const BOSS_ONE={
+ 'JEWELRY STORE':['A JEWELER LOUPE','A SPARKLY DIAMOND','SQUINTS AT EVERY STONE',0,'STOOD AT THE COUNTER ALL DAY',1,'HIS GOOD EYE IS THE LEFT ONE'],
+ "MAYOR'S MANSION":['A BIG BOX OF VOTES','A SHINY MEDAL','ELECTION DAY IS TOMORROW',1,'TOO MANY FANCY DINNERS',2,'READING HIS NOTES, CHIN DOWN'],
+ 'CASINO VAULT':['A LUCKY DICE','A STACK OF CASH','HAS LOST 9 GAMES IN A ROW',2,'THE ROULETTE MADE HIM DIZZY',3,'LOVES HIS CRYSTAL CEILING'],
+ 'ART GALLERY':['A NEW PAINTBRUSH','A FAMOUS PAINTING','WANTS TO MAKE ONE OF HIS OWN',3,'HUNG 50 FRAMES TODAY',0,'ADMIRES THE WALL TO HIS RIGHT'],
+ 'TOY FACTORY':['A NEW TOOLBOX','A NEW WIND-UP TOY','HALF HIS TOYS ARE BROKEN',0,'KNELT ON THE FLOOR ALL NIGHT',1,'HIS LEFT EAR HEARS EVERYTHING'],
+ 'DATA CENTER':['A COLD FAN','A SUPER-FAST CHIP','HIS SERVERS ARE SMOKING',1,'PIZZA BOXES AROUND HIS DESK',2,'TYPES WITHOUT LOOKING UP'],
+ 'CROWN TOWER':['A POLISHING CLOTH','A GOLDEN SHIELD','HIS ARMOR LOST ITS SHINE',0,'MARCHED 20 MILES TODAY',3,'SALUTES THE FLAGS ON HIGH'],
+ 'CANDY SHOP':['A TOOTHBRUSH','A CHOCOLATE BAR','SMILES WITH HIS MOUTH CLOSED',1,'TASTE-TESTED ALL THE FUDGE',0,'COUNTS JARS ON HIS RIGHT SIDE'],
+ 'DINOSAUR MUSEUM':['A SOFT BRUSH','A DINOSAUR BONE','HIS FOSSILS ARE CAKED IN DIRT',2,'A FOSSIL FELL ON HIM TODAY',3,'ADMIRES THE TALLEST SKELETON'],
+ 'AQUARIUM':['A NEW AIR TANK','A PAIR OF GOGGLES','CAN ONLY DIVE FOR A MINUTE',3,'SWAM A HUNDRED LAPS TODAY',1,'FEEDS THE SHARK TO HIS LEFT'],
+ 'SPORTS STADIUM':['A NEW WHISTLE','A GOLD MEDAL','THE PLAYERS CAN\'T HEAR HIM',1,'ATE SIX HOT DOGS AT HALFTIME',2,'DRAWING PLAYS IN THE DIRT'],
+ 'OBSERVATORY':['A NEW TELESCOPE LENS','A STAR MAP','EVERYTHING LOOKS BLURRY TO HIM',2,'UP ALL NIGHT, EVERY NIGHT',3,'WAITING FOR A COMET'],
+ 'HAUNTED HOTEL':['A LANTERN','A SPOOKY CANDLE','A COLD WIND HOWLS IN THE HALLS',0,'FLOATS, BUT HIS KNEES ACHE',0,'THE GHOST BELL RINGS ON HIS RIGHT'],
+ 'PIRATE MUSEUM':['A SHINY COMPASS','A TREASURE MAP','SAILED IN CIRCLES FOR A WEEK',0,'ONE OF HIS LEGS IS WOODEN',1,'HIS EYE PATCH IS ON THE RIGHT'],
+ "SANTA'S WORKSHOP":['A BAG OF CARROTS','COOKIES AND MILK','HIS REINDEER ARE GRUMBLING',2,'NO SLEEP SINCE NOVEMBER',3,'CHECKING THE SKY FOR SNOW'],
+ 'BAKERY':['A NEW OVEN MITT','A GOLDEN WHISK','BANDAGES ON BOTH HANDS',3,'KNEADED DOUGH ALL NIGHT',0,'THE OVEN TIMER IS ON HIS RIGHT'],
+ 'ICE CREAM PARLOR':['A WARM SWEATER','A BOX OF SPRINKLES','HIS TEETH ARE CHATTERING',1,'TRIED EVERY FLAVOR TODAY',2,'SCRAPING THE BOTTOM OF A TUB'],
+ 'ZOO':['A BIG UMBRELLA','A BUCKET OF FOOD','THE BIRDS FLY OVER HIM A LOT',0,'WALKED THE WHOLE ZOO TWICE',3,'TALKING TO THE GIRAFFES'],
+ 'MOVIE STUDIO':['A FRESH SCRIPT','A GOLDEN CAMERA','THE ACTORS FORGOT THEIR LINES',2,'THE SPOTLIGHT BLINDED HIM',1,'SHOUTS AT THE ACTORS ON HIS LEFT'],
+ 'MUSIC HALL':['NEW GUITAR STRINGS','A GOLDEN GUITAR PICK','HIS GUITAR MAKES NO SOUND',1,'HIS STOMACH GROWLS ON BEAT',3,'WAVES AT THE BALCONY'],
+ 'ANCIENT TOMB':['A TORCH','A GOLDEN SCARAB','TRIPS IN THE DARK HALLS',0,'HIS KNEES CREAK LIKE OLD DOORS',2,'SEARCHING THE SAND FOR GOLD'],
+ 'ROBOT FACTORY':['A CAN OF OIL','A BIG BATTERY','SQUEAKS WITH EVERY STEP',2,'A BOLT ON TOP IS LOOSE',0,'HIS RIGHT SENSOR GLOWS RED'],
+ 'VOLCANO LAB':['A FIRE EXTINGUISHER','A LAVA LAMP','THE LAB SMELLS OF SMOKE',1,'EATS SPICY FOOD ALL DAY',1,'THE LAVA POOL IS ON HIS LEFT'],
+ 'FLOWER SHOP':['A FLOWER POT','A BEAUTIFUL FLOWER','HIS FLOWERS LIE ON THE FLOOR',3,'PICKED ROSES WITH NO GLOVES',3,'WATERS THE HANGING BASKETS'],
+ 'PET STORE':['A LINT ROLLER','A BAG OF TREATS','HIS COAT IS COVERED IN FUR',2,'THE PARROT PICKS ON HIM',0,'THE PUPPIES ARE ON HIS RIGHT'],
+ 'BOOKSTORE':['READING GLASSES','A RARE BOOK','HOLDS BOOKS AT ARM\'S LENGTH',0,'CLIMBED THE LADDER ALL DAY',2,'NOSE ALWAYS IN A BOOK'],
+ 'PIZZA PARLOR':['A PIZZA BOX','A HOT PIZZA','DELIVERY ORDERS ARE PILING UP',1,'EATS THE BURNT ONES HIMSELF',1,'THE OVEN DOOR IS ON HIS LEFT'],
+ 'BEACH RESORT':['A BEACH UMBRELLA','SUNSCREEN','NOWHERE TO HIDE FROM THE SUN',0,'STOOD ON HOT SAND ALL DAY',3,'WATCHING KITES IN THE SKY'],
+ 'SKATE PARK':['KNEE PADS','NEW WHEELS','FALLS ON EVERY TRICK',2,'NEVER WEARS A HELMET',0,'THE BIG RAMP IS ON HIS RIGHT'],
+ 'FIRE STATION':['A NEW LADDER','A SHINY BELL','CAN\'T REACH THE TOP FLOOR',1,'WON THE CHILI CONTEST TODAY',3,'WATCHING SMOKE ON THE ROOF'],
+ 'CHOCOLATE FACTORY':['A GLASS OF MILK','A TRUFFLE BOX','HIS MOUTH IS DRY AS DUST',3,'STIRRED THE VATS ALL NIGHT',2,'MOPPING CHOCOLATE OFF THE FLOOR'],
+ 'CIRCUS':['A NEW BIG TOP','A RED NOSE','RAIN POURS ON THE AUDIENCE',0,'WALKED ON STILTS ALL SHOW',3,'WATCHING THE TRAPEZE ACT'],
+ 'GREENHOUSE':['A RAIN BARREL','MAGIC SEEDS','HIS PLANTS ARE DROOPING',2,'NO HAT IN THE HOT GLASS HOUSE',1,'PRUNING THE VINES ON HIS LEFT'],
+ 'COMIC SHOP':['A PLASTIC SLEEVE','A RARE COMIC','HIS BEST COMICS HAVE CREASES',1,'DRINKS SODA BY THE GALLON',0,'SORTING THE RACK ON HIS RIGHT'],
+ 'WAX MUSEUM':['A BIG FAN','A FANCY CANDLE','HIS STATUES ARE DRIPPING',0,'STANDS STILL ALL DAY, LIKE THEM',2,'SCRAPING WAX OFF THE FLOOR'],
+ 'RACE TRACK':['A FULL GAS CAN','RACING TIRES','HIS CAR STOPPED ON LAP ONE',3,'GRIPPED THE WHEEL FOR 500 LAPS',1,'THE PIT LANE IS ON HIS LEFT'],
+ 'LIGHTHOUSE':['A NEW BULB','A SHIP IN A BOTTLE','SHIPS CRASH ON HIS ROCKS',0,'CLIMBS 300 STAIRS A NIGHT',3,'ALWAYS CHECKING THE TOP'],
+ 'SKI LODGE':['WARM MITTENS','HOT COCOA','CAN\'T FEEL HIS FINGERS',1,'DRANK TEN MUGS OF COCOA',2,'WATCHES SKIERS FAR BELOW'],
+ 'VIDEO GAME STUDIO':['NEW BATTERIES','A RARE GAME','HIS CONTROLLER WON\'T TURN ON',2,'PLAYED FOR 40 HOURS STRAIGHT',0,'HIS MONITOR IS TO THE RIGHT'],
+ 'SUBMARINE BASE':['A SHINY COMPASS','A DEEP SEA MAP','THE SUB IS GOING IN CIRCLES',2,'THE CEILINGS HERE ARE LOW',3,'PRESSED TO THE PERISCOPE'],
+ 'MAGIC SHOP':['A WHITE RABBIT','A MAGIC WAND','PULLS NOTHING OUT OF HIS HAT',3,'SAWED A BOX IN HALF ALL DAY',1,'HIDES A CARD IN HIS LEFT HAND'],
+ 'CLOCK TOWER':['A NEW SPRING','A TINY GEAR','THE CLOCK STOPPED AT MIDNIGHT',0,'CLIMBS THE TOWER EVERY HOUR',3,'STARES AT THE CLOCK FACE ABOVE'],
+ 'TV STATION':['A BIG SCOOP','A GOLD MICROPHONE','THE SHOW STARTS IN 5 MINUTES',1,'THE DONUT BOX IS EMPTY',0,'CAMERA ONE IS ON HIS RIGHT'],
+ 'OPERA HOUSE':['A THROAT LOZENGE','A RED ROSE','CAN ONLY WHISPER TONIGHT',2,'HIT A NOTE SO HIGH IT HURT',1,'BOWS TO THE BOX ON THE LEFT'],
+ 'DIAMOND MINE':['A NEW HEADLAMP','A NEW PICKAXE','DIGS IN THE WRONG WALL A LOT',1,'ATE EVERYONE\'S LUNCH',2,'SIFTING THROUGH THE ROCKS'],
+ 'SCIENCE LAB':['SAFETY GOGGLES','A RARE CHEMICAL','HIS EYES ARE RED AND WATERY',0,'RAN FROM AN EXPLOSION TODAY',3,'HOLDS A FLASK TO THE LIGHT'],
+ 'AIRPORT HANGAR':['A FULL FUEL TANK','A NEW MAP','HIS PLANE WON\'T EVEN START',3,'HELD THE CONTROLS FOR 12 HOURS',3,'COUNTING PLANES OVERHEAD'],
+ "DRAGON'S LAIR":['A FIREPROOF CAPE','A PILE OF GOLD','HIS EYEBROWS ARE MISSING',1,'HIS ARMOR STOPS AT THE WAIST',0,'THE DRAGON SLEEPS TO HIS RIGHT'],
+ 'SPY HQ':['A DECODER RING','A SECRET CODE','HIS MESSAGES ARE ALL GIBBERISH',2,'CRACKED CODES ALL NIGHT',1,'HIS SPY CAM POINTS LEFT'],
+ 'BILLIONAIRE YACHT':['A LIFE JACKET','A GOLD WATCH','NEVER GOES IN THE DEEP END',0,'SEASICK, HIS KNEES WOBBLE',2,'COUNTING COINS ON THE DECK']};
+function openBoss(){const b=B.boss,o=BOSS_ONE[B.side.name];
+  if(!b.opts){const junk=BOSS_JUNK.slice().sort(()=>Math.random()-.5).slice(0,2),opts=[o[0],o[1],...junk].sort(()=>Math.random()-.5); // the right gift, the tempting decoy + 2 junk, shuffled
+    b.opts=opts;b.ans={bribe:[opts.indexOf(o[0])],strike:[o[3]],sneak:[o[5]]};b.clue={bribe:o[2],strike:o[4],sneak:o[6]};}
+  b.ui=1;b.sel=Math.max(0,BOSS_CATS.findIndex(c=>!(b.used||[]).includes(c)));b.t=0;msgT=0;for(const k in keys)keys[k]=false;sfx.big();}
+const CLUE_COST=100000,GAMBLE_WIN=450,GAMBLE_LOSE=500; // no clues = a GAMBLE: right +$450, wrong -$500 and -2 hearts. Clues cost $1000
+const bossCash=d=>{cash+=d;nightStolen+=d;}; // (the money in the top-left corner; it all goes to your stash at the end of the side job)
 function bossPick(i){const b=B.boss;
+  if(b.ui===1&&i===3&&!b.clued){ // BUY CLUES
+    if(cash<CLUE_COST){sfx.deny();say('NOT ENOUGH CASH!|CLUES COST $'+CLUE_COST+' (YOU HAVE $'+cash+')',2.5);return;}
+    bossCash(-CLUE_COST);b.clued=true;b.sel=0;sfx.coin();say('CLUES BOUGHT: -$'+CLUE_COST,2);return;}
   if(b.ui===1){if((b.used||[]).includes(BOSS_CATS[i])){sfx.deny();return;}b.cat=BOSS_CATS[i];b.ui=2;b.sel=0;b.t=0;sfx.click();return;}
-  b.ui=0;b.anim={cat:b.cat,opt:i,ok:[].concat(b.ans[b.cat]).includes(i),t:0,x0:BP.x,y0:13*T-22,hit:false};BP.vx=0;BP.vy=0;BP.face=1;BP.crouch=false;BP.h=22;BP.y=13*T-22;}
+  b.ui=0;b.anim={cat:b.cat,opt:i,ok:[].concat(b.ans[b.cat]).includes(i),gamble:!b.clued,t:0,x0:BP.x,y0:13*T-22,hit:false};BP.vx=0;BP.vy=0;BP.face=1;BP.crouch=false;BP.h=22;BP.y=13*T-22;}
 function bossResult(){const b=B.boss,a=b.anim,cat=a.cat,nm=b.def.n;b.anim=null;
+  if(a.gamble){ // the gamble pays off... or costs you (the cash in the top-left corner)
+    if(a.ok){bossCash(GAMBLE_WIN);floatTxt(BP.x+5,BP.y-20,'LUCKY GUESS! +$'+GAMBLE_WIN,'#7dff7d');}
+    else{bossCash(-Math.min(GAMBLE_LOSE,cash));
+      if(!godMode){loseHP(6);hurtFlash=.6;if(hp<=0){hp=MAXHP;const on=B.cps.filter(c=>c.on).sort((p,q)=>p.x-q.x),last=on.pop(),prev=on.pop();if(last)last.on=false;respawn=prev?{x:prev.x*T+3,y:13*T-22}:{x:B.start.x,y:B.start.y};}}
+      sfx.hurt();shake=.4;say(nm+' '+BOSS_FAIL[cat]+'|BAD GUESS: -$'+GAMBLE_LOSE+(godMode?' (INVINCIBLE: NO HEARTS LOST)':' AND -2 HEARTS!'),3.5);Object.assign(BP,{x:respawn.x,y:respawn.y,vx:0,vy:0,inv:1.6,crouch:false,h:22,onG:true});return;}}
   if(a.ok&&(b.hp||1)>1){b.hp--;(b.used=b.used||[]).push(cat);sfx.coin();say(nm+' '+BOSS_HALF[cat]+'|1 MORE TIME - USE A DIFFERENT WAY!',3.5);floatTxt(b.x+14,13*T-60,'1 MORE!','#ffd400');
     Object.assign(BP,{x:b.x-60,y:13*T-22,vx:0,vy:0,h:22,crouch:false,onG:true});return;}
   if(a.ok){b.done=true;b.goneT=a.cat==='strike'?.01:1.2;b.how=cat;sfx.win();say(nm+' '+BOSS_WIN[cat]+'|THE PRIZE IS YOURS!',3);floatTxt(b.x+14,13*T-60,cat==='strike'?'BONK!':cat==='bribe'?'DEAL!':'SHHH...','#7dff7d');
@@ -1084,7 +1150,7 @@ function drawBossFx(cx,cy){const b=B.boss,a=b&&b.anim;if(!a)return;const t=a.t,b
     const it=(b.opts||[])[a.opt]||'',ic=/COIN|CASH|DIAMOND|SCARAB|CHIP|BATTERY|PICK|RING|MEDAL/.test(it)?3:/COOKIE|GUMMY|FOOD|BROCCOLI|RECIPE|CARROT|CHOCOLATE|SPRINKLE/.test(it)?1:/SOCK|ROCK|DUCK|CLIP|PINECONE|TISSUE|SPOON/.test(it)?0:2;BRIBE_ICON(ic,Math.round(ix),Math.round(iy));}
   if(a.cat==='sneak'){if(!a.ok&&a.seen&&Math.floor(t*8)%2)txt('!',bx+14,F-74,'#ff6b6b','center',16);
     else if(a.ok&&t>.3)txt(a.opt===2?'WHOOSH...':'TIPTOE...',Math.round(BP.x)-cx+5,F-44,'#9fd3ff','center',6);}}
-function updBoss(){const b=B.boss,n=b.ui===1?3:4;b.t+=1/60;
+function updBoss(){const b=B.boss,n=b.ui===1?(b.clued?3:4):4;b.t+=1/60;
   if(pressed.up){b.sel=(b.sel+n-1)%n;sfx.click();}if(pressed.down){b.sel=(b.sel+1)%n;sfx.click();}
   for(let k=0;k<n;k++)if(rawPressed['Digit'+(k+1)]){bossPick(k);return;}
   if(pressed.pause){if(b.ui===2){b.ui=1;b.sel=Math.max(0,BOSS_CATS.findIndex(c=>!(b.used||[]).includes(c)));}else{b.ui=0;BP.x=b.x-60;}sfx.click();return;} // ESC: back (or step away)
@@ -1092,15 +1158,17 @@ function updBoss(){const b=B.boss,n=b.ui===1?3:4;b.t+=1/60;
 function drawBossUI(){const b=B.boss,d=b.def;
   ctx.fillStyle='#08081a';ctx.fillRect(30,14,260,200);ctx.fillStyle='#ff6b6b';ctx.fillRect(30,14,260,2);ctx.fillRect(30,212,260,2);
   txt(d.n+' BLOCKS THE WAY!',160,20,'#ff6b6b','center',d.n.length>14?6:8);
-  txt('CLUES: '+d.n+'...',40,36,'#ffd400','left',6);
-  BOSS_CATS.forEach((c,k)=>{txt(c.toUpperCase()+':',36,48+k*11,'#ffb070','left',6);txt(b.clue[c],84,48+k*11,'#9fd3ff','left',6);}); // BRIBE: / STRIKE: / SNEAK: + its clue
-  const used=k=>b.ui===1&&(b.used||[]).includes(BOSS_CATS[k]),L=b.ui===1?['1  BRIBE','2  STRIKE','3  SNEAK'].map((s,k)=>used(k)?s+'  (USED)':s):(b.cat==='bribe'?b.opts:BOSS_OPT[b.cat]).map((o,k)=>(k+1)+'  '+(b.cat==='bribe'?'GIVE ':b.cat==='strike'?'HIT ':'')+o),bx=b.ui===1?BOSS_BOX1:BOSS_BOX2;
+  if(b.clued){txt('CLUES: '+d.n+'...',40,36,'#ffd400','left',6);
+    BOSS_CATS.forEach((c,k)=>{txt(c.toUpperCase()+':',36,48+k*11,'#ffb070','left',6);txt(b.clue[c],84,48+k*11,'#9fd3ff','left',6);});} // BRIBE: / STRIKE: / SNEAK: + its clue
+  else{txt('NO CLUES! GUESS = A GAMBLE:',160,36,'#ffd400','center',6);txt('RIGHT = +$'+GAMBLE_WIN,160,48,'#7dff7d','center',6);
+    txt('WRONG = -$'+GAMBLE_LOSE+' AND -2 HEARTS',160,59,'#ff6b6b','center',6);txt('ONE RIGHT ANSWER EACH. YOUR CASH: $'+cash,160,70,'#9fd3ff','center',6);}
+  const used=k=>b.ui===1&&(b.used||[]).includes(BOSS_CATS[k]),L=b.ui===1?['1  BRIBE','2  STRIKE','3  SNEAK'].map((s,k)=>used(k)?s+'  (USED)':s).concat(b.clued?[]:['4  BUY CLUES ($'+CLUE_COST+')']):(b.cat==='bribe'?b.opts:BOSS_OPT[b.cat]).map((o,k)=>(k+1)+'  '+(b.cat==='bribe'?'GIVE ':b.cat==='strike'?'HIT ':'')+o),bx=b.ui===1?BOSS_BOX1:BOSS_BOX2;
   if(b.ui===2)txt(b.cat==='bribe'?'WHAT WILL YOU GIVE?':b.cat==='strike'?'WHERE WILL YOU STRIKE?':'WHICH WAY? (GO WHERE HE IS NOT LOOKING!)',160,92,'#fff','center',6);
   else{txt('BEAT HIM 2 TIMES, A DIFFERENT WAY EACH TIME',160,84,'#ffb070','center',6);txt('WHAT WILL YOU DO? ('+(b.hp||1)+(b.hp>1?' TIMES':' MORE TIME')+' TO GO)',160,104,'#fff','center',6);}
   const fs=L.some(s=>s.length>20)?6:8;
   L.forEach((s,k)=>{const [x,y,w,h]=bx[k],sel=b.sel===k;ctx.fillStyle=sel?'#3a2a10':'#14142a';ctx.fillRect(x,y,w,h);ctx.fillStyle=sel?'#ffd400':'#445';ctx.fillRect(x,y,w,1);ctx.fillRect(x,y+h-1,w,1);
-    txt(s,x+8,y+(fs===6?6:5),used(k)?'#556':sel?'#ffd400':'#fff','left',fs);});
-  txt(b.ui===2?'WRONG = BACK TO THE FLAG.  ESC = BACK':'ESC = STEP BACK',160,202,'#889','center',6);}
+    txt(s,x+8,y+(fs===6?6:5),used(k)?'#556':b.ui===1&&k===3?(cash>=CLUE_COST?(sel?'#ffd400':'#9fd3ff'):'#665'):sel?'#ffd400':'#fff','left',fs);});
+  txt(b.ui===2?(b.clued?'WRONG = BACK TO THE FLAG.  ESC = BACK':'GAMBLE! WRONG = -$'+GAMBLE_LOSE+', -2 HEARTS. ESC = BACK'):'ESC = STEP BACK',160,202,'#889','center',6);}
 // the boss in front of the prize (2x size). Each boss has its own look
 function drawBoss(cx,cy){const b=B.boss;if(!b||(b.done&&!(b.goneT>0)))return;const d=b.def,x=Math.round(b.x)-cx,y=13*T-54-cy;if(x<-40||x>VW+10)return;
   const fade=b.done?Math.max(0,b.goneT/1.2):1;ctx.globalAlpha=fade;
@@ -1255,7 +1323,7 @@ function startSide(i){
   C=null;state='bank';initBank();say(sideMode.name+': STEAL '+sideMode.prize+'|ALL THE PAY GOES TO YOUR STASH',4);showHelp();
 }
 function sideFinish(){
-  const sd=sideMode,pay=Math.round(sd.pay*(1+.25*upLvl('hustle')))+nightStolen;cash-=nightStolen;stolen-=nightStolen;sideMode=null;B=null; // the loot goes to the stash, not your pockets
+  const sd=sideMode,ns=Math.max(0,nightStolen),pay=Math.round(sd.pay*(1+.25*upLvl('hustle')))+ns;cash-=ns;stolen-=ns; // (money spent on clues / lost gambling stays spent)sideMode=null;B=null; // the loot goes to the stash, not your pockets
   save.sides=save.sides||{};save.sides[sd.name]=(save.sides[sd.name]||0)+1;sideSel=pickSide(SIDES.indexOf(sd));
   save.stash+=pay;writeSave();sfx.win();toast(sd.prize+' STOLEN!','+$'+pay+' TO YOUR STASH');stat('sides',1,10,'side');addXP(120);
   sideDoneNight=night;state='hideout';
@@ -1697,7 +1765,7 @@ function renderCity(){
 // doorways, make 3 dark storage rooms (blueprints) and a walled Moonstone Vault Wing near the middle.
 function genGallery(){
   for(let attempt=0;attempt<60;attempt++){
-    CW=92;CH=64;WW=CW*T;WH=CH*T;NBX=0;NBY=0;
+    CW=112;CH=80;WW=CW*T;WH=CH*T;NBX=0;NBY=0; // (bigger, for a longer night)
     const g=new Uint8Array(CW*CH).fill(TB),dark=new Uint8Array(CW*CH),leaves=[],splits=[];
     const split=(x,y,w,h)=>{
       const canV=w>=20,canH=h>=18;
@@ -1731,8 +1799,8 @@ function genGallery(){
     const [ddx,ddy]=pick(doorOpts);g[ddy*CW+ddx]=TKD;
     // exhibit rooms get a carpet ring and scattered statues/cases; 3 far-apart rooms are dark storage
     const others=leaves.filter(L=>L!==start&&L!==vault);
-    const store=[];for(const L of others.slice().sort(()=>Math.random()-.5)){if(store.length>=3)break;if(L.w>=8&&L.h>=7&&store.every(o=>Math.abs(o.x-L.x)+Math.abs(o.y-L.y)>=24))store.push(L);}
-    if(store.length<3)continue;
+    const store=[];for(const L of others.slice().sort(()=>Math.random()-.5)){if(store.length>=PLAN_N)break;if(L.w>=8&&L.h>=7&&store.every(o=>Math.abs(o.x-L.x)+Math.abs(o.y-L.y)>=20))store.push(L);}
+    if(store.length<PLAN_N)continue;
     const alleys=[],keys=[];
     for(const L of leaves){
       if(L===vault)continue;
@@ -1808,7 +1876,7 @@ function genGallery(){
   throw new Error('museum layout failed');
 }
 function genRoofs(){
-  setDims(9,7,4,3); // the Federal Reserve sits in the middle of downtown
+  setDims(11,9,5,4); // the Federal Reserve sits in the middle of downtown (11x9 blocks: bigger nights take longer)
   const R=genCity(false,1),g=R.g;
   for(let i=0;i<g.length;i++){const t=g[i];g[i]=(t===TR||t===TS)?TB:(t===TB||t===TK||t===TKD)?TS:t;}
   const blocks=[];for(let by=0;by<NBY;by++)for(let bx=0;bx<NBX;bx++)blocks.push([bx,by]);
@@ -1821,10 +1889,10 @@ function genRoofs(){
   // a plank bridge between EVERY pair of neighboring rooftops: no dead ends, you can always head straight for the Reserve
   for(const br of bridges)build(br);
   const hx=BK0X+4,hy=BK0Y+3;g[hy*CW+hx]=TKD; // roof hatch on the Federal Reserve
-  // 3 power boxes on far-apart roofs
+  // 5 power boxes on far-apart roofs
   const boxes=[];
-  for(let tr=0;tr<5000&&boxes.length<3;tr++){const x=rI(CW),y=rI(CH);if(g[y*CW+x]!==TS)continue;
-    if(Math.abs(x-4)+Math.abs(y-4)<20||Math.abs(x-hx)+Math.abs(y-hy)<10||boxes.some(b=>Math.abs(b.x-x)+Math.abs(b.y-y)<18))continue;
+  for(let tr=0;tr<8000&&boxes.length<BOX_N;tr++){const x=rI(CW),y=rI(CH);if(g[y*CW+x]!==TS)continue;
+    if(Math.abs(x-4)+Math.abs(y-4)<20||Math.abs(x-hx)+Math.abs(y-hy)<10||boxes.some(b=>Math.abs(b.x-x)+Math.abs(b.y-y)<16))continue;
     if(!DIRS.some(([dx,dy])=>g[(y+dy)*CW+x+dx]===TS)||DIRS.some(([dx,dy])=>g[(y+dy)*CW+x+dx]===TR||g[(y+2*dy)*CW+x+2*dx]===TR))continue; // never block a bridge
     g[y*CW+x]=TB;boxes.push({x,y,cut:false});}
   const lights=[];for(let k=0;k<45;k++){for(let tr=0;tr<50;tr++){const x=rI(CW),y=rI(CH);if(g[y*CW+x]===TS){lights.push({x:x*T+8,y:y*T+8});break;}}}
@@ -1957,7 +2025,7 @@ function renderJail(){
 }
 const COLS=['#d23c3c','#3c7bd2','#e8c547','#3cb371','#e8e8e8','#9b59b6','#ff8c1a'];
 function initCity(){
-  C=isMuseum()?genGallery():isGauntlet()?genRoofs():isStorm()?genSuburb():genCity(false,1);C.theme=isMuseum()?'gallery':isGauntlet()?'roof':isStorm()?'rain':'clear';C.thunder=isStorm()?15:8;C.flash=0;
+  C=isMuseum()?genGallery():isGauntlet()?genRoofs():isStorm()?genSuburb():genCity(false,night===1&&!twoP?KEY_N:1);C.theme=isMuseum()?'gallery':isGauntlet()?'roof':isStorm()?'rain':'clear';C.thunder=isStorm()?15:8;C.flash=0;
   C.img=isMuseum()?renderGallery():isGauntlet()?renderRoofs():renderCity();const lvl=nightLvl();
   const st=isGauntlet()?[4,4]:[2,2];
   P={tx:st[0],ty:st[1],x:st[0]*T,y:st[1]*T,ttx:st[0],tty:st[1],dx:0,dy:1,dir:'down',moving:false,anim:0,hidden:false,inv:0};
@@ -1990,16 +2058,17 @@ function initCity(){
   cops=[];
   const mkCop=(x,y)=>cops.push({tx:x,ty:y,x:x*T,y:y*T,ttx:x,tty:y,dx:1,dy:0,moving:false,state:'patrol',lost:0,alert:0,shootT:1,anim:0,role:0});
   let tries=0;
-  while(cops.length<(C.suburb?11+4*lvl:14+5*lvl)&&tries<4000){tries++;const x=rI(CW),y=rI(CH);if(C.g[y*CW+x]!==TS||Math.abs(x-2)+Math.abs(y-2)<18)continue;mkCop(x,y);}
+  const area=NBX?NBX*NBY/63:1; // (bigger city = more police and loot, same density)
+  while(cops.length<Math.round((C.suburb?11+4*lvl:14+5*lvl)*area)&&tries<6000){tries++;const x=rI(CW),y=rI(CH);if(C.g[y*CW+x]!==TS||Math.abs(x-2)+Math.abs(y-2)<18)continue;mkCop(x,y);}
   mkCop(BK0X+1,BK1Y+1);mkCop(BK1X-1,BK1Y+1);
   picks=[];const used=new Set([2*CW+2]);
   const add=(x,y,type,val)=>{const k=y*CW+x;if(used.has(k))return false;used.add(k);const o={x,y,type,val,ph:Math.random()*6,got:false};picks.push(o);return o;};
   keyPick=null;C.pieces=null;
-  if(isMuseum()){ // map only shows a rough circle around each piece
+  if(isMuseum()||(night===1&&!twoP&&C.keys.length>1)){ // map only shows a rough circle around each piece (museum: blueprints. night 1: keycard halves)
     C.pieces=C.keys.map(([x,y])=>{const o=add(x,y,'piece',0);o.cx=x+rI(7)-3;o.cy=y+rI(7)-3;return o;});
   }else if(!isStorm())keyPick=add(C.key[0],C.key[1],'key',0);
-  let n=0;while(n<60){const x=rI(CW),y=rI(CH);if(C.g[y*CW+x]===TR&&Math.abs(x-2)+Math.abs(y-2)>4&&add(x,y,'wad',50))n++;}
-  n=0;while(n<45){const x=rI(CW),y=rI(CH);if(C.g[y*CW+x]===TS&&add(x,y,'bill',20))n++;}
+  let n=0;while(n<Math.round(60*area)){const x=rI(CW),y=rI(CH);if(C.g[y*CW+x]===TR&&Math.abs(x-2)+Math.abs(y-2)>4&&add(x,y,'wad',50))n++;}
+  n=0;while(n<Math.round(45*area)){const x=rI(CW),y=rI(CH);if(C.g[y*CW+x]===TS&&add(x,y,'bill',20))n++;}
   for(const al of C.alleys){let m=0,tr=0;const want=1+rI(2);while(m<want&&tr<30){tr++;const [x,y]=pick(al);if(add(x,y,'bag',150))m++;}}
   bullets=[];bolts=[];lostPiles=[];shopBlock=false;cityTime=0;floaters=[];lastSeenG=null;copsSee=false;
   if(C.suburb){let m=0;for(let tr=0;tr<3000&&m<24;tr++){const x=rI(CW),y=rI(CH);if(C.g[y*CW+x]===TA&&add(x,y,'bag',C.dark[y*CW+x]?200:100))m++;}} // dropped wallets + loot on the lawns
@@ -2332,9 +2401,10 @@ function carCanGo(c){
   return true;
 }
 
-const prevArr=new Int32Array(CW*CH);
+let prevArr=new Int32Array(CW*CH);
 function bfsStep(sx,sy,gx,gy){
   if(sx===gx&&sy===gy)return null;
+  if(prevArr.length<CW*CH)prevArr=new Int32Array(CW*CH); // (grows with bigger maps - a too-small one made the police search loop forever)
   prevArr.fill(-1);const s=sy*CW+sx,goal=gy*CW+gx;prevArr[s]=s;const q=[s];let h=0;
   while(h<q.length){
     const cur=q[h++];if(cur===goal)break;
@@ -2900,7 +2970,7 @@ function updCity(dt){
     const [dx,dy]=DV[want];P.dir=want;P.dx=dx;P.dy=dy;
     const nx=P.tx+dx,ny=P.ty+dy;
     if(ct(nx,ny)===TKD&&!hasKey&&keyTaken&&!isJail()&&lockMsgT<=0){say('BANK LOCKED! THE COPS TOOK YOUR|KEYCARD. FIND IT AGAIN (MAP / ARROW)',3);sfx.deny();lockMsgT=2.5;}
-    else if(ct(nx,ny)===TKD&&!hasKey){if(lockMsgT<=0){say(isJail()?(isIsland()?'THE BOAT IS BROKEN! DIG UP|ALL 4 BURIED BOAT PARTS FIRST':'GATE LOCKED! PICKPOCKET THE|WARDEN\'S KEYCARD (GOLD CAP)'):(isMuseum()?'VAULT WING LOCKED! FIND ALL 3|BLUEPRINT PIECES (MAP CIRCLES)':(isRoof()?'HATCH LOCKED! CUT ALL 3|POWER BOXES FIRST (MAP)':'BANK LOCKED! FIND THE KEYCARD|CHECK YOUR MAP [M]')));sfx.deny();lockMsgT=2.5;}}
+    else if(ct(nx,ny)===TKD&&!hasKey){if(lockMsgT<=0){say(isJail()?(isIsland()?'THE BOAT IS BROKEN! DIG UP|ALL 4 BURIED BOAT PARTS FIRST':'GATE LOCKED! PICKPOCKET THE|WARDEN\'S KEYCARD (GOLD CAP)'):(isMuseum()?'VAULT WING LOCKED! FIND ALL '+PLAN_N+'|BLUEPRINT PIECES (MAP CIRCLES)':(isRoof()?'HATCH LOCKED! CUT ALL '+BOX_N+'|POWER BOXES FIRST (MAP)':halves()?'BANK LOCKED! FIND BOTH|KEYCARD HALVES (MAP CIRCLES)':'BANK LOCKED! FIND THE KEYCARD|CHECK YOUR MAP [M]')));sfx.deny();lockMsgT=2.5;}}
     else if(ct(nx,ny)===TD&&C.locks&&C.locks[ny*CW+nx]){if(!PW)pwStart(ny*CW+nx);}
     else if(walkP(nx,ny)){P.ttx=nx;P.tty=ny;P.moving=true;}
   }
@@ -2987,8 +3057,8 @@ function updCity(dt){
       if(C.cutT===0)say('CUTTING THE POWER... STAY 3 SEC!',2);
       C.cutT+=dt;C.cutNoise-=dt;C.cutBox=bx;
       if(C.cutNoise<=0){C.cutNoise=1;beep(2200,.08,'sawtooth',.04,-1500);makeNoise(P.x+8,P.y+8,9);}
-      if(C.cutT>=Math.max(.6,3-.6*upLvl('hands'))){bx.cut=true;C.cutT=0;const n=C.boxes.filter(b=>b.cut).length;sfx.zap();floatTxt(bx.x*T+8,bx.y*T,'POWER CUT!','#ffd400');
-        if(n>=3){hasKey=true;say('ALL 3 POWER BOXES CUT!|THE ROOF HATCH IS OPEN. GO!',4);}else say('POWER BOX '+n+'/3 CUT!',2.5);}
+      if(C.cutT>=Math.max(.6,3-.6*upLvl('hands'))){bx.cut=true;C.cutT=0;const n=C.boxes.filter(b=>b.cut).length,of=C.boxes.length;sfx.zap();floatTxt(bx.x*T+8,bx.y*T,'POWER CUT!','#ffd400');
+        if(n>=of){hasKey=true;say('ALL '+of+' POWER BOXES CUT!|THE ROOF HATCH IS OPEN. GO!',4);}else say('POWER BOX '+n+'/'+of+' CUT!',2.5);}
     }else if(C.cutT>0){C.cutT=0;C.cutNoise=0;say('YOU STOPPED. THE BOX RESETS',1.5);}
   }
   if(C.mounds){
@@ -3053,9 +3123,9 @@ function updCity(dt){
       k.got=true;
       if(k.type==='coco'){coconuts+=2;sfx.coin();floatTxt(k.x*T+8,k.y*T,'+2 COCONUTS','#c8a070');
       }else if(k.type==='piece'){
-        const got=C.pieces.filter(p=>p.got).length;sfx.key();floatTxt(k.x*T+8,k.y*T,'PIECE '+got+'/3','#9fd3ff');
-        if(got>=3){hasKey=true;say('ALL 3 BLUEPRINT PIECES!|THE MUSEUM IS OPEN. GO!',4);}
-        else say('BLUEPRINT PIECE '+got+'/3|CHECK THE MAP FOR THE REST',3);
+        const got=C.pieces.filter(p=>p.got).length,of=C.pieces.length,hv=halves();sfx.key();floatTxt(k.x*T+8,k.y*T,(hv?'HALF ':'PIECE ')+got+'/'+of,'#9fd3ff');
+        if(got>=of){hasKey=true;say(hv?'BOTH KEYCARD HALVES!|THE BANK IS OPEN. GO!':'ALL '+of+' BLUEPRINT PIECES!|THE MUSEUM IS OPEN. GO!',4);}
+        else say((hv?'KEYCARD HALF ':'BLUEPRINT PIECE ')+got+'/'+of+'|CHECK THE MAP FOR THE REST',3);
       }else if(k.type==='uniform'){disguiseT=Math.max(0,disguiseT)+20+10*upLvl('uniform');for(const c of cops)if(c.guard)c.state='patrol';sfx.buy();floatTxt(k.x*T+8,k.y*T,'UNIFORM ON!','#c0c5cf');say('A GUARD UNIFORM FROM THE LAUNDRY!|20S: GUARDS + CAMERAS IGNORE YOU',3.5);
       }else if(k.type==='key'){hasKey=true;keyTaken=false;sfx.key();say('KEYCARD GET! NOW ROB THE|BIG BANK (FOLLOW THE ARROW)',4);floatTxt(k.x*T+8,k.y*T,'KEYCARD','#5ff');}
       else if(k.type==='rare'){lootGain(k.val,k.x*T+8,k.y*T,true);stat('rares',1,5,'rare');say('YOU FOUND THE '+k.name+'!|A RARE TREASURE: +$'+Math.round(k.val*comboMult()),3.5);}
@@ -3532,15 +3602,15 @@ function drawCity(){
   }
   for(const c of cops){
     const x=c.x+8-cx,y=c.y+8-cy;if(x<-60||y<-60||x>VW+60||y>VH+60)continue;
-    if(!(c.blind>0)&&!c.dog)cone(lx,x,y,Math.atan2(c.dy,c.dx),c.k9?(copSight()+3)*T:c.guard||c.cone?copSight()*T:40,c.guard||c.cone?CONE_HALF:.45,isMuseum()?.35:.7);radial(lx,x,y,10,isMuseum()?.25:.5); // (the museum has LOTS of police: their lights are dimmer there, so it doesn't get too bright)
+    if(!(c.blind>0)&&!c.dog)cone(lx,x,y,Math.atan2(c.dy,c.dx),c.k9?(copSight()+3)*T:c.guard||c.cone?copSight()*T:40,c.guard||c.cone?CONE_HALF:.45,dimLights()?(isRoof()?.22:.35):.7);radial(lx,x,y,10,dimLights()?.25:.5); // (the museum + rooftops have LOTS of police: their lights are dimmer there, so it doesn't get too bright)
   }
   if(keyPick&&!hasKey)radial(lx,keyPick.x*T+8-cx,keyPick.y*T+8-cy,40,.9);
   for(const k of picks)if(k.type==='rare'&&!k.got)radial(lx,k.x*T+8-cx,k.y*T+8-cy,24,.8);
   if(C.pieces)for(const k of C.pieces)if(!k.got)radial(lx,k.x*T+8-cx,k.y*T+8-cy,34,.9);
   if(C.trader)radial(lx,C.trader.tx*T+8-cx,C.trader.ty*T+8-cy,26,.8);
   if(C.helis)for(const h of C.helis){const x=h.x-cx,y=h.y-cy;if(x>-60&&y>-60&&x<VW+60&&y<VH+60)radial(lx,x,y,42,1);}
-  if(C.bots)for(const b of C.bots){const x=b.x+8-cx,y=b.y+8-cy;if(x>-60&&y>-60&&x<VW+60&&y<VH+60){cone(lx,x,y,Math.atan2(b.dy,b.dx),30,.5,.7);radial(lx,x,y,10,.5);}}
-  if(C.cams)for(const cm of C.cams)if(cm.tower){const x=cm.x-cx,y=cm.y-cy;if(x>-150&&y>-150&&x<VW+150&&y<VH+150)cone(lx,x,y,cm.ang,cm.range,cm.half,.85);}
+  if(C.bots)for(const b of C.bots){const x=b.x+8-cx,y=b.y+8-cy;if(x>-60&&y>-60&&x<VW+60&&y<VH+60){cone(lx,x,y,Math.atan2(b.dy,b.dx),30,.5,dimLights()?.3:.7);radial(lx,x,y,10,dimLights()?.25:.5);}}
+  if(C.cams)for(const cm of C.cams)if(cm.tower){const x=cm.x-cx,y=cm.y-cy;if(x>-150&&y>-150&&x<VW+150&&y<VH+150)cone(lx,x,y,cm.ang,cm.range,cm.half,isRoof()?.5:.85);}
   const px=P.x+8-cx,py=P.y+8-cy;
   radial(lx,px,py,20,.55);
   if(OT)radial(lx,OT.x+8-cx,OT.y+8-cy,20,.55);
@@ -3549,6 +3619,11 @@ function drawCity(){
   if(flashOn)cone(lx,px,py,Math.atan2(P.dy,P.dx),100+40*wb,.5+.09*wb,1),radial(lx,px,py,28+8*wb,.8); // WIDE BEAM: a much longer, wider beam
   lx.globalCompositeOperation='source-over';
   ctx.drawImage(lc,0,0);
+  if(isRoof()){ // the rooftops: the roof HATCH (the way into the Federal Reserve) and the 5 POWER BOXES always show, in pulsing gold, on top of the dark + the lights
+    if(!C.hatch){C.hatch=[];for(let y=0;y<CH;y++)for(let x=0;x<CW;x++)if(C.g[y*CW+x]===TKD)C.hatch.push([x,y]);}
+    const pu=.55+.45*Math.sin(gameT*4),mark=(tx,ty,col)=>{const x=tx*T-cx,y=ty*T-cy;if(x<-20||y<-20||x>VW+20||y>VH+20)return;ctx.strokeStyle=`rgba(${col},${pu.toFixed(2)})`;ctx.lineWidth=2;ctx.strokeRect(x-1,y-1,T+2,T+2);};
+    for(const [x,y] of C.hatch)mark(x,y,hasKey?'125,255,125':'255,212,0');
+    for(const b of C.boxes||[])if(!b.cut)mark(b.x,b.y,'255,212,0');}
   if(flashOn&&wb)beamGlow(px,py,Math.atan2(P.dy,P.dx),100+40*wb,.5+.09*wb,wb); // ...and BRIGHTER: a warm glow on top
   if(C.theme==='rain'){ // rain streaks + lightning
     ctx.fillStyle='rgba(170,200,255,.35)';
@@ -3570,19 +3645,19 @@ function drawCity(){
   }
   if(truck.mode==='park'&&vis(truck))glow(truck.x+truck.w/2-cx,truck.y+truck.h/2-cy,30,'255,95,180',.3+.1*Math.sin(gameT*4));
   for(const c of cops){if(!c.k9||c.blind>0)continue;const x=c.x+8-cx,y=c.y+8-cy;if(x<-120||y<-120||x>VW+120||y>VH+120)continue;
-    const a=Math.atan2(c.dy,c.dx),ch=c.state==='chase',dm=isMuseum()?.45:1;ctx.fillStyle=ch?`rgba(255,40,40,${.16*dm})`:`rgba(255,150,60,${.12*dm})`; // (dimmer in the crowded museum)
+    const a=Math.atan2(c.dy,c.dx),ch=c.state==='chase',dm=dimLights()?(isRoof()?.3:.45):1;ctx.fillStyle=ch?`rgba(255,40,40,${.16*dm})`:`rgba(255,150,60,${.12*dm})`; // (dimmer in the crowded museum)
     ctx.beginPath();ctx.moveTo(x,y);ctx.arc(x,y,(copSight()+3)*T+8,a-CONE_HALF,a+CONE_HALF);ctx.closePath();ctx.fill();
     if(!(dogTreatT>0)){ctx.strokeStyle=ch?'rgba(255,60,60,.35)':'rgba(255,170,80,.3)';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.beginPath();ctx.arc(x,y,(K9_NOSE+.5)*T,0,7);ctx.stroke();ctx.setLineDash([]);}}
   if(isJail()||isGallery()||isRoof()){
     // guard view cones on the floor (red = chasing) and camera beams
     for(const c of cops){if(c.k9)continue;
       if(!(c.guard||c.cone)||c.blind>0)continue;const x=c.x+8-cx,y=c.y+8-cy;if(x<-80||y<-80||x>VW+80||y>VH+80)continue;
-      const a=Math.atan2(c.dy,c.dx),dm=isMuseum()?.45:1;ctx.fillStyle=c.state==='chase'?`rgba(255,40,40,${.16*dm})`:disguiseT>0?`rgba(120,255,120,${.07*dm})`:`rgba(255,220,120,${.11*dm})`; // (dimmer in the crowded museum)
+      const a=Math.atan2(c.dy,c.dx),dm=dimLights()?(isRoof()?.3:.45):1;ctx.fillStyle=c.state==='chase'?`rgba(255,40,40,${.16*dm})`:disguiseT>0?`rgba(120,255,120,${.07*dm})`:`rgba(255,220,120,${.11*dm})`; // (dimmer in the crowded museum)
       ctx.beginPath();ctx.moveTo(x,y);ctx.arc(x,y,copSight()*T+8,a-CONE_HALF,a+CONE_HALF);ctx.closePath();ctx.fill();
     }
     for(const cm of C.cams){
       const x=cm.x-cx,y=cm.y-cy;if(x<-90||y<-90||x>VW+90||y>VH+90)continue;
-      ctx.fillStyle=cm.cool>2?'rgba(255,40,40,.22)':cm.tower?'rgba(255,245,190,.2)':'rgba(200,230,255,.13)';
+      const cd=isRoof()?.5:1;ctx.fillStyle=cm.cool>2?`rgba(255,40,40,${.22*cd})`:cm.tower?`rgba(255,245,190,${.2*cd})`:`rgba(200,230,255,${.13*cd})`; // (dimmer on the crowded rooftops)
       ctx.beginPath();ctx.moveTo(x,y);ctx.arc(x,y,cm.range,cm.ang-cm.half,cm.ang+cm.half);ctx.closePath();ctx.fill();
     }
   }
@@ -3593,9 +3668,11 @@ function drawCity(){
     if(k.got)continue;const x=k.x*T-cx,y=k.y*T-cy;if(x<-80||y<-80||x>VW+80||y>VH+80)continue;
     const pu=.5+.5*Math.sin(gameT*5),b=Math.round(Math.sin(gameT*3)*2);
     ctx.globalCompositeOperation='lighter';glow(x+8,y+8,30+pu*6,'120,180,255',.3+pu*.2);ctx.fillStyle=`rgba(150,200,255,${.1+pu*.12})`;ctx.fillRect(x+6,y-60,4,66);ctx.globalCompositeOperation='source-over';
-    ctx.fillStyle='#e8d9a8';ctx.fillRect(x+1,y+4+b,14,10);ctx.fillStyle='#b8a978';ctx.fillRect(x,y+3+b,2,12);ctx.fillRect(x+14,y+3+b,2,12);
+    if(halves()){ctx.fillStyle='#5ff';ctx.fillRect(x+3,y+4+b,9,11);ctx.fillStyle='#1a6a7a';ctx.fillRect(x+5,y+6+b,5,3);ctx.fillStyle='#fff';ctx.fillRect(x+3,y+12+b,9,1);ctx.fillStyle='#2a8a9a';for(let j=0;j<4;j++)ctx.fillRect(x+12,y+4+b+j*3,2,2); // half a keycard (torn edge)
+      txt('KEY HALF',x+8,y-10+b,'#5ff','center',6);}
+    else{ctx.fillStyle='#e8d9a8';ctx.fillRect(x+1,y+4+b,14,10);ctx.fillStyle='#b8a978';ctx.fillRect(x,y+3+b,2,12);ctx.fillRect(x+14,y+3+b,2,12);
     ctx.fillStyle='#3a6aa8';ctx.fillRect(x+4,y+6+b,8,1);ctx.fillRect(x+4,y+9+b,6,1);ctx.fillRect(x+4,y+11+b,7,1);
-    txt('PLANS',x+8,y-10+b,'#9fd3ff','center');
+    txt('PLANS',x+8,y-10+b,'#9fd3ff','center');}
   }
   for(const b of bullets){ctx.fillStyle='rgba(255,220,80,.4)';ctx.fillRect(b.x-cx-3,b.y-cy-3,6,6);ctx.fillStyle='#fff6a0';ctx.fillRect(b.x-cx-1,b.y-cy-1,3,3);}
   for(const sp of splats){const x=sp.x-cx,y=sp.y-cy;ctx.fillStyle=`rgba(200,20,20,${Math.min(1,sp.t)})`;ctx.fillRect(x-4,y-2,8,4);ctx.fillRect(x-2,y-4,4,8);ctx.fillRect(x+4,y+3,2,2);ctx.fillRect(x-6,y-5,2,2);}
@@ -3658,7 +3735,7 @@ function drawCity(){
   if(!hasKey&&C.mounds){ // arrow to the nearest buried part; it vanishes once you're close (then use the detector)
     let n=null,nd=1e9;for(const m of C.mounds)if(!m.dug){const d=Math.abs(m.x-Math.round(P.x/T))+Math.abs(m.y-Math.round(P.y/T));if(d<nd){nd=d;n=m;}}
     if(n&&nd>8)edgeArrow(n.x*T+8,n.y*T+8,cx,cy,'#ffb000','PART');}
-  if(!hasKey&&C.pieces){let n=null,nd=1e9;for(const k of C.pieces)if(!k.got){const d=(Math.abs(k.x*T-P.x)+Math.abs(k.y*T-P.y))/T;if(d<nd){nd=d;n=k;}}if(n&&nd<25)edgeArrow(n.x*T+8,n.y*T+8,cx,cy,'#9fd3ff','PLANS');}
+  if(!hasKey&&C.pieces){let n=null,nd=1e9;for(const k of C.pieces)if(!k.got){const d=(Math.abs(k.x*T-P.x)+Math.abs(k.y*T-P.y))/T;if(d<nd){nd=d;n=k;}}if(n&&nd<25)edgeArrow(n.x*T+8,n.y*T+8,cx,cy,'#9fd3ff',halves()?'KEY':'PLANS');}
   if(!hasKey&&keyPick){const d=(Math.abs(keyPick.x*T-P.x)+Math.abs(keyPick.y*T-P.y))/T;if(d<30)edgeArrow(keyPick.x*T+8,keyPick.y*T+8,cx,cy,'#5ff','KEY');}
   if(!C.race&&!shopOpen&&truck&&truck.mode==='park'&&cars.includes(truck)&&(Math.abs(truck.x-P.x)+Math.abs(truck.y-P.y))/T<30)edgeArrow(truck.x+truck.w/2,truck.y+truck.h/2,cx,cy,'#ff5fb4','SHOP'); // the parked shop truck, when it's close
   if(hasKey)edgeArrow(C.door?C.door[0]*T+8:(BK0X+3.5)*T+8,C.door?C.door[1]*T+8:BK1Y*T+8,cx,cy,isJail()?'#3f3':'#ffd400',isJail()?(isIsland()?'BOAT':'EXIT'):isMuseum()?'VAULT WING':isRoof()?'HATCH':isStorm()?'STATION':'BANK');
@@ -3666,6 +3743,7 @@ function drawCity(){
   else if(isJail()){const w=cops.find(c=>c.hasKeyCard);if(w&&(C.wardenMap||(Math.abs(w.x-P.x)+Math.abs(w.y-P.y))/T<25))edgeArrow(w.x+8,w.y+8,cx,cy,'#5ff',isIsland()?'MASTER':'WARDEN');}
 }
 function radial(g,x,y,r,a){const gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,`rgba(0,0,0,${a})`);gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.beginPath();g.arc(x,y,r,0,Math.PI*2);g.fill();}
+const dimLights=()=>isMuseum()||isRoof(); // the crowded levels: police lights are dimmer so you can still see the map
 function cone(g,x,y,ang,r,spread,a){const gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,`rgba(0,0,0,${a})`);gr.addColorStop(.7,`rgba(0,0,0,${a*.8})`);gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.beginPath();g.moveTo(x,y);g.arc(x,y,r,ang-spread,ang+spread);g.closePath();g.fill();}
 function drawFloaters(cx,cy){for(const f of floaters)txt(f.s,f.x-cx,f.y-cy-(1-f.t)*16,f.col,'center');}
 
@@ -4497,9 +4575,11 @@ function drawNightSel(){
 // the end-of-night screen (solo story) has a HIDEOUT button under 'PRESS ENTER', so you remember to spend your stash
 let storySel=0;const STORY_HIDE_BOX=[70,210,180,13];
 const storyHideBtn=()=>state==='story'&&story&&story.score&&!twoP&&hideoutOK();
-function menuBoxes(){if(state==='bank'&&B&&B.boss&&B.boss.ui)return B.boss.ui===1?BOSS_BOX1:BOSS_BOX2;return state==='story'?(storyHideBtn()?[STORY_HIDE_BOX]:null):state==='choose'?modeBox().slice(0,CHOICE.opts.length):state==='menu'?TITLE_BOX:state==='hideout'?HIDE_BOX:state==='nightsel'?NSEL_BOX:state==='badges'?(badgeInfo?[[0,0,320,224]]:BADGE_BOX):state==='backpack'?BP_BOX:state==='results'?[[90,186,140,20]]:null;}
+function menuBoxes(){if(state==='bank'&&B&&B.boss&&B.boss.ui)return B.boss.ui===1?BOSS_BOX1.slice(0,B.boss.clued?3:4):BOSS_BOX2;return state==='story'?(storyHideBtn()?[STORY_HIDE_BOX]:null):state==='choose'?modeBox().slice(0,CHOICE.opts.length):state==='menu'?TITLE_BOX:state==='hideout'?HIDE_BOX:state==='nightsel'?NSEL_BOX:state==='badges'?(badgeInfo?[[0,0,320,224]]:BADGE_BOX):state==='backpack'?BP_BOX:state==='results'?[[90,186,140,20]]:null;}
 function menuPick(i){if(state==='bank'&&B&&B.boss&&B.boss.ui){bossPick(i);return;}if(state==='story'){storySel=0;openHideout();return;}if(state==='hideout'){HIDE.sel=i;hideoutPick(i);return;}if(state==='choose')pickMode(i);else if(state==='menu')titlePick(i);else if(state==='nightsel')nightPick(i);else if(state==='badges')badgePick(i);else if(state==='backpack')backpackPick(i);else if(state==='results')resultsDone();}
 function menuHover(i){if(state==='bank'&&B&&B.boss&&B.boss.ui)B.boss.sel=i;else if(state==='story'){}else if(state==='hideout')HIDE.sel=i;else if(state==='choose')modePick=i;else if(state==='menu')titleSel=i;else if(state==='nightsel')nselSel=i;else if(state==='badges'&&!badgeInfo&&i<BADGES.length)badgeSel=i;else if(state==='backpack'&&i<SIDES.length)bpSel=i;}
+const PLAN_N=5,BOX_N=5,KEY_N=2; // goals: museum blueprints, rooftop power boxes, night-1 keycard halves
+const halves=()=>night===1&&!twoP&&C&&C.pieces&&!isMuseum(); // night 1: the keycard comes in halves
 const MODE_BOX2=[[34,70,252,52],[34,132,252,52]],MODE_BOX3=[[34,50,252,46],[34,98,252,46],[34,146,252,46]],MODE_BOX4=[[34,48,252,35],[34,86,252,35],[34,124,252,35],[34,162,252,35]];
 const modeBox=()=>!CHOICE?MODE_BOX2:CHOICE.opts.length>3?MODE_BOX4:CHOICE.opts.length>2?MODE_BOX3:MODE_BOX2;
 function drawChoose(){
@@ -5493,8 +5573,8 @@ function drawHUD(){
   if(state==='city'&&C){
     let lab=null,n=0,of=0,col='#ffb000';
     if(C.parts){lab='PARTS';n=C.parts.filter(k=>k.got).length;of=4;}
-    else if(C.pieces){lab='PLANS';n=C.pieces.filter(k=>k.got).length;of=3;col='#9fd3ff';}
-    else if(C.boxes){lab='POWER';n=C.boxes.filter(b=>b.cut).length;of=3;col='#ffd400';}
+    else if(C.pieces){lab=halves()?'KEY':'PLANS';n=C.pieces.filter(k=>k.got).length;of=C.pieces.length;col='#9fd3ff';}
+    else if(C.boxes){lab='POWER';n=C.boxes.filter(b=>b.cut).length;of=C.boxes.length;col='#ffd400';}
     if(lab){
       if(C.goalShown!==n){C.goalFlash=C.goalShown===undefined?0:1.5;C.goalShown=n;}
       if(C.goalFlash>0)C.goalFlash-=1/60;
@@ -5511,7 +5591,7 @@ function drawHUD(){
     ctx.fillStyle=top?'rgba(0,0,0,.62)':'rgba(0,0,0,.8)';ctx.fillRect((VW-w)/2,y0,w,h);
     ctx.fillStyle='#ffd400';ctx.fillRect((VW-w)/2,top?y0+h-1:y0,w,1);
     lines.forEach((l,i)=>txt(l,VW/2,y0+4+i*10,'#ffd400','center'));
-  }else if(state==='city'&&cityTime<20)txt(isJail()?(isIsland()?'DIG. COPS COMING? T = COCONUT!':'ROB GUARDS NOT FACING YOU'):isGallery()?'HIDE IN SARCOPHAGI. FIND DEALER':isRoof()?'CUT 3 POWER BOXES. AVOID LIGHTS':isStorm()?'CATCH VINNIE. HIDE FROM LIGHTNING':'[M]AP [F]LASH  FIND PINK TRUCK',VW/2,VH-10,'#889','center');
+  }else if(state==='city'&&cityTime<20)txt(isJail()?(isIsland()?'DIG. COPS COMING? T = COCONUT!':'ROB GUARDS NOT FACING YOU'):isGallery()?'HIDE IN SARCOPHAGI. FIND DEALER':isRoof()?'CUT '+BOX_N+' POWER BOXES. AVOID LIGHTS':isStorm()?'CATCH VINNIE. HIDE FROM LIGHTNING':'[M]AP [F]LASH  FIND PINK TRUCK',VW/2,VH-10,'#889','center');
 }
 function drawMap(){
   ctx.fillStyle='rgb(0,0,12)';ctx.fillRect(0,0,VW,VH);
@@ -5719,7 +5799,7 @@ const HELP={
     ['P   PAUSE          H  HELP',W],['',W],
     ['EVERY NIGHT HAS ITS OWN GOAL.',Y],['A HELP CARD EXPLAINS EACH ONE.',Y],['NO HEARTS LOST = 3 STARS!',GR]]},
   city:{t:()=>night===6?'NIGHT 6: THE FINAL HEIST':'NIGHT 1: THE CITY',l:[
-    ['GOAL: FIND THE GLOWING KEYCARD',G],['(ARROW + MAP), THEN WALK INTO',G],['THE BIG BANK DOOR.',G],['',W],
+    ['GOAL: FIND BOTH KEYCARD HALVES',G],['(MAP CIRCLES), THEN WALK INTO',G],['THE BIG BANK DOOR.',G],['',W],
     ['GRAB CASH ON THE STREETS.',W],['PINK TRUCK = SHOP. WALK INTO IT.',W],
     ['HIDE IN GREEN DOORS.',GR],['',W],
     ['DANGER: CARS, COPS THAT SHOOT.',R],['0 HEARTS = YOU DROP ALL CASH',R],['FLASHLIGHT PULLS COPS TO YOU!',R]]},
@@ -5748,7 +5828,7 @@ const HELP={
     ['TRACKS: A BELL RINGS AND THE',R],['LIGHTS FLASH, THEN A TRAIN',R],['ROARS PAST. WAIT, OR STAND',R],['ON A LEDGE ABOVE THE TRACKS.',GR],
     ['GUARDS: HIDE ON THE BENCHES.',W],['SCANNERS: FREEZE ON RED.',W],['CASES: RUN INTO THEM TO GRAB.',Y],['GET ALL THE LOOT TO OPEN LOCKER 13!',Y]]},
   gallery:{t:'NIGHT 3: THE MUSEUM',l:[
-    ['GOAL: FIND 3 BLUEPRINT PIECES',G],['IN THE DARK STORAGE ROOMS',G],['(CIRCLES ON THE MAP [M]), THEN',G],['THE MOONSTONE VAULT WING DOOR.',G],['',W],
+    ['GOAL: FIND '+PLAN_N+' BLUEPRINT PIECES',G],['IN THE DARK STORAGE ROOMS',G],['(CIRCLES ON THE MAP [M]), THEN',G],['THE MOONSTONE VAULT WING DOOR.',G],['',W],
     ['HIDE IN SARCOPHAGI.',GR],['ROB GUARDS FROM BEHIND.',GR],['DEALER (DARK COAT) SELLS GEAR.',W],['',W],
     ['GUARDS HAVE GUNS! THEY SHOOT',R],['IN STRAIGHT LINES IF THEY SEE YOU.',R],['ROBOTS + CAMERAS: STAY AWAY.',R]]},
   museum:{t:'THE MOONSTONE',l:[
@@ -5763,7 +5843,7 @@ const HELP={
     ['HIDE IN TOOL SHEDS.',GR],['SEAGULLS SQUAWK IF YOU GET CLOSE',R],
     ['SHELLS = MONEY: SPEND IT AT THE',Y],['GUARDS\' SNACK MACHINE (MAP)',Y]]},
   roof:{t:'NIGHT 6: THE GAUNTLET',l:[
-    ['GOAL: CUT 3 POWER BOXES (MAP),',G],['THEN OPEN THE ROOF HATCH ON THE',G],['FEDERAL RESERVE.',G],
+    ['GOAL: CUT '+BOX_N+' POWER BOXES (MAP),',G],['THEN OPEN THE ROOF HATCH ON THE',G],['FEDERAL RESERVE.',G],
     ['STAND NEXT TO A BOX 3 SECONDS.',Y],['CROSS ROOFS ON PLANK BRIDGES.',W],['HIDE IN WATER TANKS.',GR],['',W],
     ['SWAT SEE IN A CONE AND SHOOT!',R],['HELICOPTER LIGHTS CALL SWAT!',R],['CUTTING POWER IS LOUD!',R],['DRONE PAD (MAP): ORDER GEAR',W]]},
   gauntlet:{t:'THE FEDERAL RESERVE',l:[
@@ -5880,11 +5960,11 @@ function startNight(n){
   if(!twoP&&!escapeNight(n))cash+=250*upLvl('nestegg'); // NEST EGG
   if(!twoP&&!escapeNight(n)){if(upLvl('kit')>=1)tomatoes=Math.max(tomatoes,10);if(upLvl('kit')>=2&&!weapon){weapon='stun';ammo=Math.max(ammo,6);}if(upLvl('kit')>=3&&weapon)ammo=Math.max(ammo,upLvl('kit')>=4?20:12);if(upLvl('kit')>=4)tomatoes=Math.max(tomatoes,20);tomatoes+=5*upLvl('tomatobag');} // STARTER KIT + TOMATO BAG
   if(!escapeNight(n)){
-    setDims(9,7); // (night 3 replaces this with its own museum floor plan)
+    setDims(11,9); // 11x9 blocks (was 9x7): a bigger city, a longer night. (night 3 replaces this with its own museum floor plan)
     initCity();
-    say(n===1?'NIGHT 1: STEAL CASH, FIND THE|KEYCARD, THEN ROB THE BIG BANK!':n===3?'NIGHT 3: INSIDE THE MUSEUM! FIND|3 BLUEPRINTS, REACH THE VAULT WING':n===4?(twoP?'NIGHT 4: THE STORM! CATCH THE|COURIER, TAKE HIS LOCKER KEY':'NIGHT 4: THE STORM! CATCH VINNIE,|TAKE HIS LOCKER KEY'):'NIGHT 6: THE GAUNTLET! CUT 3 POWER|BOXES, OPEN THE ROOF HATCH',5);
+    say(n===1?(twoP?'NIGHT 1: STEAL CASH, FIND THE|KEYCARD, THEN ROB THE BIG BANK!':'NIGHT 1: STEAL CASH, FIND BOTH|KEYCARD HALVES, ROB THE BIG BANK!'):n===3?'NIGHT 3: INSIDE THE MUSEUM! FIND|'+PLAN_N+' BLUEPRINTS, REACH THE VAULT WING':n===4?(twoP?'NIGHT 4: THE STORM! CATCH THE|COURIER, TAKE HIS LOCKER KEY':'NIGHT 4: THE STORM! CATCH VINNIE,|TAKE HIS LOCKER KEY'):'NIGHT 6: THE GAUNTLET! CUT 3 POWER|BOXES, OPEN THE ROOF HATCH',5);
   }else{
-    setDims(9,7);initJail(); // same size as the Night 1 city
+    setDims(11,9);initJail(); // same size as the Night 1 city
     say(isIsland()?"NIGHT 5: ISLAND PRISON! DIG UP 4|BURIED BOAT PARTS, THEN THE DOCK":"NIGHT "+n+": LOCKED UP! PICKPOCKET|GUARDS. STEAL THE WARDEN'S KEY!",5);
   }
   addGoalGuards();addK9s();if(hardMode)addHardCops();maybeRare();
